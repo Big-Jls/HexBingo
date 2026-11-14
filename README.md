@@ -440,6 +440,10 @@ ReBongo：https://github.com/Big-Jls/rebongo
 
 本项目为非官方附属，未使用上游图标，也不暗示任何官方关系（Apache License 2.0 第 6 条不授予商标权）。
 
+### 测试支持
+
+感谢以下小伙伴对本模组的测试支持（排名不分先后）：summerH8、FoxTwoSour、Crawling_Fish、HikaQ 等。
+
 ## 更新日志
 
 ### 1.49.14 调整
