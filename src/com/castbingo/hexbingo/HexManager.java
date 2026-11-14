@@ -37,6 +37,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.CommandEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerRespawnEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent.Post;
@@ -88,16 +89,46 @@ public final class HexManager {
                var6 = var7.equals("tp") || var7.equals("teleport") || var7.equals("backpack");
             }
 
-            if (var6 && HexEffects.isNetherLocked(var4)) {
-               var3.sendFailure(Component.translatable("hexbingo.msg.nether_locked"));
-               var0.setCanceled(true);
-               return;
+            // /execute ... run tp|teleport：命令头是 execute，必须看 run 之后的子命令，否则可绕过全部传送拦截
+            boolean var16 = false;
+            if (var15.equals("execute")) {
+               for (int var26 = 1; var26 + 1 < var2.length; var26++) {
+                  if (var2[var26].equalsIgnoreCase("run")) {
+                     String var27 = var2[var26 + 1].toLowerCase(Locale.ROOT);
+                     var16 = var27.equals("tp") || var27.equals("teleport");
+                     break;
+                  }
+               }
+
+               var6 = var6 || var16;
+            }
+
+            if (var6) {
+               // 执行者与参数中出现的玩家都要校验：队友 /tp 被锁玩家、/execute as 被锁玩家 同样不能把人带出地狱
+               MinecraftServer var28 = var3.getServer();
+               boolean var29 = HexEffects.isNetherLocked(var4);
+               if (!var29 && var28 != null) {
+                  for (int var30 = 1; var30 < var2.length; var30++) {
+                     ServerPlayer var31 = var28.getPlayerList().getPlayerByName(var2[var30]);
+                     if (var31 != null && HexEffects.isNetherLocked(var31)) {
+                        var29 = true;
+                        break;
+                     }
+                  }
+               }
+
+               if (var29) {
+                  var3.sendFailure(Component.translatable("hexbingo.msg.nether_locked"));
+                  var0.setCanceled(true);
+                  return;
+               }
             }
 
             boolean var19 = var15.equals("tp")
                || var15.equals("teleport")
                || var15.equals("spreadplayers")
-               || isBingoTp(var2);
+               || isBingoTp(var2)
+               || var16;
             if (var19) {
                if (HexEffects.isEndExiled(var4)) {
                   var3.sendFailure(Component.translatable("hexbingo.msg.end_exile_no_tp"));
@@ -985,6 +1016,18 @@ public final class HexManager {
             resume(var1);
          } else {
             HexEffects.clearAll(var1);
+         }
+      }
+   }
+
+   @SubscribeEvent
+   public static void onPlayerChangedDimension(PlayerChangedDimensionEvent var0) {
+      if (var0.getEntity() instanceof ServerPlayer var1) {
+         MinecraftServer var3 = var1.level().getServer();
+         if (var3 != null && HexGameData.get(var3).mayhem()) {
+            // 跨维度后重贴属性与效果：万用瞄准镜等 transient 属性不会自动恢复
+            HexEffects.reapply(var1);
+            HexEffects.ensureFae(var1);
          }
       }
    }

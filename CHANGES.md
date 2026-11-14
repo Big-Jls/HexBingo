@@ -1,5 +1,53 @@
 # Changelog
 
+## 26.2-1.49.17 — 2026-11-15
+
+### Fixed
+
+- **Destiny Dice** (`destiny_dice`): face 3 now completes one random slot for
+  you **and** one for the enemy team instead of un-completing an enemy slot.
+- **Dragon Rider** (`dragon_rider`): the dragon no longer ignores every player;
+  only its owner and other `dragon_rider` holders are spared. Right-click an
+  adult dragon to ride directly; sneak-right-click (or no saddle) opens the
+  saddle screen. Renaming the dragon no longer breaks client steering, and
+  quitting the server clears the growth bar/input cache.
+- **Bees** (`bees`): now targets enemy players in every dimension and spawns the
+  bees in the victim's dimension.
+- **Bat Form / Sword Flight**: the two flight modes no longer clear each
+  other's `mayfly`; dying ends Bat Form immediately.
+- **Immunity Shield** (`immunity_shield`): now also blocks Blind, Shrink,
+  Backpack Thief, Mind Control, Nether Banish and Chaos Mind. As designed it
+  does **not** block enemy slot cancellation.
+- **Travel Frog / Raven Mouth / cats & wolves**: summoned pets are registered and
+  discarded on hex reroll/cleanup instead of lingering forever.
+- **Shrink** (`shrink`): jump strength now scales down with the body.
+- **Task Shield** (`task_shield`): locked tasks are released when the team no
+  longer holds the hex.
+- **Ultimate Refresh** (`ultimate_refresh`): unused refresh charges are cleared
+  when the hex is rerolled.
+- **Chaos Mind**: the item is no longer duplicated; inventory and equipment
+  slots are shuffled separately so gear no longer always ends up in the backpack.
+- **Raven Mouth** (`raven_mouth`): the parrot is no longer discarded in the same
+  tick it spawns.
+- **Trapped With My Friends**: Haste now takes the stronger of this hex and
+  Near Line instead of removing the stronger effect.
+- **Dechi Song** (`dechi_song`): the offhand pickaxe is no longer enchanted twice.
+- **Sword Flight**: durability is only consumed while actually flying.
+- **Amnesia** (`amnesia`): skips task-shielded slots instead of silently failing
+  while reporting success.
+- **Prismatic / Silver Shift**: chain depth cap raised from 4 to 8 so the last
+  hop is no longer a silent no-op.
+- **Hidden Pocket** (`hidden_pocket`): the chest no longer spawns inside the
+  player's feet block.
+- **Spider Man**: sneaking now lets you fall off the wall instead of being
+  pinned in mid-air.
+- **Universal Scope family** (`scope`, `scope_2`, `scope_3`): attributes are
+  reapplied after a dimension change; the cross-dimension reapply covers every
+  attribute-based hex.
+- Misc: Eye of Ender mark range 16 → 2 blocks, unbreakable fishing rod, wormhole
+  no longer opens over void/lava, cross-dimension Blind, safe non-overworld
+  random teleport, and several 20-tick sampling period fixes.
+
 ## 26.2-1.49.14 — 2026-11-14
 
 ### Changed

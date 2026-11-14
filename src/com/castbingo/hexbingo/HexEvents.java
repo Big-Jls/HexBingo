@@ -493,12 +493,12 @@ public class HexEvents {
    public void entityInteract(EntityInteract var1) {
       if (var1.getEntity() instanceof ServerPlayer var2) {
          if (var1.getTarget() instanceof Phantom var12 && HexEffects.isMyDragon(var2, var12)) {
-            // 驯龙高手：幼龙投喂加速成长；成年龙右键先开鞍具界面，有鞍则直接骑乘
+            // 驯龙高手：幼龙投喂加速成长；成年龙右键骑乘，潜行右键或无鞍时打开鞍具界面
             if (!HexEffects.dragonAdult(var2.getUUID())) {
                if (!HexEffects.feedDragon(var2, var12, var1.getItemStack())) {
                   var2.sendSystemMessage(Component.translatable("hexbingo.msg.dragon_not_adult").withStyle(ChatFormatting.GRAY));
                }
-            } else if (HexEffects.dragonSaddle(var2.getUUID()).isEmpty()) {
+            } else if (var2.isShiftKeyDown() || HexEffects.dragonSaddle(var2.getUUID()).isEmpty()) {
                HexEffects.openDragonSaddle(var2);
             } else {
                HexEffects.rideDragon(var2, var12);
@@ -530,8 +530,10 @@ public class HexEvents {
    @SubscribeEvent
    public void entityJoin(EntityJoinLevelEvent var1) {
       if (var1.getLevel() instanceof ServerLevel var2 && var1.getEntity() instanceof EyeOfEnder var3) {
+         // 末影之眼生成位置就是投掷者的眼睛位置：只认 2 格内刚投出眼睛的标记者，
+         // 原来的 16 格范围会把旁边玩家扔的眼也算成自己的
          for (ServerPlayer var5 : var2.players()) {
-            if (var5.distanceToSqr(var3) < 256.0 && HexEffects.hasEyeMark(var5)) {
+            if (var5.distanceToSqr(var3) < 4.0 && HexEffects.hasEyeMark(var5)) {
                HexEffects.makeEyeSurvive(var3);
                break;
             }

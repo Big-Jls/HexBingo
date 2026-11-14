@@ -73,6 +73,7 @@ public final class HexBingo {
          NeoForge.EVENT_BUS.addListener(HexKeys::clientTick);
          NeoForge.EVENT_BUS.addListener(HexDiceAnim::render);
          NeoForge.EVENT_BUS.addListener(HexClient::dragonTick);
+         NeoForge.EVENT_BUS.addListener(HexClient::onLoggingOut);
       }
    }
 

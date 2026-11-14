@@ -195,6 +195,12 @@ public class HexGameData extends SavedData {
       }
    }
 
+   public void clearRefreshCharges(UUID var1) {
+      if (this.refreshCharges.remove(var1) != null) {
+         this.setDirty();
+      }
+   }
+
    public CompoundTag portableFurnace(UUID var1) {
       return this.furnaces.computeIfAbsent(var1, var0 -> new CompoundTag());
    }

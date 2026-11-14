@@ -61,15 +61,15 @@ public final class HexClient {
       DRAGON_GROWTH = var1 ? -1.0F : var0;
    }
 
-   /** 骑在成年龙上时把 W / 空格状态上报服务端，只在按键变化时发送。 */
+   /**
+    * 骑在龙上时把 W / 空格状态上报服务端，只在按键变化时发送。
+    * 只按坐骑类型判定：玩家用命名牌改掉名字后依然能操控。
+    */
    public static void dragonTick(net.neoforged.neoforge.client.event.ClientTickEvent.Post var9) {
       Minecraft var0 = Minecraft.getInstance();
       boolean var1 = false;
       boolean var2 = false;
-      if (var0.player != null
-         && var0.player.getVehicle() instanceof Phantom var3
-         && var3.getCustomName() != null
-         && "成年龙".equals(var3.getCustomName().getString())) {
+      if (var0.player != null && var0.player.getVehicle() instanceof Phantom) {
          var1 = var0.options.keyUp.isDown();
          var2 = var0.options.keyJump.isDown();
       }
@@ -79,6 +79,13 @@ public final class HexClient {
          DRAGON_UP = var2;
          ClientPacketDistributor.sendToServer(new HexDragonInputPayload(var1, var2), new CustomPacketPayload[0]);
       }
+   }
+
+   /** 退出服务器（含切换服务器）时清空客户端缓存，避免成长条和按键状态残留到下个服务器。 */
+   public static void onLoggingOut(net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut var0) {
+      DRAGON_GROWTH = -1.0F;
+      DRAGON_FORWARD = false;
+      DRAGON_UP = false;
    }
 
    public static void open(int var0, List<String> var1, boolean var2) {

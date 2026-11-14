@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "26.2-1.49.14",
+    [string]$Version = "26.2-1.49.17",
     [string]$MinecraftDir = "D:\minecraft\.minecraft",
     [string]$NeoForgeVersion = "26.2-NeoForge_26.2.0.93",
     [string]$LibXJar = "",

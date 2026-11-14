@@ -134,6 +134,7 @@ import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.npc.villager.VillagerData;
 import net.minecraft.world.entity.player.Input;
 import net.minecraft.world.entity.player.Abilities;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.EyeOfEnder;
 import net.minecraft.world.entity.projectile.FishingHook;
@@ -415,6 +416,8 @@ public final class HexEffects {
    private static final List<HexEffects.AdvanceState> ADVANCES = new ArrayList<>();
    // 驯龙高手：环绕玩家的幼龙
    private static final Map<UUID, Phantom> DRAGON_PETS = new HashMap<>();
+   // 宠物龙标记：写在实体标签里（随 NBT 保存、跨维度传送保留），避免靠名字判定被普通幻翼冒充
+   private static final String DRAGON_TAG = "hexbingo_dragon";
    private static final Map<UUID, Double> DRAGON_ANGLES = new HashMap<>();
    private static final Map<UUID, Integer> DRAGON_SOUND_TIMER = new HashMap<>();
    // 驯龙高手：成长进度（tick，满 6000 即成年）、鞍、骑乘输入与飞行速度
@@ -489,6 +492,8 @@ public final class HexEffects {
    private static final Map<String, Set<Task>> TASK_SHIELDS = new HashMap<>();
    private static final Map<UUID, HexEffects.TransformState> TRANSFORMS = new HashMap<>();
    private static final Map<UUID, TamableAnimal> PETS = new HashMap<>();
+   // 猫猫神教 / 汪汪队召唤的猫狗：按主人记录，clearAll 时统一回收，避免重抽海克斯后残留
+   private static final Map<UUID, List<Entity>> SUMMONED_PETS = new HashMap<>();
    // 被 /kill 移除的宠物不再自动补发，直到下一局重新获得该海克斯
    private static final Set<UUID> PET_DISMISSED = new HashSet<>();
    private static final Map<UUID, BlockPos> BEACONS = new HashMap<>();
@@ -1396,6 +1401,7 @@ public final class HexEffects {
 
       PET_TIMER.remove(var0.getUUID());
       PET_DISMISSED.remove(var0.getUUID());
+      discardSummonedPets(var0);
       Phantom var14 = DRAGON_PETS.remove(var0.getUUID());
       if (var14 != null) {
          if (var0.getVehicle() == var14) {
@@ -1448,6 +1454,33 @@ public final class HexEffects {
       VOYAGE_LOCK_MASK.remove(var0.getUUID());
       VOYAGE_START_Y.remove(var0.getUUID());
       GOLD_RUSH.remove(var0.getUUID());
+
+      // 终极刷新：清掉尚未使用的刷新次数，避免海克斯被换掉后仍显示可刷新
+      MinecraftServer var17 = var0.level().getServer();
+      if (var17 != null) {
+         HexGameData.get(var17).clearRefreshCharges(var0.getUUID());
+      }
+
+      // 任务护盾：本队已无人持有该海克斯时释放锁定任务，避免换掉海克斯后任务永久锁死
+      Team var16 = team(var0);
+      if (var16 != null) {
+         boolean var18 = false;
+         if (var17 != null) {
+            for (UUID var19 : var16.getPlayers()) {
+               if (!var19.equals(var0.getUUID())) {
+                  ServerPlayer var20 = var17.getPlayerList().getPlayer(var19);
+                  if (var20 != null && hasHex(var20, "task_shield")) {
+                     var18 = true;
+                     break;
+                  }
+               }
+            }
+         }
+
+         if (!var18) {
+            TASK_SHIELDS.remove(var16.color.getName());
+         }
+      }
 
       for (Holder var4 : ALL_ATTRIBUTES) {
          AttributeInstance var5 = var0.getAttribute(var4);
@@ -1544,8 +1577,10 @@ public final class HexEffects {
                         applyPermanentEffect(var5, var14);
                         break;
                      // 持续回血（每 5 秒）
+                     // 注意：tick() 由 20 tick 采样驱动，玩家 tickCount 每次采样固定 +20，
+                     // 必须用 /20 换算成“采样次数”，否则 tickCount % N 只对登录刻恰好对齐的玩家成立
                      case "regen":
-                        if (var5.tickCount % 100 == 0) {
+                        if (var5.tickCount / 20 % 5 == 0) {
                            var5.heal((float)var14.amount);
                         }
                         break;
@@ -1565,20 +1600,20 @@ public final class HexEffects {
                         break;
                      // 净化解：定期移除负面状态
                      case "cleanse":
-                        if (var5.tickCount % 100 == 0) {
+                        if (var5.tickCount / 20 % 5 == 0) {
                            cleanse(var5);
                         }
                         break;
                      // 光环：给范围内自身与队友上药水
                      case "aura":
-                        if (var5.tickCount % 40 == 0) {
+                        if (var5.tickCount / 20 % 2 == 0) {
                            aura(var5, var8, var14);
                         }
                         break;
                      // 敌方高亮：玩家与怪物发光
                      case "glow_enemies":
                      case "enemy_scout":
-                        if (var5.tickCount % 40 == 0) {
+                        if (var5.tickCount / 20 % 2 == 0) {
                            glowEnemies(var5, var8, var14);
                         }
                         break;
@@ -1597,7 +1632,7 @@ public final class HexEffects {
                      // 定期补给雪球
                      case "snowball_supply":
                         int var18 = Math.max(1, var14.interval);
-                        if (var5.tickCount % (var18 * 20) == 0) {
+                        if (var5.tickCount / 20 % var18 == 0) {
                            var5.addItem(new ItemStack(Items.SNOWBALL));
                         }
                         break;
@@ -1644,19 +1679,18 @@ public final class HexEffects {
                         break;
                      // 黑石行者：岩浆上生成临时黑石
                      case "blackstone_walker":
-                        if (var5.tickCount % 2 == 0) {
-                           tickBlackstoneWalker(var5);
-                        }
+                        // tick() 本身就只在每 20 tick 采样时执行，再叠加 %2 只会让一半玩家永不触发
+                        tickBlackstoneWalker(var5);
                         break;
                      // 兼容灾厄：每 30 秒不祥之兆 +1 级（最高 III）
                      case "bad_omen":
-                        if (var5.tickCount % 600 == 0) {
+                        if (var5.tickCount / 20 % 30 == 0) {
                            tickBadOmen(var5);
                         }
                         break;
                      // 临门一脚：只差 1 格成线时全队获得急迫 II 与速度 I
                      case "near_line":
-                        if (var5.tickCount % 40 == 0 && var8 != null && isNearLine(var8, var3.tasks().size())) {
+                        if (var5.tickCount / 20 % 2 == 0 && var8 != null && isNearLine(var8, var3.tasks().size())) {
                            var5.addEffect(new MobEffectInstance(MobEffects.HASTE, 100, 1, false, false, true));
                            var5.addEffect(new MobEffectInstance(MobEffects.SPEED, 100, 0, false, false, true));
                         }
@@ -1787,16 +1821,18 @@ public final class HexEffects {
    private static void glowEnemies(ServerPlayer var0, Team var1, HexEffect var2) {
       double var3 = var2.radius > 0.0 ? var2.radius : 20.0;
       double var5 = var3 * var3;
+      // 持续时间取配置的 seconds（默认 4 秒），保证在 2 秒一次的刷新间隔内不断档
+      int var11 = var2.seconds > 0 ? var2.seconds * 20 : 80;
       if (var0.level() instanceof ServerLevel var7) {
          for (ServerPlayer var9 : var7.players()) {
             if (var9 != var0 && !(var9.distanceToSqr(var0) > var5) && (var1 == null || !var1.hasPlayer(var9))) {
-               var9.addEffect(new MobEffectInstance(MobEffects.GLOWING, 80, 0, false, false, false));
+               var9.addEffect(new MobEffectInstance(MobEffects.GLOWING, var11, 0, false, false, false));
             }
          }
 
          for (Entity var13 : var7.getEntities(var0, var0.getBoundingBox().inflate(var3))) {
             if (var13 instanceof Monster var10 && var10.isAlive()) {
-               var10.addEffect(new MobEffectInstance(MobEffects.GLOWING, 80, 0, false, false, false));
+               var10.addEffect(new MobEffectInstance(MobEffects.GLOWING, var11, 0, false, false, false));
             }
          }
       }
@@ -2417,6 +2453,11 @@ public final class HexEffects {
    }
 
    public static void death(LivingDeathEvent var0) {
+      // 蝙蝠形态：死亡立即结束，避免复活后仍隐形/缩小/漂浮直到计时结束
+      if (var0.getEntity() instanceof ServerPlayer var23) {
+         endBatForm(var23, false);
+      }
+
       // 结束了！：击杀末影龙直接结束比赛（击杀者的队伍获胜）
       if (var0.getEntity() instanceof EnderDragon && var0.getSource().getEntity() instanceof ServerPlayer var22 && teamOwnsEnded(var22, team(var22))) {
          endGameWithWin(var22);
@@ -2763,10 +2804,15 @@ public final class HexEffects {
             var1.getChunk(var8 >> 4, var9 >> 4);
             int var10 = var1.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, var8, var9);
             BlockPos var11 = new BlockPos(var8, var10, var9);
+            BlockState var13 = var1.getBlockState(var11.below());
             if (var1.isInWorldBounds(var11)
                && var1.getBlockState(var11).isAir()
                && var1.getBlockState(var11.above()).isAir()
-               && var1.getBlockState(var11.below()).getFluidState().isEmpty()) {
+               // 脚下必须是实体方块：越界/虚空列读出来是空气，否则会被丢到虚空里摔死
+               && !var13.isAir()
+               && var13.getFluidState().isEmpty()
+               // 下界高度图会取到基岩顶（y=128），传送上去等于卡在基岩上方
+               && (var1.dimension() != Level.NETHER || var10 <= 120)) {
                var3 = var11;
             }
          }
@@ -2796,6 +2842,7 @@ public final class HexEffects {
          ThreadLocalRandom var3 = ThreadLocalRandom.current();
          String[] var4 = new String[]{"all_black", "black", "british_shorthair", "calico", "jellie", "persian", "ragdoll", "red", "siamese", "tabby", "white"};
          int var5 = 0;
+         List<Entity> var13 = SUMMONED_PETS.computeIfAbsent(var0.getUUID(), var6 -> new ArrayList<>());
 
          for (String var9 : var4) {
             CatVariant var10 = (CatVariant)var12.getValue(Identifier.fromNamespaceAndPath("minecraft", var9));
@@ -2808,6 +2855,7 @@ public final class HexEffects {
                   var11.setOwner(var0);
                   var11.setPersistenceRequired();
                   var1.addFreshEntity(var11);
+                  var13.add(var11);
                   var5++;
                }
             }
@@ -2823,6 +2871,7 @@ public final class HexEffects {
          ThreadLocalRandom var3 = ThreadLocalRandom.current();
          String[] var4 = new String[]{"ashen", "black", "chestnut", "pale", "rusty", "snowy", "spotted", "striped", "woods"};
          int var5 = 0;
+         List<Entity> var13 = SUMMONED_PETS.computeIfAbsent(var0.getUUID(), var6 -> new ArrayList<>());
 
          for (String var9 : var4) {
             WolfVariant var10 = (WolfVariant)var12.getValue(Identifier.fromNamespaceAndPath("minecraft", var9));
@@ -2835,12 +2884,23 @@ public final class HexEffects {
                   var11.setOwner(var0);
                   var11.setPersistenceRequired();
                   var1.addFreshEntity(var11);
+                  var13.add(var11);
                   var5++;
                }
             }
          }
 
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.wolves", new Object[]{var5}).withStyle(ChatFormatting.LIGHT_PURPLE));
+      }
+   }
+
+   // 回收猫猫神教 / 汪汪队召唤的猫狗
+   private static void discardSummonedPets(ServerPlayer var0) {
+      List<Entity> var1 = SUMMONED_PETS.remove(var0.getUUID());
+      if (var1 != null) {
+         for (Entity var3 : var1) {
+            var3.discard();
+         }
       }
    }
 
@@ -3428,6 +3488,8 @@ public final class HexEffects {
             var3.setPersistenceRequired();
             var3.setInvulnerable(true);
             var1.addFreshEntity(var3);
+            // 登记为召唤物：重抽海克斯 / 死亡清理时一并回收，避免永久无敌青蛙残留
+            SUMMONED_PETS.computeIfAbsent(var0.getUUID(), var6 -> new ArrayList<>()).add(var3);
             var0.sendSystemMessage(Component.translatable("hexbingo.msg.frog_summon").withStyle(ChatFormatting.AQUA));
          }
       }
@@ -3554,11 +3616,18 @@ public final class HexEffects {
       if (var1 != null) {
          Bingo var2 = Bingo.get(var1.overworld());
          Team var3 = var2.getTeam(var0);
-         ArrayList var4 = new ArrayList();
+         // 只收集真正能被退回的格子：被任务护盾锁定的格子跳过，否则会静默失败却提示成功
+         ArrayList<Team> var4 = new ArrayList<>();
+         ArrayList<Integer> var5 = new ArrayList<>();
 
          for (Team var6 : var2.getTeams()) {
-            if (var6 != var3 && hasCompleted(var6)) {
-               var4.add(var6);
+            if (var6 != var3) {
+               for (int var9 = 0; var9 < 25; var9++) {
+                  if (var6.completed(var9) && !isTaskShielded(var6, var2, var9)) {
+                     var4.add(var6);
+                     var5.add(var9);
+                  }
+               }
             }
          }
 
@@ -3567,8 +3636,9 @@ public final class HexEffects {
             return;
          }
 
-         Team var7 = (Team)var4.get(ThreadLocalRandom.current().nextInt(var4.size()));
-         int var8 = randomCompleted(var7);
+         int var10 = ThreadLocalRandom.current().nextInt(var4.size());
+         Team var7 = var4.get(var10);
+         int var8 = var5.get(var10);
          uncompleteSlot(var1, var2, var7, var8);
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.amnesia", new Object[]{var2.task(var8).contentName(var1)}).withStyle(ChatFormatting.GOLD));
       }
@@ -3879,6 +3949,8 @@ public final class HexEffects {
             var1.setInvulnerable(true);
             setVariant(var1, Parrot.class, "DATA_VARIANT_ID", Variant.GRAY.getId());
             var2.addFreshEntity(var1);
+            // 登记召唤物，让鹦鹉真正留在世界里（之前同 tick discard 导致玩家永远看不到它）
+            SUMMONED_PETS.computeIfAbsent(var0.getUUID(), var6 -> new ArrayList<>()).add(var1);
          }
       }
 
@@ -3905,10 +3977,6 @@ public final class HexEffects {
             }
          }
       }
-
-      if (var1 != null) {
-         var1.discard();
-      }
    }
 
    private static void updateFriendAura(ServerPlayer var0, String var1, int var2, HexEffect var3) {
@@ -3930,10 +3998,18 @@ public final class HexEffects {
          if (var11 != null) {
             if (var7 > 0) {
                var11.addOrUpdateTransientModifier(new AttributeModifier(modifierId(var1, var2), 0.02 * Math.min(var7, 5), Operation.ADD_MULTIPLIED_BASE));
-               var0.addEffect(new MobEffectInstance(MobEffects.HASTE, 60, 0, true, false, false));
+               // 与「临门一脚」叠加时取最高：已有更强的急迫就不要降级覆盖
+               MobEffectInstance var20 = var0.getEffect(MobEffects.HASTE);
+               if (var20 == null || var20.getAmplifier() < 0 || var20.getAmplifier() == 0 && var20.getDuration() < 60) {
+                  var0.addEffect(new MobEffectInstance(MobEffects.HASTE, 60, 0, true, false, false));
+               }
             } else {
                var11.removeModifier(modifierId(var1, var2));
-               var0.removeEffect(MobEffects.HASTE);
+               // 只清理自己这份短时急迫 I，不要把「临门一脚」的急迫 II 一起移除
+               MobEffectInstance var20 = var0.getEffect(MobEffects.HASTE);
+               if (var20 != null && var20.getAmplifier() == 0 && var20.getDuration() <= 60) {
+                  var0.removeEffect(MobEffects.HASTE);
+               }
             }
          }
       }
@@ -4813,33 +4889,42 @@ public final class HexEffects {
    }
 
    private static void summonBees(ServerPlayer var0, int var1) {
-      if (var0.level() instanceof ServerLevel var2) {
-         Team var9 = team(var0);
-         ArrayList var4 = new ArrayList();
+      MinecraftServer var2 = var0.level().getServer();
+      if (var2 == null) {
+         return;
+      }
 
-         for (ServerPlayer var6 : var2.players()) {
-            if (var6 != var0 && !var6.isSpectator() && (var9 == null || !var9.hasPlayer(var6)) && !shieldBlocks(var6, "bees")) {
-               var4.add(var6);
-            }
+      Team var9 = team(var0);
+      ArrayList var4 = new ArrayList();
+
+      // 跨维度：目标是全服其他队伍玩家，不限于施法者所在维度
+      for (ServerPlayer var6 : var2.getPlayerList().getPlayers()) {
+         if (var6 != var0 && !var6.isSpectator() && (var9 == null || !var9.hasPlayer(var6)) && !shieldBlocks(var6, "bees")) {
+            var4.add(var6);
          }
+      }
 
-         if (!var4.isEmpty()) {
-            ThreadLocalRandom var10 = ThreadLocalRandom.current();
+      if (!var4.isEmpty()) {
+         ThreadLocalRandom var10 = ThreadLocalRandom.current();
 
-            for (int var11 = 0; var11 < var1; var11++) {
-               ServerPlayer var7 = (ServerPlayer)var4.get(var11 % var4.size());
-               Bee var8 = (Bee)EntityTypes.BEE.create(var2, EntitySpawnReason.MOB_SUMMONED);
-               if (var8 != null) {
-                  var8.setPos(var7.getX() + var10.nextDouble() * 4.0 - 2.0, var7.getY() + 1.0, var7.getZ() + var10.nextDouble() * 4.0 - 2.0);
-                  var2.addFreshEntity(var8);
-                  var8.setLastHurtByMob(var7);
-                  var8.setTarget(var7);
-                  var8.setPersistentAngerTarget(EntityReference.of(var7));
-                  var8.setPersistentAngerEndTime(var2.getGameTime() + 1200L);
-                  var8.startPersistentAngerTimer();
-                  HEX_BEES.add(var8.getUUID());
-                  BEE_TARGETS.put(var8.getUUID(), var7.getUUID());
-               }
+         for (int var11 = 0; var11 < var1; var11++) {
+            ServerPlayer var7 = (ServerPlayer)var4.get(var11 % var4.size());
+            if (!(var7.level() instanceof ServerLevel var3)) {
+               continue;
+            }
+
+            // 蜂生成在目标玩家所在维度，否则跨维度目标永远收不到蜜蜂
+            Bee var8 = (Bee)EntityTypes.BEE.create(var3, EntitySpawnReason.MOB_SUMMONED);
+            if (var8 != null) {
+               var8.setPos(var7.getX() + var10.nextDouble() * 4.0 - 2.0, var7.getY() + 1.0, var7.getZ() + var10.nextDouble() * 4.0 - 2.0);
+               var3.addFreshEntity(var8);
+               var8.setLastHurtByMob(var7);
+               var8.setTarget(var7);
+               var8.setPersistentAngerTarget(EntityReference.of(var7));
+               var8.setPersistentAngerEndTime(var3.getGameTime() + 1200L);
+               var8.startPersistentAngerTimer();
+               HEX_BEES.add(var8.getUUID());
+               BEE_TARGETS.put(var8.getUUID(), var7.getUUID());
             }
          }
       }
@@ -7093,6 +7178,11 @@ public final class HexEffects {
       int var8 = 0;
 
       for (int var9 = 0; var9 < var0.getInventory().getContainerSize(); var9++) {
+         // 副手也在 getContainerSize() 范围内，留到下面单独处理，避免同一把镐被附魔两次
+         if (var9 == Inventory.SLOT_OFFHAND) {
+            continue;
+         }
+
          ItemStack var10 = var0.getInventory().getItem(var9);
          if (!var10.isEmpty() && var10.is(ItemTags.PICKAXES)) {
             int var11 = Math.max(2 + ThreadLocalRandom.current().nextInt(2), EnchantmentHelper.getItemEnchantmentLevel(var7, var10));
@@ -7593,7 +7683,7 @@ public final class HexEffects {
 
    private static void grantRandomHex(ServerPlayer var0, String var1, String prefix) {
       MinecraftServer var2 = var0.level().getServer();
-      if (var2 != null && GRANT_DEPTH.get() < 4) {
+      if (var2 != null && GRANT_DEPTH.get() < 8) {
          HexGameData var3 = HexGameData.get(var2);
          if (var3.mayhem()) {
             if (var3.hexesLocked()) {
@@ -7857,7 +7947,7 @@ public final class HexEffects {
       int var3 = 0;
 
       for (ServerPlayer var5 : var1.getPlayerList().getPlayers()) {
-         if (var5 != var0 && !var5.isSpectator() && (var2 == null || !var2.hasPlayer(var5))) {
+         if (var5 != var0 && !var5.isSpectator() && (var2 == null || !var2.hasPlayer(var5)) && !shieldBlocks(var5, "inventory_shuffle")) {
             shuffleInventory(var5);
             var5.sendSystemMessage(Component.translatable("hexbingo.msg.inventory_shuffled").withStyle(ChatFormatting.RED));
             var3++;
@@ -7868,7 +7958,10 @@ public final class HexEffects {
    }
 
    private static void giveChaosMindItem(ServerPlayer var0) {
-      var0.addItem(questItem(Items.BARRIER, "混沌智", "hexbingo.item.chaos_mind.lore"));
+      // 重复获取海克斯（重抽/棱彩复制）时不要重复发放道具
+      if (!hasNamedItem(var0, "混沌智")) {
+         var0.addItem(questItem(Items.BARRIER, "混沌智", "hexbingo.item.chaos_mind.lore"));
+      }
    }
 
    public static boolean castChaosMind(ServerPlayer var0) {
@@ -7903,52 +7996,63 @@ public final class HexEffects {
 
    private static void shuffleInventory(ServerPlayer var0) {
       NonNullList<ItemStack> var1 = var0.getInventory().getNonEquipmentItems();
+      // 主背包与装备分开打乱：混在一起按顺序填会先把背包填满、盔甲槽永远空着
       ArrayList<ItemStack> var2 = new ArrayList<>();
+      ArrayList<Integer> var3 = new ArrayList<>();
 
-      for (int var3 = 0; var3 < var1.size(); var3++) {
-         ItemStack var4 = var1.get(var3);
-         if (!var4.isEmpty()) {
+      for (int var4 = 0; var4 < var1.size(); var4++) {
+         ItemStack var5 = var1.get(var4);
+         if (!var5.isEmpty()) {
             // 绑定技能物品与玻璃大炮锁定槽标记留在原位，不参与打乱
-            if (isBoundItem(var4) || isLockMarker(var4)) {
+            if (isBoundItem(var5) || isLockMarker(var5)) {
                continue;
             }
 
-            var2.add(var4.copy());
-            var1.set(var3, ItemStack.EMPTY);
+            var2.add(var5.copy());
+            var1.set(var4, ItemStack.EMPTY);
          }
       }
 
-      EquipmentSlot[] var5 = new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET, EquipmentSlot.OFFHAND};
-
-      for (EquipmentSlot var6 : var5) {
-         ItemStack var7 = var0.getItemBySlot(var6);
-         if (!var7.isEmpty()) {
-            if (isBoundItem(var7) || isLockMarker(var7)) {
-               continue;
-            }
-
-            var2.add(var7.copy());
-            var0.setItemSlot(var6, ItemStack.EMPTY);
+      for (int var4 = 0; var4 < var1.size(); var4++) {
+         if (var1.get(var4).isEmpty()) {
+            var3.add(var4);
          }
       }
 
       Collections.shuffle(var2, ThreadLocalRandom.current());
-      int var8 = 0;
+      Collections.shuffle(var3, ThreadLocalRandom.current());
 
-      for (int var9 = 0; var9 < var1.size(); var9++) {
-         if (!var1.get(var9).isEmpty()) {
-            continue;
-         }
-
-         var1.set(var9, var8 < var2.size() ? var2.get(var8++) : ItemStack.EMPTY);
+      for (int var4 = 0; var4 < var3.size(); var4++) {
+         var1.set(var3.get(var4), var4 < var2.size() ? var2.get(var4) : ItemStack.EMPTY);
       }
 
-      for (EquipmentSlot var11 : var5) {
-         if (!var0.getItemBySlot(var11).isEmpty()) {
-            continue;
-         }
+      EquipmentSlot[] var6 = new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET, EquipmentSlot.OFFHAND};
+      ArrayList<ItemStack> var7 = new ArrayList<>();
+      ArrayList<EquipmentSlot> var8 = new ArrayList<>();
 
-         var0.setItemSlot(var11, var8 < var2.size() ? var2.get(var8++) : ItemStack.EMPTY);
+      for (EquipmentSlot var9 : var6) {
+         ItemStack var10 = var0.getItemBySlot(var9);
+         if (!var10.isEmpty()) {
+            if (isBoundItem(var10) || isLockMarker(var10)) {
+               continue;
+            }
+
+            var7.add(var10.copy());
+            var0.setItemSlot(var9, ItemStack.EMPTY);
+         }
+      }
+
+      for (EquipmentSlot var9 : var6) {
+         if (var0.getItemBySlot(var9).isEmpty()) {
+            var8.add(var9);
+         }
+      }
+
+      Collections.shuffle(var7, ThreadLocalRandom.current());
+      Collections.shuffle(var8, ThreadLocalRandom.current());
+
+      for (int var9 = 0; var9 < var8.size(); var9++) {
+         var0.setItemSlot(var8.get(var9), var9 < var7.size() ? var7.get(var9) : ItemStack.EMPTY);
       }
 
       var0.containerMenu.broadcastChanges();
@@ -8001,6 +8105,18 @@ public final class HexEffects {
             if (!var10.isEmpty()) {
                var7.add(var10.get(ThreadLocalRandom.current().nextInt(var10.size())));
             }
+         }
+      }
+
+      if (var7.isEmpty()) {
+         var0.sendSystemMessage(Component.translatable("hexbingo.msg.banish_none").withStyle(ChatFormatting.GRAY));
+         return true;
+      }
+
+      // 免疫护盾：被点名的目标可以免疫这次放逐
+      for (ServerPlayer var25 : new ArrayList<>(var7)) {
+         if (shieldBlocks(var25, "nether_banish")) {
+            var7.remove(var25);
          }
       }
 
@@ -8284,15 +8400,29 @@ public final class HexEffects {
       var0.setDirty();
    }
 
-   // 地心游记：传送到 Y=-50 附近的洞穴
+   // 地心游记：传送到 Y=-50 附近的洞穴（仅主世界有该地层）
    private static void journeyCore(ServerPlayer var0) {
       if (var0.level() instanceof ServerLevel var1) {
          int var2 = var0.getBlockX();
          int var3 = var0.getBlockZ();
-         BlockPos var4 = findCaveNear(var1, var2, var3, 24);
+         BlockPos var4 = null;
+         if (var1.dimension() == Level.OVERWORLD) {
+            var4 = findCaveNear(var1, var2, var3, 24);
+
+            if (var4 == null) {
+               var4 = carveSafeSpot(var1, new BlockPos(var2, Math.max(var1.getMinY() + 2, -50), var3));
+            }
+         } else {
+            // 下界/末地没有 y=-50 的地层：原地向下找可站立的位置，避免卡进基岩或落进虚空
+            int var5 = safeGroundY(var1, var2, var3, var0.getBlockY() + 32);
+            if (var5 > var1.getMinY() + 1) {
+               var4 = new BlockPos(var2, var5, var3);
+            }
+         }
 
          if (var4 == null) {
-            var4 = carveSafeSpot(var1, new BlockPos(var2, Math.max(var1.getMinY() + 2, -50), var3));
+            var0.sendSystemMessage(Component.translatable("hexbingo.rtp.failed").withStyle(ChatFormatting.RED));
+            return;
          }
 
          var0.teleportTo(var1, var4.getX() + 0.5, var4.getY(), var4.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
@@ -8396,14 +8526,14 @@ public final class HexEffects {
          }
          case 3: {
             int var8 = randomIncomplete(var2, var3);
-            int var9 = var5 == null ? -1 : randomCompleted(var5);
+            int var9 = var5 == null ? -1 : randomIncomplete(var2, var5);
             if (var8 < 0 || var9 < 0) {
                broadcast(var1, Component.translatable("hexbingo.msg.destiny_dice_none").withStyle(ChatFormatting.GRAY));
                return;
             }
 
             completeTask(var2, var3, var8);
-            uncompleteSlot(var1, var2, var5, var9);
+            completeTask(var2, var5, var9);
             broadcast(var1, Component.translatable("hexbingo.msg.destiny_dice_3").withStyle(ChatFormatting.LIGHT_PURPLE));
             break;
          }
@@ -8706,6 +8836,7 @@ public final class HexEffects {
       var2.noPhysics = true;
       var2.setCustomName(Component.literal("幼龙"));
       var2.setCustomNameVisible(true);
+      var2.addTag(DRAGON_TAG);
       // 幻翼支持缩放；末影龙会被原版强制保持 1.0 大小
       AttributeInstance var3 = var2.getAttribute(Attributes.SCALE);
       if (var3 != null) {
@@ -8797,6 +8928,7 @@ public final class HexEffects {
             Entity var6 = var3.teleport(new TeleportTransition(var5, new Vec3(var4.getX(), var4.getY() + 1.5, var4.getZ()), Vec3.ZERO, var3.getYRot(), var3.getXRot(), Set.of(), TeleportTransition.DO_NOTHING));
             if (var6 instanceof Phantom var7) {
                var7.noPhysics = true;
+               var7.addTag(DRAGON_TAG);
                var2.setValue(var7);
                var3 = var7;
             } else {
@@ -8876,7 +9008,12 @@ public final class HexEffects {
             AABB var23 = new AABB(var3.getX() - 2.0, var3.getY() - 1.5, var3.getZ() - 2.0, var3.getX() + 2.0, var3.getY() + 1.5, var3.getZ() + 2.0);
 
             for (LivingEntity var24 : var5.getEntitiesOfClass(
-               LivingEntity.class, var23, var21 -> var21.isAlive() && !(var21 instanceof Player) && !(var21 instanceof Phantom)
+               LivingEntity.class,
+               var23,
+               var21 -> var21.isAlive()
+                  && !(var21 instanceof Phantom)
+                  && var21 != var4
+                  && (!(var21 instanceof ServerPlayer var28) || !hasHex(var28, "dragon_rider"))
             )) {
                DamageSource var25 = var5.damageSources().mobAttack(var3);
                var24.hurtServer(var5, var25, 4.0F);
@@ -9130,7 +9267,7 @@ public final class HexEffects {
             && !isDragonProtectedBlock(var8)
             && var8.getDestroySpeed(var3, var7) >= 0.0F) {
             var3.destroyBlock(var7.immutable(), isDragonOre(var8), var1);
-            if (++var5 >= 12) {
+            if (++var5 >= 6) {
                break;
             }
          }
@@ -9186,9 +9323,9 @@ public final class HexEffects {
       }
    }
 
-   /** 幼龙是否属于本模组的宠物（跨维度传送瞬间的新实例也计入）。 */
+   /** 幼龙是否属于本模组的宠物（按实体标签判定，普通幻翼改名冒充不了）。 */
    public static boolean isDragonPet(Phantom var0) {
-      return DRAGON_PETS.containsValue(var0) || var0.getCustomName() != null && isDragonName(var0.getCustomName().getString());
+      return DRAGON_PETS.containsValue(var0) || var0.entityTags().contains(DRAGON_TAG);
    }
 
    /** 幼龙改名为成年龙后名字会变，两种名字都要认。 */
@@ -9624,7 +9761,8 @@ public final class HexEffects {
 
          for (int var4 = 0; var4 < 16; var4++) {
             BlockPos var5 = var3.offset(var2.nextInt(5) - 2, var2.nextInt(3), var2.nextInt(5) - 2);
-            if (var1.getBlockState(var5).isAir()) {
+            // 不要生成在玩家脚下所在的格子，否则箱子会把玩家卡在身上
+            if (!var5.equals(var3) && var1.getBlockState(var5).isAir()) {
                var1.setBlockAndUpdate(var5, Blocks.CHEST.defaultBlockState());
                if (var1.getBlockEntity(var5) instanceof ChestBlockEntity var6) {
                   var6.setLootTable(randomVanillaLootTable(var2));
@@ -9684,8 +9822,13 @@ public final class HexEffects {
       }
 
       Input var2 = var0.getLastClientInput();
+      // 潜行时不吸附，允许正常下坠脱离墙面（否则会被 y=0 卡在半空）
+      if (var2 != null && var2.shift()) {
+         return;
+      }
+
       Vec3 var3 = var0.getDeltaMovement();
-      if (var2 != null && var2.forward() && !var2.shift()) {
+      if (var2 != null && var2.forward()) {
          var0.setDeltaMovement(var3.x, Math.max(var3.y, 0.2), var3.z);
          var0.hurtMarked = true;
       } else if (var3.y < 0.0) {
@@ -9938,8 +10081,8 @@ public final class HexEffects {
          var0.onUpdateAbilities();
       }
 
-      // 离地飞行时消耗耐久（落地休息不消耗）
-      if (!var0.onGround()) {
+      // 只在真正处于飞行状态时消耗耐久（普通跳跃、坠落、游泳都不扣）
+      if (var5.flying && !var0.onGround()) {
          double var7 = SWORD_FLY_CONSUME.getOrDefault(var2, 0.0) + var4.rate;
          int var9 = (int)var7;
          if (var9 > 0) {
@@ -9982,7 +10125,8 @@ public final class HexEffects {
          var0.getAbilities().setFlyingSpeed(var3);
       }
 
-      if (!var0.isCreative() && !var0.isSpectator()) {
+      // 蝙蝠形态仍生效时保留 mayfly，避免关闭踏剑飞行把蝙蝠形态的飞行一起关掉
+      if (!BAT_UNTIL.containsKey(var2) && !var0.isCreative() && !var0.isSpectator()) {
          var0.getAbilities().mayfly = false;
          var0.getAbilities().flying = false;
       }
@@ -10472,11 +10616,17 @@ public final class HexEffects {
          return false;
       }
 
+      MinecraftServer var12 = var0.level().getServer();
+      if (var12 == null) {
+         return false;
+      }
+
       Team var11 = team(var0);
       int var5 = 0;
 
-      for (ServerPlayer var7 : var10.players()) {
-         if (var7 != var0 && !var7.isSpectator() && (var11 == null || !var11.hasPlayer(var7))) {
+      // 致盲目标是“所有敌人”：跨维度同样生效，不能只看施法者所在维度的玩家
+      for (ServerPlayer var7 : var12.getPlayerList().getPlayers()) {
+         if (var7 != var0 && !var7.isSpectator() && (var11 == null || !var11.hasPlayer(var7)) && !shieldBlocks(var7, "blind")) {
             var7.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 160, 0, false, true, true));
             var7.sendSystemMessage(Component.translatable("hexbingo.msg.blinded").withStyle(ChatFormatting.DARK_GRAY));
             var5++;
@@ -10924,7 +11074,8 @@ public final class HexEffects {
             var0.onUpdateAbilities();
          }
 
-         if (!var0.isCreative() && !var0.isSpectator()) {
+         // 踏剑飞行仍开启时不要关闭 mayfly，否则两种飞行会互相打断
+         if (!SWORD_FLY_ON.contains(var0.getUUID()) && !var0.isCreative() && !var0.isSpectator()) {
             var0.getAbilities().mayfly = false;
             var0.getAbilities().flying = false;
             var0.onUpdateAbilities();
@@ -10963,6 +11114,10 @@ public final class HexEffects {
       ServerPlayer var6 = nearestEnemy(var0, -1.0);
       if (var6 == null) {
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.mind_no_target").withStyle(ChatFormatting.GRAY));
+         return true;
+      }
+
+      if (shieldBlocks(var6, "mind_control")) {
          return true;
       }
 
@@ -11484,6 +11639,10 @@ public final class HexEffects {
          return true;
       }
 
+      if (shieldBlocks(var6, "shrink")) {
+         return true;
+      }
+
       SHRINK_UNTIL.put(var6.getUUID(), var1 + 60000L);
       SHRINK_COOLDOWN.put(var0.getUUID(), var1 + skillCooldown(var0, 480000L));
       applyShrinkModifiers(var6, true);
@@ -11517,6 +11676,16 @@ public final class HexEffects {
             var4.addOrUpdateTransientModifier(new AttributeModifier(modifierId("shrink", 2), -0.75, Operation.ADD_MULTIPLIED_BASE));
          } else {
             var4.removeModifier(modifierId("shrink", 2));
+         }
+      }
+
+      // 描述要求跳跃高度同步缩小，否则只有体型变小、跳跃依旧
+      AttributeInstance var5 = var0.getAttribute(Attributes.JUMP_STRENGTH);
+      if (var5 != null) {
+         if (var1) {
+            var5.addOrUpdateTransientModifier(new AttributeModifier(modifierId("shrink", 3), -0.75, Operation.ADD_MULTIPLIED_BASE));
+         } else {
+            var5.removeModifier(modifierId("shrink", 3));
          }
       }
    }
@@ -11584,6 +11753,10 @@ public final class HexEffects {
       ServerPlayer var6 = nearestEnemy(var0, -1.0);
       if (var6 == null) {
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.thief_none").withStyle(ChatFormatting.GRAY));
+         return true;
+      }
+
+      if (shieldBlocks(var6, "backpack_thief")) {
          return true;
       }
 
@@ -11990,12 +12163,13 @@ public final class HexEffects {
       PacketDistributor.sendToPlayer(var1, new HexAllMineLockPayload(var2), new CustomPacketPayload[0]);
    }
 
-   // 钓鱼佬：发放海之眷顾 X 鱼竿；钓鱼掉落改为随机物品（仆从大师同款池，除鱼外）
+   // 钓鱼佬：发放海之眷顾 X 且不可破坏的鱼竿；钓鱼掉落改为随机物品（仆从大师同款池，除鱼外）
    private static void giveFishermanRod(ServerPlayer var0) {
       if (!hasNamedItem(var0, "钓鱼佬")) {
          ItemStack var1 = questItem(Items.FISHING_ROD, "钓鱼佬", "hexbingo.item.fisherman.lore");
          Registry<Enchantment> var2 = var0.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
          var1.enchant(var2.wrapAsHolder(var2.getValueOrThrow(Enchantments.LUCK_OF_THE_SEA)), 10);
+         var1.set(DataComponents.UNBREAKABLE, Unit.INSTANCE);
          var0.addItem(var1);
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.fisherman").withStyle(ChatFormatting.GOLD));
       }
