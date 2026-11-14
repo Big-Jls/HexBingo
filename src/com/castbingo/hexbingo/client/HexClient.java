@@ -8,6 +8,7 @@ package com.castbingo.hexbingo.client;
 import com.castbingo.hexbingo.Hex;
 import com.castbingo.hexbingo.HexBingo;
 import com.castbingo.hexbingo.HexRegistry;
+import com.castbingo.hexbingo.network.HexDragonInputPayload;
 import com.castbingo.hexbingo.network.HexRosterPayload;
 import com.castbingo.hexbingo.network.HexTaskListPayload;
 import java.util.ArrayList;
@@ -15,12 +16,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.world.entity.monster.Phantom;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 public final class HexClient {
    /** 客户端缓存：被「封印」海克斯封印的任务下标。 */
    private static final Set<Integer> SEALED = new HashSet<>();
    /** 客户端缓存：被「全是我的」海克斯锁定的任务下标。 */
    private static final Set<Integer> ALL_MINE_LOCKED = new HashSet<>();
+   /** 驯龙高手：幼龙成长进度，-1 表示不显示成长条。 */
+   private static float DRAGON_GROWTH = -1.0F;
+   private static boolean DRAGON_FORWARD;
+   private static boolean DRAGON_UP;
 
    public static boolean isSealed(int var0) {
       return SEALED.contains(var0);
@@ -44,11 +52,32 @@ public final class HexClient {
       }
    }
 
-   /** 团队背包扩容：服务端已打开 72 格菜单，这里补上对应界面。 */
-   public static void openBpScreen(net.minecraft.network.chat.Component var0) {
-      Minecraft var1 = Minecraft.getInstance();
-      if (var1.player != null && var1.player.containerMenu instanceof com.castbingo.hexbingo.HexBpMenu var2) {
-         var1.setScreenAndShow(new HexBpScreen(var2, var1.player.getInventory(), var0));
+   /** 幼龙成长条进度，-1 表示隐藏。 */
+   public static float dragonGrowth() {
+      return DRAGON_GROWTH;
+   }
+
+   public static void acceptDragonGrowth(float var0, boolean var1) {
+      DRAGON_GROWTH = var1 ? -1.0F : var0;
+   }
+
+   /** 骑在成年龙上时把 W / 空格状态上报服务端，只在按键变化时发送。 */
+   public static void dragonTick(net.neoforged.neoforge.client.event.ClientTickEvent.Post var9) {
+      Minecraft var0 = Minecraft.getInstance();
+      boolean var1 = false;
+      boolean var2 = false;
+      if (var0.player != null
+         && var0.player.getVehicle() instanceof Phantom var3
+         && var3.getCustomName() != null
+         && "成年龙".equals(var3.getCustomName().getString())) {
+         var1 = var0.options.keyUp.isDown();
+         var2 = var0.options.keyJump.isDown();
+      }
+
+      if (var1 != DRAGON_FORWARD || var2 != DRAGON_UP) {
+         DRAGON_FORWARD = var1;
+         DRAGON_UP = var2;
+         ClientPacketDistributor.sendToServer(new HexDragonInputPayload(var1, var2), new CustomPacketPayload[0]);
       }
    }
 

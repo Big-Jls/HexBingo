@@ -147,12 +147,6 @@ public final class HexManager {
                var0.setCanceled(true);
                return;
             }
-
-            // 团队背包已扩容：交给本模组的 72 格界面（原版 /bp 固定 54 格）
-            if (var18 && HexEffects.openExpandedBackpack(var4)) {
-               var0.setCanceled(true);
-               return;
-            }
          }
       }
 
@@ -616,8 +610,9 @@ public final class HexManager {
 
       ArrayList var3 = new ArrayList();
 
+      // 品质提升同样可选：它是「下一次三选一必出彩色」的投资件，不属于特殊解锁件
       for (Hex var5 : HexRegistry.all()) {
-         if (!var2.hexes(var0.getUUID()).contains(var5.id()) && !var5.id().equals(HexRegistry.OFFER_UPGRADE)) {
+         if (!var2.hexes(var0.getUUID()).contains(var5.id())) {
             var3.add(var5.id());
          }
       }
@@ -632,39 +627,6 @@ public final class HexManager {
       return var3.size();
    }
 
-   public static int openFreePick(MinecraftServer var0) {
-      HexGameData var1 = HexGameData.get(var0);
-      if (!var1.mayhem()) {
-         return 0;
-      }
-
-      List<Hex> var2 = HexRegistry.all();
-      int var3 = 0;
-
-      for (ServerPlayer var5 : var0.getPlayerList().getPlayers()) {
-         if (var1.isHexLocked(var5.getUUID())) {
-            continue;
-         }
-
-         ArrayList<String> var6 = new ArrayList<>();
-
-         for (Hex var8 : var2) {
-            if (!var1.hexes(var5.getUUID()).contains(var8.id()) && !var8.id().equals(HexRegistry.OFFER_UPGRADE)) {
-               var6.add(var8.id());
-            }
-         }
-
-         if (!var6.isEmpty()) {
-            FREE_PICK.add(var5.getUUID());
-            PacketDistributor.sendToPlayer(var5, new HexListPayload(List.copyOf(var6)), new CustomPacketPayload[0]);
-            HexBingo.LOGGER.info("Sent hex list ({} entries) to {}", var6.size(), var5.getScoreboardName());
-            var3++;
-         }
-      }
-
-      return var3;
-   }
-
    public static void freePick(ServerPlayer var0, String var1) {
       MinecraftServer var2 = var0.level().getServer();
       if (var2 != null) {
@@ -676,7 +638,7 @@ public final class HexManager {
             }
 
             Hex var4 = HexRegistry.byId(var1);
-            if (var4 != null && !var1.equals(HexRegistry.OFFER_UPGRADE) && !var1.equals(HexRegistry.ALL_MINE)) {
+            if (var4 != null && !var1.equals(HexRegistry.ALL_MINE)) {
                if (var3.hexes(var0.getUUID()).contains(var1)) {
                   var0.sendSystemMessage(Component.translatable("hexbingo.msg.hex_pick_owned").withStyle(ChatFormatting.GRAY));
                } else {

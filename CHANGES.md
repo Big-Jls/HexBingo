@@ -1,5 +1,50 @@
 # Changelog
 
+## 26.2-1.49.14 — 2026-11-14
+
+### Changed
+
+- **Dragon Rider** (`dragon_rider`): the ridden adult dragon now collides with
+  the world instead of phasing through it. Blocks in its flight path are smashed
+  so it keeps flying; ore blocks still drop their items, every other block is
+  destroyed without drops. Hovering in place no longer digs the ground.
+
+## 26.2-1.49.13 — 2026-11-14
+
+### Changed
+
+- `/bingo hexes`: the self-pick list now also offers **Quality Upgrade**
+  (`offer_upgrade`) instead of filtering it out; picking it arms the usual
+  "next roll contains at least one prismatic hex" effect.
+- **Dragon Rider** (`dragon_rider`, gold): the baby dragon now has a built-in
+  growth bar (HUD below the crosshair area). Its body scale and flying speed grow
+  with the bar and it becomes an adult after 5 minutes; feeding it any food speeds
+  the bar up by 5%.
+- **Dragon Rider**: right-clicking the adult dragon opens a saddle screen (one
+  saddle slot). Insert a saddle, right-click again to ride: mouse look steers,
+  W flies forward, Space rises, Shift dismounts. Circling and block breaking pause
+  while ridden.
+
+### Removed
+
+- `/bingo hexall`: removed the command, `HexManager.openFreePick` and the
+  `hexbingo.msg.hexall*` lang keys. Use `/bingo hexes` (self) instead.
+- `/bingo hook`: removed the subcommand (the grappling hook hex itself is
+  unchanged and still works from its item/keybind).
+
+### Fixed
+
+- **Sword Flight** (`sword_fly`): the displayed sword under the player was
+  spawned upright and clipped into the body; it is now laid flat (pitch 90°),
+  yaw-aligned with the player and placed just above the feet.
+- **Dice animations** (`dice_roll`, `destiny_dice`): the die frame texture was
+  drawn with a degenerate UV rectangle (both ranges collapsed), so nothing
+  visible was rendered; UVs are now passed as the full `0..1` range.
+- **Fisherman** (`fisherman`): fish are no longer caught. NeoForge's
+  `ItemFishedEvent#getDrops()` is a copy of the vanilla drop list, so editing it
+  had no effect; the event is now cancelled and random items are spawned
+  directly with vanilla-like motion.
+
 ## 26.2-1.49.12 — 2026-11-14
 
 ### Removed

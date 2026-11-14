@@ -8,7 +8,9 @@ package com.castbingo.hexbingo;
 import io.github.noeppi_noeppi.mods.bongo.Bingo;
 import io.github.noeppi_noeppi.mods.bongo.data.Team;
 import io.github.noeppi_noeppi.mods.bongo.event.BingoTaskEvent;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,6 +22,7 @@ import net.minecraft.world.entity.animal.bee.Bee;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.animal.frog.Frog;
+import net.minecraft.world.entity.monster.Phantom;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.projectile.EyeOfEnder;
 import net.minecraft.world.item.ItemStack;
@@ -489,7 +492,20 @@ public class HexEvents {
    @SubscribeEvent
    public void entityInteract(EntityInteract var1) {
       if (var1.getEntity() instanceof ServerPlayer var2) {
-         if (var1.getTarget() instanceof Frog var7
+         if (var1.getTarget() instanceof Phantom var12 && HexEffects.isMyDragon(var2, var12)) {
+            // 驯龙高手：幼龙投喂加速成长；成年龙右键先开鞍具界面，有鞍则直接骑乘
+            if (!HexEffects.dragonAdult(var2.getUUID())) {
+               if (!HexEffects.feedDragon(var2, var12, var1.getItemStack())) {
+                  var2.sendSystemMessage(Component.translatable("hexbingo.msg.dragon_not_adult").withStyle(ChatFormatting.GRAY));
+               }
+            } else if (HexEffects.dragonSaddle(var2.getUUID()).isEmpty()) {
+               HexEffects.openDragonSaddle(var2);
+            } else {
+               HexEffects.rideDragon(var2, var12);
+            }
+
+            var1.setCanceled(true);
+         } else if (var1.getTarget() instanceof Frog var7
             && var7.getCustomName() != null
             && var7.getCustomName().getString().equals("旅行青蛙")
             && HexEffects.hasHex(var2, "travel_frog")) {
@@ -521,6 +537,12 @@ public class HexEvents {
             }
          }
       }
+   }
+
+   @SubscribeEvent
+   public void entityTickPre(net.neoforged.neoforge.event.tick.EntityTickEvent.Pre var1) {
+      // 骑行推进必须早于幻翼 tick，否则同 tick 内玩家会被摆到上一帧的龙背上
+      HexEffects.preTickDragon(var1.getEntity());
    }
 
    @SubscribeEvent

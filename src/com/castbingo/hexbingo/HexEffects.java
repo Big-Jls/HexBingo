@@ -73,6 +73,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BiomeTags;
+import net.minecraft.tags.BlockItemTags;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.tags.ItemTags;
@@ -102,6 +103,7 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -119,6 +121,7 @@ import net.minecraft.world.entity.animal.parrot.Parrot.Variant;
 import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.minecraft.world.entity.animal.wolf.Wolf;
 import net.minecraft.world.entity.animal.wolf.WolfVariant;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -133,6 +136,7 @@ import net.minecraft.world.entity.player.Input;
 import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.EyeOfEnder;
+import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.throwableitemprojectile.Snowball;
 import net.minecraft.world.food.FoodData;
@@ -196,9 +200,9 @@ import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.scores.TeamColor;
 import net.minecraft.world.phys.Vec3;
 import com.castbingo.hexbingo.network.HexDiceRollPayload;
-import com.castbingo.hexbingo.network.HexBpOpenPayload;
 import com.castbingo.hexbingo.network.HexSealPayload;
 import com.castbingo.hexbingo.network.HexAllMineLockPayload;
+import com.castbingo.hexbingo.network.HexDragonGrowthPayload;
 import net.minecraft.world.phys.HitResult.Type;
 import net.neoforged.neoforge.event.CommandEvent;
 import net.neoforged.neoforge.event.ItemStackedOnOtherEvent;
@@ -207,7 +211,6 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Post;
-import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Pre;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent.ItemCraftedEvent;
@@ -414,12 +417,21 @@ public final class HexEffects {
    private static final Map<UUID, Phantom> DRAGON_PETS = new HashMap<>();
    private static final Map<UUID, Double> DRAGON_ANGLES = new HashMap<>();
    private static final Map<UUID, Integer> DRAGON_SOUND_TIMER = new HashMap<>();
+   // 驯龙高手：成长进度（tick，满 6000 即成年）、鞍、骑乘输入与飞行速度
+   private static final Map<UUID, Integer> DRAGON_GROWTH = new HashMap<>();
+   private static final Map<UUID, ItemStack> DRAGON_SADDLE = new HashMap<>();
+   private static final Map<UUID, Vec3> DRAGON_VELOCITY = new HashMap<>();
+   private static final Map<UUID, boolean[]> DRAGON_INPUT = new HashMap<>();
+   private static final int DRAGON_GROWTH_TICKS = 6000;
+   private static final int DRAGON_FEED_GROWTH = 300;
    private static final List<HexEffects.EggIncubation> INCUBATIONS = new ArrayList<>();
    private static final long DRAGON_INCUBATION_MS = 180000L;
    // TextDisplay 的 setText 在 26.2 中是 private，只能用反射调用
    private static Method TEXT_DISPLAY_SET_TEXT;
    // 幻翼的 moveTargetPoint 是 private，写入后交给原版 PhantomMoveControl 飞行
    private static Field PHANTOM_MOVE_TARGET;
+   // PhantomMoveControl 的速度上限也是 private，成长条只能靠反射调节
+   private static Field PHANTOM_MOVE_SPEED;
    private static final SoundEvent BABY_DRAGON_SOUND = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath("hexbingo", "baby_dragon"));
    // 致盲
    private static final Map<UUID, Long> BLIND_COOLDOWN = new HashMap<>();
@@ -645,7 +657,7 @@ public final class HexEffects {
          case "extra_choice":
             HexGameData.get(var0.level().getServer()).setExtraChoice(var0.getUUID());
             break;
-         // 旧版：海克斯品质提升（当前数据未使用）
+         // 品质提升：下一次三选一保证至少出现 1 个彩色海克斯
          case "quality_up":
             HexGameData.get(var0.level().getServer()).addQualityUp(var0.getUUID(), Math.max(1, (int)var3.amount));
             break;
@@ -1386,11 +1398,27 @@ public final class HexEffects {
       PET_DISMISSED.remove(var0.getUUID());
       Phantom var14 = DRAGON_PETS.remove(var0.getUUID());
       if (var14 != null) {
+         if (var0.getVehicle() == var14) {
+            var0.stopRiding();
+         }
+
          var14.discard();
       }
 
       DRAGON_ANGLES.remove(var0.getUUID());
       DRAGON_SOUND_TIMER.remove(var0.getUUID());
+      DRAGON_GROWTH.remove(var0.getUUID());
+      DRAGON_VELOCITY.remove(var0.getUUID());
+      DRAGON_INPUT.remove(var0.getUUID());
+      ItemStack var15 = DRAGON_SADDLE.remove(var0.getUUID());
+      if (var15 != null && !var15.isEmpty()) {
+         var0.addItem(var15);
+      }
+
+      if (!var0.hasDisconnected()) {
+         clearDragonGrowth(var0);
+      }
+
       cancelIncubation(var0.getUUID(), false);
       endBatForm(var0, false);
       endSwordFly(var0, false);
@@ -8709,6 +8737,11 @@ public final class HexEffects {
       DRAGON_PETS.put(var0.getUUID(), var3);
       DRAGON_ANGLES.put(var0.getUUID(), 0.0);
       DRAGON_SOUND_TIMER.put(var0.getUUID(), 40);
+      DRAGON_GROWTH.put(var0.getUUID(), 0);
+      DRAGON_VELOCITY.put(var0.getUUID(), Vec3.ZERO);
+      DRAGON_INPUT.put(var0.getUUID(), new boolean[]{false, false});
+      applyDragonScale(var3, 0);
+      syncDragonGrowth(var0, 0);
       var2.playSound(null, var1, SoundEvents.ENDER_DRAGON_GROWL, SoundSource.NEUTRAL, 0.5F, 1.4F);
       var0.sendSystemMessage(Component.translatable("hexbingo.msg.dragon_hatched").withStyle(ChatFormatting.GOLD));
       MinecraftServer var5 = var2.getServer();
@@ -8758,6 +8791,7 @@ public final class HexEffects {
 
             var2.setValue(var6);
             var3 = var6;
+            restoreDragonState(var2.getKey(), var3, var4);
          } else if (var3.level() != var5) {
             // 26.2 的跨维度传送会创建新实体实例（NBT 往返），旧实例会被移除，必须换掉地图里的引用
             Entity var6 = var3.teleport(new TeleportTransition(var5, new Vec3(var4.getX(), var4.getY() + 1.5, var4.getZ()), Vec3.ZERO, var3.getYRot(), var3.getXRot(), Set.of(), TeleportTransition.DO_NOTHING));
@@ -8772,6 +8806,34 @@ public final class HexEffects {
 
          var3.setRemainingFireTicks(0);
          var3.setTarget(null);
+
+         // 驯龙高手：内置成长条，满 6000 tick（5 分钟）长成成年龙；喂食可加速
+         int var27 = DRAGON_GROWTH.getOrDefault(var2.getKey(), 0);
+         if (var27 < DRAGON_GROWTH_TICKS) {
+            var27 = Math.min(DRAGON_GROWTH_TICKS, var27 + 1);
+            DRAGON_GROWTH.put(var2.getKey(), var27);
+            if ((var27 & 3) == 0) {
+               applyDragonScale(var3, var27);
+            }
+
+            if (var27 % 10 == 0) {
+               syncDragonGrowth(var4, var27);
+            }
+
+            if (var27 >= DRAGON_GROWTH_TICKS) {
+               makeDragonAdult(var4, var3);
+            }
+         }
+
+         if (var4.getVehicle() == var3) {
+            // 主人正骑在龙背上：飞行由 preTickDragon 在实体 tick 前推进，这里只保留成长逻辑
+            continue;
+         } else if (var3.isNoAi()) {
+            var3.setNoAi(false);
+            // 骑乘时开启的碰撞在脱龙（传送/死亡等非 shift 途径）后要恢复
+            var3.noPhysics = true;
+            DRAGON_VELOCITY.put(var2.getKey(), Vec3.ZERO);
+         }
 
          double var7 = DRAGON_ANGLES.getOrDefault(var2.getKey(), 0.0) + 0.07;
          DRAGON_ANGLES.put(var2.getKey(), var7);
@@ -8824,6 +8886,272 @@ public final class HexEffects {
       }
    }
 
+   /** 按成长进度调整幼龙体型（0.5 → 2.0）与飞行速度上限。 */
+   private static void applyDragonScale(Phantom var0, int var1) {
+      float var2 = Mth.clamp((float)var1 / (float)DRAGON_GROWTH_TICKS, 0.0F, 1.0F);
+      AttributeInstance var3 = var0.getAttribute(Attributes.SCALE);
+      if (var3 != null) {
+         var3.setBaseValue(0.5F + var2 * 1.5F);
+      }
+
+      clampPhantomSpeed(var0, 0.8F + var2 * 1.0F);
+   }
+
+   /** 幻翼的速度写死在内部 MoveControl 的私有字段里，只能反射压低上限；成长越多上限越高。 */
+   private static void clampPhantomSpeed(Phantom var0, float var1) {
+      try {
+         Object var2 = var0.getMoveControl();
+         if (PHANTOM_MOVE_SPEED == null || !PHANTOM_MOVE_SPEED.getDeclaringClass().isInstance(var2)) {
+            Field var3 = var2.getClass().getDeclaredField("speed");
+            var3.setAccessible(true);
+            PHANTOM_MOVE_SPEED = var3;
+         }
+
+         if (PHANTOM_MOVE_SPEED.getFloat(var2) > var1) {
+            PHANTOM_MOVE_SPEED.setFloat(var2, var1);
+         }
+      } catch (Exception var4) {
+      }
+   }
+
+   /** 成长条走满：改名为成年龙，播放龙吼并下发满进度（客户端据此隐藏成长条）。 */
+   private static void makeDragonAdult(ServerPlayer var0, Phantom var1) {
+      DRAGON_GROWTH.put(var0.getUUID(), DRAGON_GROWTH_TICKS);
+      applyDragonScale(var1, DRAGON_GROWTH_TICKS);
+      var1.setCustomName(Component.literal("成年龙"));
+      var1.setCustomNameVisible(true);
+      syncDragonGrowth(var0, DRAGON_GROWTH_TICKS);
+      ServerLevel var2 = (ServerLevel)var1.level();
+      var2.playSound(null, var1.getX(), var1.getY(), var1.getZ(), SoundEvents.ENDER_DRAGON_GROWL, SoundSource.NEUTRAL, 0.9F, 0.7F);
+      var0.sendSystemMessage(Component.translatable("hexbingo.msg.dragon_grown").withStyle(ChatFormatting.GOLD));
+   }
+
+   /** 幼龙被区块卸载后重建：恢复体型、成年名字与成长条。 */
+   private static void restoreDragonState(UUID var0, Phantom var1, ServerPlayer var2) {
+      int var3 = DRAGON_GROWTH.getOrDefault(var0, 0);
+      applyDragonScale(var1, var3);
+      if (var3 >= DRAGON_GROWTH_TICKS) {
+         var1.setCustomName(Component.literal("成年龙"));
+         var1.setCustomNameVisible(true);
+      }
+
+      syncDragonGrowth(var2, var3);
+   }
+
+   /** 把成长进度同步给客户端 HUD；长成后 adult=true，客户端隐藏成长条。 */
+   private static void syncDragonGrowth(ServerPlayer var0, int var1) {
+      float var2 = Mth.clamp((float)var1 / (float)DRAGON_GROWTH_TICKS, 0.0F, 1.0F);
+      PacketDistributor.sendToPlayer(var0, new HexDragonGrowthPayload(var2, var1 >= DRAGON_GROWTH_TICKS), new CustomPacketPayload[0]);
+   }
+
+   /** 海克斯被移除时清掉客户端残留的成长条。 */
+   private static void clearDragonGrowth(ServerPlayer var0) {
+      PacketDistributor.sendToPlayer(var0, new HexDragonGrowthPayload(-1.0F, false), new CustomPacketPayload[0]);
+   }
+
+   /** 成长条是否已走满（成年龙）。 */
+   public static boolean dragonAdult(UUID var0) {
+      return DRAGON_GROWTH.getOrDefault(var0, 0) >= DRAGON_GROWTH_TICKS;
+   }
+
+   /** 这只幻翼是否属于该玩家（区别对待队伍里别人的龙）。 */
+   public static boolean isMyDragon(ServerPlayer var0, Phantom var1) {
+      return DRAGON_PETS.get(var0.getUUID()) == var1;
+   }
+
+   /** 投喂食物加速成长；返回 true 表示成功吃掉一件食物。 */
+   public static boolean feedDragon(ServerPlayer var0, Phantom var1, ItemStack var2) {
+      if (var2.isEmpty() || !var2.has(DataComponents.FOOD) || dragonAdult(var0.getUUID())) {
+         return false;
+      }
+
+      int var3 = Math.min(DRAGON_GROWTH_TICKS, DRAGON_GROWTH.getOrDefault(var0.getUUID(), 0) + DRAGON_FEED_GROWTH);
+      DRAGON_GROWTH.put(var0.getUUID(), var3);
+      applyDragonScale(var1, var3);
+      ServerLevel var4 = (ServerLevel)var0.level();
+      var4.playSound(null, var1.getX(), var1.getY(), var1.getZ(), SoundEvents.GENERIC_EAT, SoundSource.NEUTRAL, 0.8F, 1.0F);
+      for (int var5 = 0; var5 < 4; var5++) {
+         var4.sendParticles(ParticleTypes.HAPPY_VILLAGER, var1.getX(), var1.getY() + 0.4, var1.getZ(), 1, 0.3, 0.3, 0.3, 0.0);
+      }
+
+      if (!var0.getAbilities().instabuild) {
+         var2.shrink(1);
+      }
+
+      if (var3 >= DRAGON_GROWTH_TICKS) {
+         makeDragonAdult(var0, var1);
+      } else {
+         syncDragonGrowth(var0, var3);
+         var0.sendSystemMessage(
+            Component.translatable("hexbingo.msg.dragon_fed", (int)((float)var3 / (float)DRAGON_GROWTH_TICKS * 100.0F)).withStyle(ChatFormatting.GREEN)
+         );
+      }
+
+      return true;
+   }
+
+   /** 记录鞍槽内容（鞍具界面关闭时由菜单回写）。 */
+   public static void setDragonSaddle(UUID var0, ItemStack var1) {
+      if (var1.isEmpty()) {
+         DRAGON_SADDLE.remove(var0);
+      } else {
+         DRAGON_SADDLE.put(var0, var1.copy());
+      }
+   }
+
+   public static ItemStack dragonSaddle(UUID var0) {
+      ItemStack var1 = DRAGON_SADDLE.get(var0);
+      return var1 == null ? ItemStack.EMPTY : var1;
+   }
+
+   /** 打开成年龙的鞍具界面（界面由注册的 MenuScreens 构造器自动打开，无需额外封包）。 */
+   public static void openDragonSaddle(ServerPlayer var0) {
+      var0.openMenu(new HexDragonMenu.Provider(var0.getUUID(), dragonSaddle(var0.getUUID())));
+   }
+
+   /** 骑上成年龙：有鞍才允许，骑乘期间关闭幻翼 AI，飞行完全由按键与视角驱动。 */
+   public static void rideDragon(ServerPlayer var0, Phantom var1) {
+      if (dragonSaddle(var0.getUUID()).isEmpty()) {
+         var0.sendSystemMessage(Component.translatable("hexbingo.msg.dragon_need_saddle").withStyle(ChatFormatting.GRAY));
+         return;
+      }
+
+      var1.setNoAi(true);
+      var1.setDeltaMovement(Vec3.ZERO);
+      DRAGON_VELOCITY.put(var0.getUUID(), Vec3.ZERO);
+      DRAGON_INPUT.put(var0.getUUID(), new boolean[]{false, false});
+      if (!var0.startRiding(var1)) {
+         var1.setNoAi(false);
+         return;
+      }
+
+      var0.sendSystemMessage(Component.translatable("hexbingo.msg.dragon_riding").withStyle(ChatFormatting.GOLD));
+   }
+
+   /** 客户端上报的骑行按键：forward = W，up = 空格。 */
+   public static void setDragonInput(ServerPlayer var0, boolean var1, boolean var2) {
+      boolean[] var3 = DRAGON_INPUT.get(var0.getUUID());
+      if (var3 == null) {
+         var3 = new boolean[]{false, false};
+         DRAGON_INPUT.put(var0.getUUID(), var3);
+      }
+
+      var3[0] = var1;
+      var3[1] = var2;
+   }
+
+   /** 在幻翼 tick 之前推进骑行位置，这样同 tick 内乘客会被摆到龙背上，不会拖影。 */
+   public static void preTickDragon(Entity var0) {
+      if (!(var0 instanceof Phantom var1) || var1.level().isClientSide()) {
+         return;
+      }
+
+      UUID var2 = null;
+
+      for (Entry<UUID, Phantom> var3 : DRAGON_PETS.entrySet()) {
+         if (var3.getValue() == var1) {
+            var2 = var3.getKey();
+            break;
+         }
+      }
+
+      if (var2 == null || !(var1.getFirstPassenger() instanceof ServerPlayer var6)) {
+         return;
+      }
+
+      if (var6.isShiftKeyDown()) {
+         var6.stopRiding();
+         var1.setNoAi(false);
+         // 下龙后恢复无碰撞，交给原版幻翼 AI 环绕飞行
+         var1.noPhysics = true;
+         DRAGON_VELOCITY.put(var2, Vec3.ZERO);
+         DRAGON_INPUT.put(var2, new boolean[]{false, false});
+         return;
+      }
+
+      tickRiddenDragon(var2, var1, var6);
+   }
+
+   /** 视角方向 + W 前进、空格上升；无输入时缓慢减速悬停，不会掉落。 */
+   private static void tickRiddenDragon(UUID var0, Phantom var1, ServerPlayer var2) {
+      boolean[] var3 = DRAGON_INPUT.getOrDefault(var0, new boolean[]{false, false});
+      boolean var4 = DRAGON_GROWTH.getOrDefault(var0, 0) >= DRAGON_GROWTH_TICKS;
+      double var5 = var4 ? 0.85 : 0.5;
+      Vec3 var7 = DRAGON_VELOCITY.getOrDefault(var0, Vec3.ZERO);
+      if (var3[0]) {
+         var7 = var7.add(var2.getLookAngle().scale(0.09));
+      }
+
+      if (var3[1]) {
+         var7 = var7.add(0.0, 0.07, 0.0);
+      }
+
+      var7 = var7.scale(0.9);
+      if (var7.length() > var5) {
+         var7 = var7.normalize().scale(var5);
+      }
+
+      DRAGON_VELOCITY.put(var0, var7);
+      var1.setDeltaMovement(var7);
+      if (var7.horizontalDistanceSqr() > 0.001) {
+         var1.setYRot((float)(Mth.atan2(var7.z, var7.x) * 180.0F / (float)Math.PI) - 90.0F);
+         var1.setXRot((float)(-(Mth.atan2(var7.y, var7.horizontalDistance()) * 180.0F / (float)Math.PI)));
+      }
+
+      moveRiddenDragon(var1, var2, var7);
+   }
+
+   /** 骑乘期间开启实体碰撞，让龙的移动受方块阻挡：撞碎挡路方块后继续前进，不再直接穿过方块。 */
+   private static void moveRiddenDragon(Phantom var0, ServerPlayer var1, Vec3 var2) {
+      var0.noPhysics = false;
+      breakRiddenDragonPath(var0, var1, var2);
+      var0.move(MoverType.SELF, var2);
+   }
+
+   /**
+    * 撞碎骑乘中的成年龙前方的方块：矿物方块保留掉落物，其它方块只被破坏、不掉落物品。
+    * 仅在龙实际移动时执行，悬停时不会把脚下的地面挖掉。
+    */
+   private static void breakRiddenDragonPath(Phantom var0, ServerPlayer var1, Vec3 var2) {
+      if (var2.lengthSqr() < 0.0025) {
+         return;
+      }
+
+      ServerLevel var3 = (ServerLevel)var0.level();
+      AABB var4 = var0.getBoundingBox().expandTowards(var2.x, var2.y, var2.z).inflate(0.05);
+      int var5 = 0;
+
+      for (BlockPos var7 : BlockPos.betweenClosed(
+         Mth.floor(var4.minX), Mth.floor(var4.minY), Mth.floor(var4.minZ), Mth.floor(var4.maxX), Mth.floor(var4.maxY), Mth.floor(var4.maxZ)
+      )) {
+         BlockState var8 = var3.getBlockState(var7);
+         if (!var8.isAir()
+            && var8.getFluidState().isEmpty()
+            && !isDragonProtectedBlock(var8)
+            && var8.getDestroySpeed(var3, var7) >= 0.0F) {
+            var3.destroyBlock(var7.immutable(), isDragonOre(var8), var1);
+            if (++var5 >= 12) {
+               break;
+            }
+         }
+      }
+   }
+
+   /** 26.2 的 BlockItemTags 同时提供方块标签与物品标签，这里用方块标签判断是否为矿物。 */
+   private static boolean isDragonOre(BlockState var0) {
+      return var0.is(BlockItemTags.COAL_ORES.block())
+         || var0.is(BlockItemTags.IRON_ORES.block())
+         || var0.is(BlockItemTags.COPPER_ORES.block())
+         || var0.is(BlockItemTags.GOLD_ORES.block())
+         || var0.is(BlockItemTags.REDSTONE_ORES.block())
+         || var0.is(BlockItemTags.LAPIS_ORES.block())
+         || var0.is(BlockItemTags.DIAMOND_ORES.block())
+         || var0.is(BlockItemTags.EMERALD_ORES.block())
+         || var0.is(Blocks.NETHER_QUARTZ_ORE)
+         || var0.is(Blocks.NETHER_GOLD_ORE)
+         || var0.is(Blocks.ANCIENT_DEBRIS);
+   }
+
    /** 幼龙不破坏可交互容器/工作站、黑曜石、基岩与传送门等方块（参考末影龙的免疫标签）。 */
    private static boolean isDragonProtectedBlock(BlockState var0) {
       return var0.is(BlockTags.DRAGON_IMMUNE)
@@ -8845,10 +9173,10 @@ public final class HexEffects {
          || var0.is(Blocks.POWDER_SNOW_CAULDRON);
    }
 
-   /** 服务器重启/区块重载后残留的旧幼龙不在宠物表里：关闭 AI 并直接移除，避免它恢复成敌对幻翼或变成无敌孤儿。 */
+   /** 服务器重启/区块重载后残留的旧龙不在宠物表里：关闭 AI 并直接移除，避免它恢复成敌对幻翼或变成无敌孤儿。 */
    public static void tickDragonPet(Entity var0) {
       if (var0 instanceof Phantom var1 && !var1.level().isClientSide()) {
-         if (!DRAGON_PETS.containsValue(var1) && var1.getCustomName() != null && "幼龙".equals(var1.getCustomName().getString())) {
+         if (!DRAGON_PETS.containsValue(var1) && var1.getCustomName() != null && isDragonName(var1.getCustomName().getString())) {
             var1.setTarget(null);
             var1.setNoAi(true);
             var1.getGoalSelector().removeAllGoals(goal -> true);
@@ -8860,7 +9188,12 @@ public final class HexEffects {
 
    /** 幼龙是否属于本模组的宠物（跨维度传送瞬间的新实例也计入）。 */
    public static boolean isDragonPet(Phantom var0) {
-      return DRAGON_PETS.containsValue(var0) || var0.getCustomName() != null && "幼龙".equals(var0.getCustomName().getString());
+      return DRAGON_PETS.containsValue(var0) || var0.getCustomName() != null && isDragonName(var0.getCustomName().getString());
+   }
+
+   /** 幼龙改名为成年龙后名字会变，两种名字都要认。 */
+   private static boolean isDragonName(String var0) {
+      return "幼龙".equals(var0) || "成年龙".equals(var0);
    }
 
    /** 幼龙完全无敌：取消一切来源的伤害（含创造模式攻击、虚空等穿透性伤害）。 */
@@ -9683,10 +10016,13 @@ public final class HexEffects {
       if (var3 == null && var0.level() instanceof ServerLevel var5) {
          Display.ItemDisplay var6 = EntityTypes.ITEM_DISPLAY.create(var5, EntitySpawnReason.MOB_SUMMONED);
          if (var6 != null) {
-            var6.setPos(var0.getX(), var0.getY() + 0.35, var0.getZ());
+            var6.setPos(var0.getX(), var0.getY() + 0.08, var0.getZ());
             var6.setNoGravity(true);
             var6.setInvulnerable(true);
             var6.setSilent(true);
+            // 剑要横躺在脚下：Display 的 FIXED 朝向取实体 yaw/pitch，俯仰 90° 让剑身放平并指向玩家正面
+            var6.setXRot(90.0F);
+            var6.setYRot(var0.getYRot());
             var6.getSlot(0).set(new ItemStack(var1));
             var5.addFreshEntity(var6);
             SWORD_FLY_DISPLAYS.put(var2, var6);
@@ -9696,7 +10032,8 @@ public final class HexEffects {
       }
 
       if (var3 != null && !var3.isRemoved() && var3.level() == var0.level()) {
-         var3.teleportTo(var0.getX(), var0.getY() + 0.35, var0.getZ());
+         var3.teleportTo(var0.getX(), var0.getY() + 0.08, var0.getZ());
+         var3.setYRot(var0.getYRot());
       }
    }
 
@@ -11360,27 +11697,6 @@ public final class HexEffects {
       var0.sendSystemMessage(Component.translatable("hexbingo.msg.sniffer_egg").withStyle(ChatFormatting.GOLD));
    }
 
-   // 已扩容的队伍改用 72 格界面打开 /bp；返回 true 表示已由本模组接管
-   public static boolean openExpandedBackpack(ServerPlayer var0) {
-      MinecraftServer var1 = var0.level().getServer();
-      if (var1 == null) {
-         return false;
-      }
-
-      Bingo var2 = Bingo.get(var1.overworld());
-      Team var3 = var2.getTeam(var0);
-      if (var3 == null || !(var3.getBackPack() instanceof ItemStackHandler var4) || var4.getSlots() <= 54) {
-         return false;
-      }
-
-      var0.openMenu(new HexBpMenu.Provider(var4, var3.getName(), var2::setDirty));
-      // 原版界面表无法注册自定义菜单界面，由封包补开 72 格界面
-      PacketDistributor.sendToPlayer(
-         var0, new HexBpOpenPayload(Component.translatable("bongo.backpack").append(var3.getName())), new CustomPacketPayload[0]
-      );
-      return true;
-   }
-
    // 临门一脚：判断队伍是否只差 1 格就能成线
    private static boolean isNearLine(Team var0, int var1) {
       int var2 = (int)Math.sqrt(var1);
@@ -11686,19 +12002,37 @@ public final class HexEffects {
    }
 
    public static void fishermanLoot(ItemFishedEvent var0) {
-      NonNullList<ItemStack> var1 = var0.getDrops();
-      var1.clear();
-      ThreadLocalRandom var2 = ThreadLocalRandom.current();
-      int var3 = 1 + var2.nextInt(2);
+      // NeoForge 的 ItemFishedEvent 只保存原版掉落列表的副本，原版 retrieve 仍遍历原始列表，
+      // 改 getDrops() 不会影响实际掉落——必须取消原版掉落（鱼），再按原版手感自己生成物品。
+      FishingHook var1 = var0.getHookEntity();
+      Player var2 = var0.getEntity();
+      Level var3 = var1.level();
+      if (var3.isClientSide()) {
+         return;
+      }
 
-      for (int var4 = 0; var4 < var3; var4++) {
-         Item var5 = randomFishingItem();
-         if (var5 != null) {
-            var1.add(new ItemStack(var5));
+      var0.setCanceled(true);
+      ThreadLocalRandom var4 = ThreadLocalRandom.current();
+      int var5 = 1 + var4.nextInt(2);
+
+      for (int var6 = 0; var6 < var5; var6++) {
+         Item var7 = randomFishingItem();
+         if (var7 != null) {
+            ItemEntity var8 = new ItemEntity(var3, var1.getX(), var1.getY(), var1.getZ(), new ItemStack(var7));
+            double var9 = var2.getX() - var1.getX();
+            double var10 = var2.getY() - var1.getY();
+            double var11 = var2.getZ() - var1.getZ();
+            var8.setDeltaMovement(
+               var9 * 0.1,
+               var10 * 0.1 + Math.sqrt(Math.sqrt(var9 * var9 + var10 * var10 + var11 * var11)) * 0.08,
+               var11 * 0.1
+            );
+            var3.addFreshEntity(var8);
+            var3.addFreshEntity(new ExperienceOrb(var3, var2.getX(), var2.getY() + 0.5, var2.getZ() + 0.5, var4.nextInt(6) + 1));
          }
       }
 
-      // 注意：不额外调用 damageRodBy——原版会按事件的初始耐久消耗（1 点）扣鱼竿耐久，重复调用会双倍掉耐久
+      // 注意：不额外调用 damageRodBy——取消后原版会按事件初始耐久消耗（1 点）扣鱼竿耐久，重复调用会双倍掉耐久
    }
 
    // 从仆从大师全物品池随机取一个物品，排除鱼（重试几次）

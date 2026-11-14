@@ -7,9 +7,13 @@ package com.castbingo.hexbingo;
 
 import com.castbingo.hexbingo.client.HexClient;
 import com.castbingo.hexbingo.client.HexDiceAnim;
+import com.castbingo.hexbingo.client.HexDragonHud;
+import com.castbingo.hexbingo.client.HexDragonScreen;
 import com.castbingo.hexbingo.client.HexKeys;
 import com.castbingo.hexbingo.client.HexSealOverlay;
 import com.castbingo.hexbingo.network.HexDiceRollPayload;
+import com.castbingo.hexbingo.network.HexDragonGrowthPayload;
+import com.castbingo.hexbingo.network.HexDragonInputPayload;
 import com.castbingo.hexbingo.network.HexListPayload;
 import com.castbingo.hexbingo.network.HexMagnetTogglePayload;
 import com.castbingo.hexbingo.network.HexMidasPayload;
@@ -22,7 +26,6 @@ import com.castbingo.hexbingo.network.HexRefreshPayload;
 import com.castbingo.hexbingo.network.HexRosterRequestPayload;
 import com.castbingo.hexbingo.network.HexSealPayload;
 import com.castbingo.hexbingo.network.HexAllMineLockPayload;
-import com.castbingo.hexbingo.network.HexBpOpenPayload;
 import com.castbingo.hexbingo.network.HexSelectPayload;
 import com.castbingo.hexbingo.network.HexSpiderTogglePayload;
 import com.castbingo.hexbingo.network.HexSwordFlyTogglePayload;
@@ -40,6 +43,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig.Type;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.slf4j.Logger;
@@ -65,8 +69,10 @@ public final class HexBingo {
       if (FMLEnvironment.getDist() == Dist.CLIENT) {
          var2.addListener(HexKeys::register);
          var2.addListener(this::registerGuiLayers);
+         var2.addListener(this::registerMenuScreens);
          NeoForge.EVENT_BUS.addListener(HexKeys::clientTick);
          NeoForge.EVENT_BUS.addListener(HexDiceAnim::render);
+         NeoForge.EVENT_BUS.addListener(HexClient::dragonTick);
       }
    }
 
@@ -78,6 +84,14 @@ public final class HexBingo {
          Identifier.fromNamespaceAndPath("hexbingo", "hex_seal"),
          HexSealOverlay.INSTANCE
       );
+      // 幼龙成长条画在所有界面之上，避免被 boss 血条或聊天挡住
+      var1.registerAboveAll(Identifier.fromNamespaceAndPath("hexbingo", "hex_dragon_growth"), HexDragonHud.INSTANCE);
+   }
+
+   @OnlyIn(Dist.CLIENT)
+   private void registerMenuScreens(RegisterMenuScreensEvent var1) {
+      // 自定义菜单类型必须注册界面构造器，否则原版 handleOpenScreen 找不到界面，既不建 containerMenu 也不开界面
+      var1.register(HexMenus.DRAGON.get(), HexDragonScreen::new);
    }
 
    private void registerPayloads(RegisterPayloadHandlersEvent var1) {
@@ -122,7 +136,12 @@ public final class HexBingo {
          .playToClient(HexDiceRollPayload.TYPE, HexDiceRollPayload.STREAM_CODEC, (var0, var1x) -> var1x.enqueueWork(() -> HexDiceAnim.start(var0.durationTicks())))
          .playToClient(HexSealPayload.TYPE, HexSealPayload.STREAM_CODEC, (var0, var1x) -> var1x.enqueueWork(() -> HexClient.applySeals(var0.indices())))
          .playToClient(HexAllMineLockPayload.TYPE, HexAllMineLockPayload.STREAM_CODEC, (var0, var1x) -> var1x.enqueueWork(() -> HexClient.applyAllMineLocks(var0.indices())))
-         .playToClient(HexBpOpenPayload.TYPE, HexBpOpenPayload.STREAM_CODEC, (var0, var1x) -> var1x.enqueueWork(() -> HexClient.openBpScreen(var0.title())))
+         .playToClient(HexDragonGrowthPayload.TYPE, HexDragonGrowthPayload.STREAM_CODEC, (var0, var1x) -> var1x.enqueueWork(() -> HexClient.acceptDragonGrowth(var0.progress(), var0.adult())))
+         .playToServer(HexDragonInputPayload.TYPE, HexDragonInputPayload.STREAM_CODEC, (var0, var1x) -> var1x.enqueueWork(() -> {
+            if (var1x.player() instanceof ServerPlayer var2) {
+               HexEffects.setDragonInput(var2, var0.forward(), var0.up());
+            }
+         }))
          .playToServer(HexRefreshPayload.TYPE, HexRefreshPayload.STREAM_CODEC, (var0, var1x) -> var1x.enqueueWork(() -> {
             if (var1x.player() instanceof ServerPlayer var2) {
                HexManager.refresh(var2);

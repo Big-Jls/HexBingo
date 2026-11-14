@@ -42,7 +42,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 
 1. 安装 NeoForge 26.2.0.93+ 与官方 LibX 26.2-8.0.0。
 2. 安装 ReBongo（`ReBongo-26.2-1.0.0-port.11.jar`，`modId` 为 `bongo`）。
-3. 把 `HexBingo-26.2-1.49.12.jar` 放入客户端与服务端的 `mods`。
+3. 把 `HexBingo-26.2-1.49.14.jar` 放入客户端与服务端的 `mods`。
 4. 开一局 海克斯Bingo：/bingo create bongo:<难度> bongo:mayhem
 5. 按提示选择海克斯。
 
@@ -179,7 +179,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 | 万能牌 | `wildcard` | 在 Bingo 卡面随机点亮一格（所有队伍共享这一格）。 |
 | 命运骰子 | `destiny_dice` | 掷骰（播放动画后揭晓）随机触发：完成一格 / 取消敌人一格 / 双方各完成一格 / 全体卡面重排。 |
 | 随机大迁徙 | `great_migration` | 所有玩家被随机传送到主世界彼此 1000 格内的位置。 |
-| 驯龙高手 | `dragon_rider` | 获得一颗龙蛋；放下后需孵化 3 分钟，蛋上方的文字展示实体显示倒计时，挖掉或移走会重新计时。孵化出的幼龙使用幻翼 AI 环绕你飞行，跨维度、远距离传送与区块卸载后都会回到你身边继续环绕；经过的方块会掉落（不会破坏工作台、熔炉、铁砧、锻造台等工作站与容器，也不会破坏黑曜石、基岩和传送门），碰到的非玩家生物会被击退并受到 4 点伤害，不会攻击任何玩家，且完全无敌（任何伤害都会被取消，包括创造模式攻击）。 |
+| 驯龙高手 | `dragon_rider` | 获得一颗龙蛋；放下后需孵化 3 分钟，蛋上方的文字展示实体显示倒计时，挖掉或移走会重新计时。孵化出的幼龙有内置成长条（屏幕下方），体型与飞行速度随成长提升，5 分钟自然成年，右键投喂食物可加速；幼龙使用幻翼 AI 环绕你飞行，跨维度、远距离传送与区块卸载后都会回到你身边继续环绕；经过的方块会掉落（不会破坏工作台、熔炉、铁砧、锻造台等工作站与容器，也不会破坏黑曜石、基岩和传送门），碰到的非玩家生物会被击退并受到 4 点伤害，不会攻击任何玩家，且完全无敌（任何伤害都会被取消，包括创造模式攻击）。成年后右键打开鞍具界面放入鞍即可骑乘：视角控向、W 前进、空格上升、Shift 下龙；骑乘时不再穿过方块，撞到的方块会被击碎后继续飞行（矿物正常掉落，其它方块只破坏不掉落物品，悬停不动时不会挖地），环绕跟随与自然破坏暂停。 |
 | 初音未来 | `mangrove_map` | 获得一张指向最近红树林群系的地图。 |
 | 黑石行者 | `blackstone_walker` | 像冰霜行者一样在岩浆上行走：脚下的岩浆会结成临时黑石，几秒后自动融化回岩浆。 |
 | 缩小术 | `shrink` | 获得「缩小术」：右键把最近敌人缩小到 25%（体型、跳跃与交互范围同步缩小），持续 60 秒。冷却 8 分钟。 |
@@ -346,7 +346,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 | Wildcard | `wildcard` | Randomly light up one cell on the Bingo card (shared by all teams). |
 | Destiny Dice | `destiny_dice` | Roll a die (revealed after an animation): complete a cell / remove an enemy cell / both complete a cell / reshuffle all cards. |
 | Great Migration | `great_migration` | All players are randomly teleported to overworld positions within 1000 blocks of each other. |
-| Dragon Tamer | `dragon_rider` | Gain a dragon egg; after placing it, it incubates for 3 minutes with a text-display countdown above it, and mining or moving it resets the timer. The hatched baby dragon circles you, breaks blocks it passes through with drops (but never workstations/containers such as crafting tables, furnaces, anvils or smithing tables, nor obsidian, bedrock or portals), knocks back creatures for 4 damage, and never attacks you or other players who own this hex. |
+| Dragon Tamer | `dragon_rider` | Gain a dragon egg; after placing it, it incubates for 3 minutes with a text-display countdown above it, and mining or moving it resets the timer. The hatched baby dragon has a built-in growth bar (shown at the bottom of the screen); its size and flying speed grow with it and it becomes an adult after 5 minutes, right-click with food to speed it up. Baby dragons circle you, break blocks they pass through with drops (but never workstations/containers such as crafting tables, furnaces, anvils or smithing tables, nor obsidian, bedrock or portals), knock back creatures for 4 damage, never attack any player and are fully invulnerable. Once adult, right-click to open the saddle screen, insert a saddle and right-click again to ride: look to steer, W to fly forward, Space to rise, Shift to dismount. While ridden the dragon no longer phases through blocks — blocks it hits are smashed so it keeps flying (ores drop normally, any other block is destroyed without drops and hovering in place does not dig), and circling/natural block breaking pause. |
 | Hatsune Miku | `mangrove_map` | Receive a map pointing to the nearest mangrove swamp biome. |
 | Blackstone Walker | `blackstone_walker` | Walk on lava like Frost Walker: the lava under your feet turns into temporary blackstone that melts back after a few seconds. |
 | Shrink | `shrink` | Gain 'Shrink': right-click to shrink the nearest enemy to 25% size (jump power and interaction range shrink too) for 60 seconds. Cooldown 8 minutes. |
@@ -418,7 +418,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 需要 JDK 25、NeoForge 26.2.0.93 安装、官方 LibX 与已构建的 ReBongo jar：
 
 ```powershell
-.\build.ps1 -Version 26.2-1.49.12 `
+.\build.ps1 -Version 26.2-1.49.14 `
   -MinecraftDir "D:\minecraft\.minecraft" `
   -NeoForgeVersion "26.2-NeoForge_26.2.0.93" `
   -LibXJar "D:\minecraft\.minecraft\versions\26.2-NeoForge_26.2.0.93\mods\LibX-26.2-8.0.0.jar" `
@@ -441,6 +441,23 @@ ReBongo：https://github.com/Big-Jls/rebongo
 本项目为非官方附属，未使用上游图标，也不暗示任何官方关系（Apache License 2.0 第 6 条不授予商标权）。
 
 ## 更新日志
+
+### 1.49.14 调整
+
+- **驯龙高手**（`dragon_rider`）：修复被骑乘的成年龙能直接穿过方块的问题——骑乘时开启实体碰撞，撞到方块会把它击碎后继续飞行，不再穿进方块里。
+- **驯龙高手**：骑乘时击碎的方块里，只有矿物方块正常掉落物品，其它方块只被破坏、不掉落物品；悬停不动时不会挖掉脚下地面。
+- 矿物判定改用 26.2 的 `BlockItemTags`（方块/物品共用标签），并保留下界石英矿、下界金矿、远古残骸。
+
+### 1.49.13 调整
+
+- **驯龙高手**（`dragon_rider`）：幼龙新增内置成长条（屏幕下方 HUD），体型与飞行速度随成长条持续提升，5 分钟自然成年；右键投喂任意食物可额外加速 5%。
+- **驯龙高手**：成年龙右键打开鞍具界面（1 格鞍槽），放入鞍后再次右键即可骑乘：鼠标视角控制方向，W 前进、空格上升、Shift 下龙；被骑乘期间暂停环绕跟随与破坏方块。
+- **钓鱼佬**（`fisherman`）：修复仍会钓上鱼的问题——NeoForge 的 `ItemFishedEvent#getDrops()` 只是原版掉落列表的副本，改动不生效；现改为取消原版掉落并自行生成随机物品。
+- `/bingo hexes`：自选列表不再过滤 **品质提升**（`offer_upgrade`），现在也可以直接选它（下一次三选一必出彩色）。
+- 移除 `/bingo hexall` 指令及其 `openFreePick` 与 `hexbingo.msg.hexall*` 语言键（用 `/bingo hexes` 给自己选即可）。
+- 移除 `/bingo hook` 指令（钩爪海克斯本体不变，仍可通过物品/按键使用）。
+- 修复 **踏剑飞行** 脚下的剑竖直插在身体里的问题：现在平放（俯仰 90°）、跟随玩家朝向、贴在脚底。
+- 修复 **骰子动画**（`dice_roll`、`destiny_dice`）不显示的问题：贴图 UV 传参顺序错误导致采样范围退化为 0，现按完整 `0..1` 绘制。
 
 ### 1.49.12 调整
 

@@ -11,12 +11,13 @@ import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-/** 团队背包扩容（72 格）的自定义菜单类型注册。 */
+/** 自定义菜单类型注册。 */
 public final class HexMenus {
    public static final DeferredRegister<MenuType<?>> REGISTER = DeferredRegister.create(Registries.MENU, "hexbingo");
-   public static final DeferredHolder<MenuType<?>, MenuType<HexBpMenu>> TEAM_BP = REGISTER.register(
-      "team_bp_72",
-      () -> IMenuTypeExtension.create(HexBpMenu::createFromNetwork)
+   // 驯龙高手：成年龙的鞍具界面
+   public static final DeferredHolder<MenuType<?>, MenuType<HexDragonMenu>> DRAGON = REGISTER.register(
+      "dragon_saddle",
+      () -> IMenuTypeExtension.create(HexDragonMenu::createFromNetwork)
    );
 
    private HexMenus() {

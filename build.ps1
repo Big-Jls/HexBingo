@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "26.2-1.49.12",
+    [string]$Version = "26.2-1.49.14",
     [string]$MinecraftDir = "D:\minecraft\.minecraft",
     [string]$NeoForgeVersion = "26.2-NeoForge_26.2.0.93",
     [string]$LibXJar = "",
@@ -26,11 +26,15 @@ $gameJar = Join-Path $MinecraftDir "versions\$NeoForgeVersion\$NeoForgeVersion.j
 if (-not (Test-Path $gameJar)) { throw "Minecraft/NeoForge version jar not found: $gameJar" }
 
 $cp = New-Object System.Collections.Generic.List[string]
+# NeoForge 26.2 用运行时补丁放宽了部分原版成员的访问权限（如 MenuScreens$ScreenConstructor 在未打补丁的
+# 版本 jar 里是包私有），编译必须优先使用补丁后的客户端 jar，否则这些 API 编译期不可见
+$patched = Join-Path $MinecraftDir "libraries\net\neoforged\minecraft-client-patched\26.2.0.93\minecraft-client-patched-26.2.0.93.jar"
+if (Test-Path $patched) { $cp.Add($patched) }
 $cp.Add($gameJar)
 $universal = Join-Path $MinecraftDir "libraries\net\neoforged\neoforge\26.2.0.93\neoforge-26.2.0.93-universal.jar"
 if (Test-Path $universal) { $cp.Add($universal) }
 Get-ChildItem (Join-Path $MinecraftDir "libraries") -Recurse -Filter *.jar -ErrorAction SilentlyContinue |
-    ForEach-Object { if ($_.FullName -ne $gameJar) { $cp.Add($_.FullName) } }
+    ForEach-Object { if ($_.FullName -ne $gameJar -and $_.FullName -ne $patched) { $cp.Add($_.FullName) } }
 $cp.Add((Resolve-Path $LibXJar).Path)
 $cp.Add((Resolve-Path $BongoJar).Path)
 

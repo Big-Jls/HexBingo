@@ -56,15 +56,6 @@ public final class HexCommands {
                                     return 1;
                                  }
                               })))
-                           .then(Commands.literal("hook").executes(var0x -> {
-                              requireRunning(var0x.getSource());
-                              ServerPlayer var1 = ((CommandSourceStack)var0x.getSource()).getPlayerOrException();
-                              if (!HexEffects.grapple(var1)) {
-                                 throw new SimpleCommandExceptionType(Component.translatable("hexbingo.hook.no_hex")).create();
-                              } else {
-                                 return 1;
-                              }
-                           })))
                         .then(Commands.literal("boomerang").executes(var0x -> {
                            requireRunning(var0x.getSource());
                            ServerPlayer var1 = ((CommandSourceStack)var0x.getSource()).getPlayerOrException();
@@ -91,17 +82,7 @@ public final class HexCommands {
                            }))
                         )
                   ))
-               .then(
-                  ((LiteralArgumentBuilder)Commands.literal("hexall").requires(var0x -> var0x.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)))
-                     .executes(var0x -> {
-                        requireRunning((CommandSourceStack)var0x.getSource());
-                        MinecraftServer var1 = ((CommandSourceStack)var0x.getSource()).getServer();
-                        int var2 = HexManager.openFreePick(var1);
-                        ((CommandSourceStack)var0x.getSource()).sendSuccess(() -> Component.translatable("hexbingo.msg.hexall_ui", new Object[]{var2}), true);
-                        return var2;
-                     })
-               )
-         );
+         ));
    }
 
    private static void requireRunning(CommandSourceStack var0) throws CommandSyntaxException {
