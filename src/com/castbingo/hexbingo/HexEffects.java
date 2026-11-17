@@ -410,6 +410,8 @@ public final class HexEffects {
    private static final Map<UUID, Integer> KILL_STACKS = new HashMap<>();
    // 陨石：正在坠落的陨石
    private static final List<HexEffects.MeteorState> METEORS = new ArrayList<>();
+   // 陨石坑生成的骷髅：与海克斯小蜜蜂一样可以无视无敌伤害玩家
+   private static final String METEOR_SKELETON_TAG = "hexbingo_meteor_skeleton";
    // 陨石引发的地震：逐格崩塌
    private static final List<HexEffects.QuakeState> QUAKES = new ArrayList<>();
    // 预支胜利：临时点亮的格子
@@ -4943,6 +4945,20 @@ public final class HexEffects {
 
    public static boolean isHexBee(Bee var0) {
       return HEX_BEES.contains(var0.getUUID());
+   }
+
+   public static boolean isMeteorSkeleton(Entity var0) {
+      return var0 != null && var0.entityTags().contains(METEOR_SKELETON_TAG);
+   }
+
+   private static void discardMeteorSkeletons(MinecraftServer var0) {
+      for (ServerLevel var1 : var0.getAllLevels()) {
+         for (Entity var2 : var1.getAllEntities()) {
+            if (isMeteorSkeleton(var2)) {
+               var2.discard();
+            }
+         }
+      }
    }
 
    // 伤害是否被对局设置关闭（无敌 或 关闭 PVP）
@@ -10757,6 +10773,7 @@ public final class HexEffects {
             var19.setItemSlot(EquipmentSlot.FEET, meteorArmor(var16, var23[var3.nextInt(var23.length)]));
             var19.setItemSlot(EquipmentSlot.MAINHAND, meteorArmor(var16, var24[var3.nextInt(var24.length)]));
             var19.setPersistenceRequired();
+            var19.addTag(METEOR_SKELETON_TAG);
             var2.addFreshEntity(var19);
          }
       }
@@ -12713,6 +12730,7 @@ public final class HexEffects {
 
    public static void clearNewStates(MinecraftServer var0) {
       METEORS.clear();
+      discardMeteorSkeletons(var0);
       BLIND_COOLDOWN.clear();
       MIDAS_COOLDOWN.clear();
       BAT_UNTIL.clear();

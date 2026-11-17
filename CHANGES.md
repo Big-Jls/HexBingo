@@ -1,5 +1,13 @@
 # Changelog
 
+## 26.2-1.49.22 — 2026-11-17
+
+### Fixed
+
+- **Meteor** (`meteor`): skeletons spawned in the craters now damage players
+  even while the match is invulnerable or PVP is disabled, matching the Bees
+  hex. Tagged meteor skeletons are discarded when the game resets.
+
 ## 26.2-1.49.21 — 2026-11-17
 
 ### Fixed

@@ -446,7 +446,7 @@
     "hexbingo.menu.portable_furnace":  "便携熔炉",
     "hexbingo.msg.portable_furnace_item":  "你获得了「便携熔炉」，右键打开。",
     "hexbingo.hex.meteor.name":  "陨石",
-    "hexbingo.hex.meteor.desc":  "在你周围召唤 5-10 颗大小不一的紫水晶陨石坠落（最远不超过 500 格）。其他队伍玩家会被震碎脚下 10×10 方块并减速 III，同时获得标记落点的地图。",
+    "hexbingo.hex.meteor.desc":  "在你周围召唤 5-10 颗大小不一的紫水晶陨石坠落（最远不超过 500 格）。其他队伍玩家会被震碎脚下 10×10 方块并减速 III，同时获得标记落点的地图。陨石坑会生成装备随机的骷髅，这些骷髅可以无视无敌伤害玩家。",
     "hexbingo.hex.offer_upgrade.name":  "品质提升",
     "hexbingo.hex.offer_upgrade.desc":  "下一次海克斯选择必定出现至少 1 个彩色。只会出现在第一次海克斯选择中。",
     "hexbingo.hex.blind.name":  "致盲",

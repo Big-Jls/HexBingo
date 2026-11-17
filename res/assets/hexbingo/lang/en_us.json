@@ -446,7 +446,7 @@
     "hexbingo.menu.portable_furnace":  "Portable Furnace",
     "hexbingo.msg.portable_furnace_item":  "You received 'Portable Furnace': right-click to open it.",
     "hexbingo.hex.meteor.name":  "Meteor",
-    "hexbingo.hex.meteor.desc":  "Call down 5-10 amethyst meteors of varying size around you (never more than 500 blocks away). Enemy players have a 10x10 area under their feet shattered and get Slowness III, and you receive a map marking every impact point.",
+    "hexbingo.hex.meteor.desc":  "Call down 5-10 amethyst meteors of varying size around you (never more than 500 blocks away). Enemy players have a 10x10 area under their feet shattered and get Slowness III, and you receive a map marking every impact point. The craters spawn armored skeletons whose attacks can hurt players even while invulnerable.",
     "hexbingo.hex.offer_upgrade.name":  "Quality Upgrade",
     "hexbingo.hex.offer_upgrade.desc":  "Your next hex selection is guaranteed to contain at least 1 prismatic hex. Only offered during the first hex selection.",
     "hexbingo.hex.blind.name":  "Blind",

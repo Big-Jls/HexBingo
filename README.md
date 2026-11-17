@@ -44,7 +44,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 
 1. 安装 NeoForge 26.2.0.93+ 与官方 LibX 26.2-8.0.0。
 2. 安装 ReBongo（`ReBongo-26.2-1.0.0-port.11.jar`，`modId` 为 `bongo`）。
-3. 把 `HexBingo-26.2-1.49.21.jar` 放入客户端与服务端的 `mods`。
+3. 把 `HexBingo-26.2-1.49.22.jar` 放入客户端与服务端的 `mods`。
 4. 开一局 海克斯Bingo：/bingo create bongo:<难度> bongo:mayhem
 5. 按提示选择海克斯。
 
@@ -118,7 +118,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 | 鱼神 | `dolphin_dash` | 在水中获得永久的海豚的恩惠 II。 |
 | 便携熔炉 | `portable_furnace` | 获得「便携熔炉」：右键随时打开熔炉界面；关闭界面后仍会继续烧制，熔炼速度受「烧制加速」影响。 |
 | 烧制加速 | `smelt_speed` | 附近的熔炉、高炉、烟熏炉烧制速度翻倍。 |
-| 陨石 | `meteor` | 在你周围召唤 5-10 颗大小不一的紫水晶陨石坠落（最远不超过 500 格）；其他队伍玩家被减速 III，脚下地块会像真实地震一样逐格崩塌，并获得标记落点的地图。 |
+| 陨石 | `meteor` | 在你周围召唤 5-10 颗大小不一的紫水晶陨石坠落（最远不超过 500 格）；其他队伍玩家被减速 III，脚下地块会像真实地震一样逐格崩塌，并获得标记落点的地图。陨石坑会生成装备随机的骷髅，这些骷髅可以无视无敌伤害玩家。 |
 | 品质提升 | `offer_upgrade` | 下一次海克斯选择必定出现至少 1 个彩色；只会在第一次海克斯选择中出现。 |
 | 致盲 | `blind` | 获得「致盲」：右键使所有敌人失明 8 秒。冷却 3 分钟。 |
 | 结束了? | `is_it_over` | 传送到末地外岛 10 分钟，期间无法被任何传送带走，结束后自动返回。 |
@@ -253,7 +253,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 需要 JDK 25、NeoForge 26.2.0.93 安装、官方 LibX 与已构建的 ReBongo jar：
 
 ```powershell
-.\build.ps1 -Version 26.2-1.49.21 `
+.\build.ps1 -Version 26.2-1.49.22 `
   -MinecraftDir "D:\minecraft\.minecraft" `
   -NeoForgeVersion "26.2-NeoForge_26.2.0.93" `
   -LibXJar "D:\minecraft\.minecraft\versions\26.2-NeoForge_26.2.0.93\mods\LibX-26.2-8.0.0.jar" `
@@ -287,6 +287,10 @@ ReBongo：https://github.com/Big-Jls/rebongo
 感谢以下小伙伴对本模组的测试支持（排名不分先后）：summerH8、FoxTwoSour、Crawling_Fish、HikaQ 等。
 
 ## 更新日志
+
+### 1.49.22 调整
+
+- **陨石**（`meteor`）：陨石坑生成的骷髅与「小蜜蜂」一致，可以无视无敌/关闭 PVP 的伤害限制攻击玩家；对局重置时会清理这些骷髅。
 
 ### 1.49.21 调整
 

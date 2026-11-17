@@ -17,6 +17,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.animal.bee.Bee;
 import net.minecraft.world.entity.decoration.ArmorStand;
@@ -119,6 +120,18 @@ public class HexEvents {
          && var1.getSource().getDirectEntity() instanceof Bee var3
          && HexEffects.isHexBee(var3)) {
          var1.setCanceled(false);
+      }
+   }
+
+   @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+   public void meteorSkeletonDamage(LivingIncomingDamageEvent var1) {
+      // 陨石坑的骷髅与海克斯小蜜蜂一致：无敌/关闭 PVP 时仍可伤害玩家
+      if (var1.isCanceled() && var1.getEntity() instanceof ServerPlayer) {
+         Entity var2 = var1.getSource().getEntity();
+         Entity var3 = var1.getSource().getDirectEntity();
+         if (HexEffects.isMeteorSkeleton(var2) || HexEffects.isMeteorSkeleton(var3)) {
+            var1.setCanceled(false);
+         }
       }
    }
 
