@@ -1,5 +1,15 @@
 # Changelog
 
+## 26.2-1.49.21 — 2026-11-17
+
+### Fixed
+
+- **Spy** (`spy`): the one-use marker is persisted in `HexGameData`, so a
+  server restart no longer grants an extra use.
+- **Scope descriptions**: the English descriptions now match the Chinese and
+  the implementation: `scope_1` +2, `scope_2` +5, `scope_3` +9 interaction
+  range.
+
 ## 26.2-1.49.20 — 2026-11-17
 
 ### Fixed

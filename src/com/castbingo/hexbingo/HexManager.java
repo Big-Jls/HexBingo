@@ -232,7 +232,7 @@ public final class HexManager {
       TASK_PICK_MODE.clear();
       HexEffects.clearJams();
       HexEffects.abortTrap(var0);
-      HexEffects.resetSpy();
+      HexEffects.resetSpy(var0);
       HexEffects.resetTrapCooldown();
       HexEffects.clearBreakLocks();
       BREAK_LOCK_SEEN.clear();
@@ -258,7 +258,7 @@ public final class HexManager {
          var1.endGame();
       } else {
          HexEffects.abortTrap(var0);
-         HexEffects.resetSpy();
+         HexEffects.resetSpy(var0);
          HexEffects.resetTrapCooldown();
          HexEffects.clearBreakLocks();
          BREAK_LOCK_SEEN.clear();

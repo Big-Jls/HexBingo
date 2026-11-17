@@ -283,7 +283,7 @@ public final class HexEffects {
       Items.PITCHER_PLANT
    );
    private static final Map<UUID, Holder<MobEffect>> SONG_BUFFS = new HashMap<>();
-   private static final Set<UUID> SPY_USED = new HashSet<>();
+   // 间谍：一次性使用标记由 HexGameData 持久化（跨重启保留）
    private static final Set<String> BOUND_ITEM_NAMES = Set.of("转到我眩晕了", "ok回力镖", "玻璃大炮锁定槽", "中国人会飞·鞘翅", "中国人会飞·烟花", "和我一起困在这里", "精怪魔法", "冲冲冲", "随身工作台", "便携熔炉", "The World", "维度放逐", "对方不在服务区", "海神", "你摸不到", "混沌智", "目标封锁", "致盲", "蝙蝠形态", "精神控制", "矿物透视", "镜像复制", "空白格", "缩小术", "背包小偷", "潘是对的", "封印", "全是我的");
    private static final Identifier WILDCARD_TEXTURE = Identifier.fromNamespaceAndPath("hexbingo", "textures/gui/wildcard.png");
    private static final String BLACK_MARKET_USED_TAG = "hexbingo_black_market_used";
@@ -1441,7 +1441,6 @@ public final class HexEffects {
       MIND_CONTROL.entrySet().removeIf(var1 -> var1.getValue().target.equals(var0.getUUID()));
       // 补齐一次性标记与冷却的清理，避免重抽海克斯/对局重置后跨局残留
       RTP_COOLDOWN.remove(var0.getUUID());
-      SPY_USED.remove(var0.getUUID());
       UNTOUCHABLE_COOLDOWN.remove(var0.getUUID());
       CHAOS_MIND_COOLDOWN.remove(var0.getUUID());
       SPIDER_CLIMB_OFF.remove(var0.getUUID());
@@ -1466,6 +1465,7 @@ public final class HexEffects {
          HexGameData var30 = HexGameData.get(var17);
          var30.clearRefreshCharges(var0.getUUID());
          var30.clearAllMineUsed(var0.getUUID());
+         var30.clearSpyUsed(var0.getUUID());
       }
 
       // 任务护盾：本队已无人持有该海克斯时释放锁定任务，避免换掉海克斯后任务永久锁死
@@ -6679,7 +6679,7 @@ public final class HexEffects {
          return true;
       }
 
-      if (SPY_USED.contains(var0.getUUID())) {
+      if (HexGameData.get(var3).spyUsed().contains(var0.getUUID())) {
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.spy_used").withStyle(ChatFormatting.GRAY));
          return true;
       }
@@ -6705,7 +6705,7 @@ public final class HexEffects {
 
       if (shieldBlocks(var2, "spy")) {
          // 目标被免疫护盾抵挡：技能已消耗，标记为已使用
-         SPY_USED.add(var0.getUUID());
+         HexGameData.get(var3).addSpyUsed(var0.getUUID());
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.shield_spy").withStyle(ChatFormatting.GRAY));
          return true;
       }
@@ -6787,7 +6787,7 @@ public final class HexEffects {
          }
       }
 
-      SPY_USED.add(var0.getUUID());
+      HexGameData.get(var3).addSpyUsed(var0.getUUID());
       MutableComponent var38 = Component.translatable("hexbingo.msg.spy_success", new Object[]{var1.getDisplayName(), var2.getDisplayName()})
          .withStyle(ChatFormatting.LIGHT_PURPLE);
       HashSet var40 = new HashSet();
@@ -6921,8 +6921,8 @@ public final class HexEffects {
       }
    }
 
-   public static void resetSpy() {
-      SPY_USED.clear();
+   public static void resetSpy(MinecraftServer var0) {
+      HexGameData.get(var0).clearSpyUsed();
    }
 
    private static void giveFaeItem(ServerPlayer var0) {

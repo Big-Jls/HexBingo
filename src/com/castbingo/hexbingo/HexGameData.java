@@ -46,6 +46,7 @@ public class HexGameData extends SavedData {
    private final Set<Integer> sealed = new HashSet<>();
    private final Set<Integer> allMineLocked = new HashSet<>();
    private final Set<UUID> allMineUsed = new HashSet<>();
+   private final Set<UUID> spyUsed = new HashSet<>();
    private boolean hexesLocked;
 
    public static HexGameData get(MinecraftServer var0) {
@@ -352,6 +353,29 @@ public class HexGameData extends SavedData {
       }
    }
 
+   public Set<UUID> spyUsed() {
+      return this.spyUsed;
+   }
+
+   public void addSpyUsed(UUID var1) {
+      if (this.spyUsed.add(var1)) {
+         this.setDirty();
+      }
+   }
+
+   public void clearSpyUsed(UUID var1) {
+      if (this.spyUsed.remove(var1)) {
+         this.setDirty();
+      }
+   }
+
+   public void clearSpyUsed() {
+      if (!this.spyUsed.isEmpty()) {
+         this.spyUsed.clear();
+         this.setDirty();
+      }
+   }
+
    public void clearPending(UUID var1) {
       if (this.pending.remove(var1) != null) {
          this.setDirty();
@@ -382,6 +406,7 @@ public class HexGameData extends SavedData {
       this.sealed.clear();
       this.allMineLocked.clear();
       this.allMineUsed.clear();
+      this.spyUsed.clear();
       this.hexesLocked = false;
       this.setDirty();
    }
@@ -479,6 +504,9 @@ public class HexGameData extends SavedData {
       ListTag allMineUsedTag = new ListTag();
       this.allMineUsed.forEach(var1x -> allMineUsedTag.add(StringTag.valueOf(var1x.toString())));
       var1.put("allMineUsed", allMineUsedTag);
+      ListTag spyUsedTag = new ListTag();
+      this.spyUsed.forEach(var1x -> spyUsedTag.add(StringTag.valueOf(var1x.toString())));
+      var1.put("spyUsed", spyUsedTag);
       var1.putBoolean("hexesLocked", this.hexesLocked);
       return var1;
    }
@@ -498,6 +526,7 @@ public class HexGameData extends SavedData {
       this.sealed.clear();
       this.allMineLocked.clear();
       this.allMineUsed.clear();
+      this.spyUsed.clear();
       this.hexesLocked = false;
       this.mayhem = var1.getBooleanOr("mayhem", false);
       this.gameStart = var1.getLongOr("gameStart", 0L);
@@ -746,6 +775,16 @@ public class HexGameData extends SavedData {
             UUID usedBy = parseUuid(allMineList.getStringOr(i, ""));
             if (usedBy != null) {
                this.allMineUsed.add(usedBy);
+            }
+         }
+      }
+
+      Tag spyUsedTag = var1.get("spyUsed");
+      if (spyUsedTag instanceof ListTag spyUsedList) {
+         for (int i = 0; i < spyUsedList.size(); i++) {
+            UUID usedBy = parseUuid(spyUsedList.getStringOr(i, ""));
+            if (usedBy != null) {
+               this.spyUsed.add(usedBy);
             }
          }
       }
