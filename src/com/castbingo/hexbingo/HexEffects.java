@@ -284,7 +284,7 @@ public final class HexEffects {
    );
    private static final Map<UUID, Holder<MobEffect>> SONG_BUFFS = new HashMap<>();
    private static final Set<UUID> SPY_USED = new HashSet<>();
-   private static final Set<String> BOUND_ITEM_NAMES = Set.of("转到我眩晕了", "ok回力镖", "玻璃大炮锁定槽", "中国人会飞·鞘翅", "中国人会飞·烟花", "和我一起困在这里", "精怪魔法", "冲冲冲", "随身工作台", "便携熔炉", "The World", "维度放逐", "对方不在服务区", "海神", "你摸不到", "混沌智", "目标封锁", "致盲", "蝙蝠形态", "精神控制", "矿物透视", "镜像复制", "空白格", "缩小术", "背包小偷", "潘是对的", "封印");
+   private static final Set<String> BOUND_ITEM_NAMES = Set.of("转到我眩晕了", "ok回力镖", "玻璃大炮锁定槽", "中国人会飞·鞘翅", "中国人会飞·烟花", "和我一起困在这里", "精怪魔法", "冲冲冲", "随身工作台", "便携熔炉", "The World", "维度放逐", "对方不在服务区", "海神", "你摸不到", "混沌智", "目标封锁", "致盲", "蝙蝠形态", "精神控制", "矿物透视", "镜像复制", "空白格", "缩小术", "背包小偷", "潘是对的", "封印", "全是我的");
    private static final Identifier WILDCARD_TEXTURE = Identifier.fromNamespaceAndPath("hexbingo", "textures/gui/wildcard.png");
    private static final String BLACK_MARKET_USED_TAG = "hexbingo_black_market_used";
    private static final Map<UUID, Long> DICE_NEXT = new HashMap<>();
@@ -458,10 +458,7 @@ public final class HexEffects {
    private static final Map<UUID, Long> XRAY_COOLDOWN = new HashMap<>();
    private static final Map<UUID, List<Shulker>> XRAY_MARKERS = new HashMap<>();
    private static final String XRAY_TAG = "hexbingo_xray_marker";
-   // 全是我的：已使用过（一局内一次性）
-   private static final Set<UUID> ALL_MINE_USED = new HashSet<>();
-   // 全是我的：被锁定任务的下标（客户端卡面画小锁）
-   private static final Set<Integer> ALL_MINE_LOCKED = new HashSet<>();
+   // 全是我的：已使用玩家与被锁定任务下标由 HexGameData 持久化（跨重启保留小锁）
    // 缩小术：被缩小玩家 -> 到期时间
    private static final Map<UUID, Long> SHRINK_UNTIL = new HashMap<>();
    private static final Map<UUID, Long> SHRINK_COOLDOWN = new HashMap<>();
@@ -1461,12 +1458,14 @@ public final class HexEffects {
       }
       VOYAGE_LOCK_MASK.remove(var0.getUUID());
       VOYAGE_START_Y.remove(var0.getUUID());
-      GOLD_RUSH.remove(var0.getUUID());
+      SEAL_USED.remove(var0.getUUID());
 
       // 终极刷新：清掉尚未使用的刷新次数，避免海克斯被换掉后仍显示可刷新
       MinecraftServer var17 = var0.level().getServer();
       if (var17 != null) {
-         HexGameData.get(var17).clearRefreshCharges(var0.getUUID());
+         HexGameData var30 = HexGameData.get(var17);
+         var30.clearRefreshCharges(var0.getUUID());
+         var30.clearAllMineUsed(var0.getUUID());
       }
 
       // 任务护盾：本队已无人持有该海克斯时释放锁定任务，避免换掉海克斯后任务永久锁死
@@ -1525,6 +1524,8 @@ public final class HexEffects {
       long var1 = System.currentTimeMillis();
       TEMP_DAMAGE.entrySet().removeIf(var2 -> var2.getValue().until() < var1);
       TEMP_LIFESTEAL.entrySet().removeIf(var2 -> var2.getValue().until() < var1);
+      // 夺金：按受击生物记录冷却，过期条目需要及时清理，避免长期对局内存持续增长
+      GOLD_RUSH.entrySet().removeIf(var2 -> var2.getValue() < var1);
       tickTheWorld(var0);
       tickHexBees(var0);
       tickEndExile(var0);
@@ -4066,7 +4067,7 @@ public final class HexEffects {
          ArrayList<ItemStack> var9 = new ArrayList<>();
 
          for (ServerPlayer var5 : var2) {
-            for (int var6 = 0; var6 < 36; var6++) {
+            for (int var6 = 0; var6 < var5.getInventory().getContainerSize(); var6++) {
                ItemStack var7 = var5.getInventory().getItem(var6);
                // 玻璃大炮的锁定槽标记留在原位，不被共同富裕洗走
                if (!var7.isEmpty() && !isBoundItem(var7) && !isLockMarker(var7)) {
@@ -6280,6 +6281,10 @@ public final class HexEffects {
          ensureBeacon(var0);
       }
 
+      if (hasHex(var0, "all_mine") && !allMineUsedFor(var0) && !hasNamedItem(var0, "全是我的") && hasFreeSlot(var0)) {
+         var0.addItem(questItem(Items.BARRIER, "全是我的", "hexbingo.item.all_mine.lore"));
+      }
+
       if (hasHex(var0, "chinese_can_fly")) {
          ensureFlightRocket(var0);
       }
@@ -7208,6 +7213,18 @@ public final class HexEffects {
       }
    }
 
+   public static void tickLockedSlots(MinecraftServer var0) {
+      for (ServerPlayer var2 : var0.getPlayerList().getPlayers()) {
+         for (Hex var4 : hexes(var2)) {
+            for (HexEffect var6 : var4.effects()) {
+               if ("locked_slots".equals(var6.type)) {
+                  enforceLockedSlots(var2, var6);
+               }
+            }
+         }
+      }
+   }
+
    public static void clearLockedSlotMarkers(ServerPlayer var0) {
       boolean var1 = false;
 
@@ -7661,13 +7678,13 @@ public final class HexEffects {
          louisXviDrop(var20, var0, var21);
       }
 
-      if (var0.getSource().getEntity() instanceof ServerPlayer var1 && var0.getEntity().level() instanceof ServerLevel var2) {
-         double var6 = dropMultiplier(var1, ItemStack.EMPTY, false);
+      if (var20 != null && var0.getEntity().level() instanceof ServerLevel var2) {
+         double var6 = dropMultiplier(var20, ItemStack.EMPTY, false);
          if (var6 > 1.0) {
             multiplyDrops(var2, var0.getDrops(), var6);
          }
 
-         if (var0.getEntity() instanceof Sheep && hasHex(var1, "sheep_wool")) {
+         if (var0.getEntity() instanceof Sheep && hasHex(var20, "sheep_wool")) {
             Entity var7 = var0.getEntity();
 
             for (int var8 = 0; var8 < 2; var8++) {
@@ -7676,16 +7693,16 @@ public final class HexEffects {
             }
          }
 
-         if (var0.getEntity() instanceof EnderMan && hasHex(var1, "ender_slayer")) {
-            enderSlayerDrop(var1, var0, var2);
+         if (var0.getEntity() instanceof EnderMan && hasHex(var20, "ender_slayer")) {
+            enderSlayerDrop(var20, var0, var2);
          }
 
-         if (hasHex(var1, "loot_hunter") && !(var0.getEntity() instanceof Player)) {
-            lootHunterDrop(var1, var0, var2);
+         if (hasHex(var20, "loot_hunter") && !(var0.getEntity() instanceof Player)) {
+            lootHunterDrop(var20, var0, var2);
          }
 
-         if (LOUIS_PENDING.contains(var1.getUUID()) && hasHex(var1, "louis_xvi")) {
-            louisXviDrop(var1, var0, var2);
+         if (LOUIS_PENDING.contains(var20.getUUID()) && hasHex(var20, "louis_xvi")) {
+            louisXviDrop(var20, var0, var2);
          }
       }
    }
@@ -7735,6 +7752,9 @@ public final class HexEffects {
                      int var13 = EnchantmentHelper.getItemEnchantmentLevel(var12, var1);
                      int var14 = (int)var0.getAttributeValue(Attributes.LUCK);
                      var9 *= 1.0 + 0.25 * var13 + 0.25 * var14;
+                  } else {
+                     // 生物掉落没有时运附魔，但仍受幸运属性加成
+                     var9 *= 1.0 + 0.25 * (int)var0.getAttributeValue(Attributes.LUCK);
                   }
 
                   var3 = Math.max(var3, var9);
@@ -9736,7 +9756,7 @@ public final class HexEffects {
 
                for (int var13 = 0; var13 < var11.size(); var13++) {
                   ItemStack var14 = var11.get(var13);
-                  if (!var14.isEmpty() && !isBoundItem(var14)) {
+                  if (!var14.isEmpty() && !isBoundItem(var14) && !isLockMarker(var14)) {
                      var12.add(var13);
                   }
                }
@@ -12080,7 +12100,9 @@ public final class HexEffects {
 
       for (int var6 = 0; var6 < 16 && !var5; var6++) {
          BlockPos var7 = var4.offset(var3.nextInt(5) - 2, var3.nextInt(3), var3.nextInt(5) - 2);
-         if (var2.getBlockState(var7).isAir()) {
+         if (var2.getBlockState(var7).isAir()
+            && var2.getFluidState(var7).isEmpty()
+            && !var2.getBlockState(var7.below()).isAir()) {
             var2.setBlockAndUpdate(var7, Blocks.CHEST.defaultBlockState());
             if (var2.getBlockEntity(var7) instanceof ChestBlockEntity var8) {
                var8.setLootTable(randomVanillaLootTable(var3));
@@ -12321,14 +12343,20 @@ public final class HexEffects {
 
    // 全是我的：一次性技能。右键道具打开任务选择，选中后锁定其他所有队伍的这一格（自己队伍不受影响）。
    private static void giveAllMineItem(ServerPlayer var0) {
-      if (!hasNamedItem(var0, "全是我的")) {
+      if (!hasNamedItem(var0, "全是我的") && hasFreeSlot(var0)) {
          var0.addItem(questItem(Items.BARRIER, "全是我的", "hexbingo.item.all_mine.lore"));
          HexManager.openTaskPick(var0, "mine");
       }
    }
 
+   private static boolean allMineUsedFor(ServerPlayer var0) {
+      MinecraftServer var1 = var0.level().getServer();
+      return var1 != null && HexGameData.get(var1).allMineUsed().contains(var0.getUUID());
+   }
+
    public static boolean allMineReady(ServerPlayer var0) {
-      return hasHex(var0, "all_mine") && !ALL_MINE_USED.contains(var0.getUUID());
+      MinecraftServer var1 = var0.level().getServer();
+      return var1 != null && hasHex(var0, "all_mine") && !HexGameData.get(var1).allMineUsed().contains(var0.getUUID());
    }
 
    public static void applyAllMine(ServerPlayer var0, int var1) {
@@ -12349,10 +12377,11 @@ public final class HexEffects {
          return;
       }
 
-      ALL_MINE_USED.add(var0.getUUID());
+      HexGameData var5x = HexGameData.get(var2);
+      var5x.addAllMineUsed(var0.getUUID());
 
       // 记录被锁定的格子并同步客户端（卡面右下角画小锁）
-      ALL_MINE_LOCKED.add(var1);
+      var5x.addAllMineLock(var1);
       sendAllMineLockSync(var2);
 
       // 消耗掉「全是我的」道具
@@ -12382,10 +12411,11 @@ public final class HexEffects {
    }
 
    private static void sendAllMineLockSync(MinecraftServer var0) {
-      int[] var1 = new int[ALL_MINE_LOCKED.size()];
+      Set<Integer> var5 = HexGameData.get(var0).allMineLocks();
+      int[] var1 = new int[var5.size()];
       int var2 = 0;
 
-      for (int var3 : ALL_MINE_LOCKED) {
+      for (int var3 : var5) {
          var1[var2++] = var3;
       }
 
@@ -12393,10 +12423,11 @@ public final class HexEffects {
    }
 
    public static void syncAllMineLocksTo(MinecraftServer var0, ServerPlayer var1) {
-      int[] var2 = new int[ALL_MINE_LOCKED.size()];
+      Set<Integer> var5 = HexGameData.get(var0).allMineLocks();
+      int[] var2 = new int[var5.size()];
       int var3 = 0;
 
-      for (int var4 : ALL_MINE_LOCKED) {
+      for (int var4 : var5) {
          var2[var3++] = var4;
       }
 
@@ -12622,14 +12653,13 @@ public final class HexEffects {
             HexGameData.get(var1).setSealed(var27);
             Set<Integer> var29 = new HashSet<>();
 
-            for (int var30 : ALL_MINE_LOCKED) {
+            for (int var30 : HexGameData.get(var1).allMineLocks()) {
                if (var30 >= 0 && var30 < var3) {
                   var29.add(var25[var30]);
                }
             }
 
-            ALL_MINE_LOCKED.clear();
-            ALL_MINE_LOCKED.addAll(var29);
+            HexGameData.get(var1).setAllMineLocks(var29);
 
             for (HexEffects.AdvanceState var31 : ADVANCES) {
                if (var31.slot >= 0 && var31.slot < var3) {
@@ -12709,8 +12739,8 @@ public final class HexEffects {
          applyShrinkModifiers(var2, false);
       }
 
-      ALL_MINE_USED.clear();
-      ALL_MINE_LOCKED.clear();
+      HexGameData.get(var0).clearAllMineLocks();
+      HexGameData.get(var0).clearAllMineUsed();
       sendSealSync(var0);
       sendAllMineLockSync(var0);
       FEAST_SCALE.clear();

@@ -42,7 +42,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 
 1. 安装 NeoForge 26.2.0.93+ 与官方 LibX 26.2-8.0.0。
 2. 安装 ReBongo（`ReBongo-26.2-1.0.0-port.11.jar`，`modId` 为 `bongo`）。
-3. 把 `HexBingo-26.2-1.49.19.jar` 放入客户端与服务端的 `mods`。
+3. 把 `HexBingo-26.2-1.49.20.jar` 放入客户端与服务端的 `mods`。
 4. 开一局 海克斯Bingo：/bingo create bongo:<难度> bongo:mayhem
 5. 按提示选择海克斯。
 
@@ -418,7 +418,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 需要 JDK 25、NeoForge 26.2.0.93 安装、官方 LibX 与已构建的 ReBongo jar：
 
 ```powershell
-.\build.ps1 -Version 26.2-1.49.19 `
+.\build.ps1 -Version 26.2-1.49.20 `
   -MinecraftDir "D:\minecraft\.minecraft" `
   -NeoForgeVersion "26.2-NeoForge_26.2.0.93" `
   -LibXJar "D:\minecraft\.minecraft\versions\26.2-NeoForge_26.2.0.93\mods\LibX-26.2-8.0.0.jar" `
@@ -445,6 +445,17 @@ ReBongo：https://github.com/Big-Jls/rebongo
 感谢以下小伙伴对本模组的测试支持（排名不分先后）：summerH8、FoxTwoSour、Crawling_Fish、HikaQ 等。
 
 ## 更新日志
+
+### 1.49.20 调整
+
+- **全是我的**（`all_mine`）：道具补进绑定名单，无法丢出或存入容器；使用状态与小锁下标写入存档，重启后小锁仍在；未使用且道具丢失时会在重登/复活补发。
+- **玻璃大炮**（`glass_cannon_bag`）：锁定槽改为逐 tick 校验，不再有 1 秒空窗；生物掉落在 8 倍基础上也受幸运加成。
+- **夺金**（`gold_rush`）：过期的生物冷却条目会定期清理，长局不再无限增长。
+- **共同富裕**（`common_wealth`）：收纳与重分配覆盖全部 41 格（含盔甲与副手），绑定物品和锁定槽标记仍保持原位。
+- **腐蚀背包**（`corrupt_inventory`）：跳过玻璃大炮的锁定槽标记。
+- **目标封锁**（`objective_deny`）：配置冷却 900 → 360 秒，与描述「冷却 6 分钟」一致。
+- **战利品猎人**（`loot_hunter`）：间接击杀（弹射物等）也计入击杀者；箱子需要有实体方块支撑，不再悬空。
+- **潘是对的**（`pan_is_right`）：重掷时会清掉本人的封印/全是我的使用标记，避免重新获得同类海克斯后无法使用。
 
 ### 1.49.19 调整
 

@@ -1,5 +1,25 @@
 # Changelog
 
+## 26.2-1.49.20 — 2026-11-17
+
+### Fixed
+
+- **All Mine** (`all_mine`): the item is now in the bound-item list, its used
+  state and locked-slot icons are persisted, and a missing unused item is
+  re-granted on login/respawn.
+- **Glass Cannon** (`glass_cannon_bag`): locked slots are enforced every tick
+  instead of once per second; mob drops also benefit from the Luck attribute.
+- **Gold Rush** (`gold_rush`): expired per-creature cooldowns are cleaned up.
+- **Common Wealth** (`common_wealth`): collects and redistributes all 41 slots,
+  including armor and offhand, while leaving bound items and lock markers.
+- **Corrupt Inventory** (`corrupt_inventory`): skips glass-cannon lock markers.
+- **Objective Deny** (`objective_deny`): config cooldown corrected from 900 to
+  360 seconds to match the 6-minute description.
+- **Loot Hunter** (`loot_hunter`): indirect kills count for the killer, and
+  chests require a supporting block instead of floating in the air.
+- **Pan Is Right** (`pan_is_right`): rerolling now clears the player's seal and
+  all-mine used marks so a re-acquired hex is usable again.
+
 ## 26.2-1.49.19 — 2026-11-17
 
 ### Changed

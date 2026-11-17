@@ -44,6 +44,8 @@ public class HexGameData extends SavedData {
    private final Map<UUID, Integer> qualityUp = new HashMap<>();
    private final Set<UUID> hexLocked = new HashSet<>();
    private final Set<Integer> sealed = new HashSet<>();
+   private final Set<Integer> allMineLocked = new HashSet<>();
+   private final Set<UUID> allMineUsed = new HashSet<>();
    private boolean hexesLocked;
 
    public static HexGameData get(MinecraftServer var0) {
@@ -302,6 +304,54 @@ public class HexGameData extends SavedData {
       }
    }
 
+   public Set<Integer> allMineLocks() {
+      return this.allMineLocked;
+   }
+
+   public void addAllMineLock(int var1) {
+      if (this.allMineLocked.add(var1)) {
+         this.setDirty();
+      }
+   }
+
+   public void setAllMineLocks(Set<Integer> var1) {
+      if (!this.allMineLocked.equals(var1)) {
+         this.allMineLocked.clear();
+         this.allMineLocked.addAll(var1);
+         this.setDirty();
+      }
+   }
+
+   public void clearAllMineLocks() {
+      if (!this.allMineLocked.isEmpty()) {
+         this.allMineLocked.clear();
+         this.setDirty();
+      }
+   }
+
+   public Set<UUID> allMineUsed() {
+      return this.allMineUsed;
+   }
+
+   public void addAllMineUsed(UUID var1) {
+      if (this.allMineUsed.add(var1)) {
+         this.setDirty();
+      }
+   }
+
+   public void clearAllMineUsed(UUID var1) {
+      if (this.allMineUsed.remove(var1)) {
+         this.setDirty();
+      }
+   }
+
+   public void clearAllMineUsed() {
+      if (!this.allMineUsed.isEmpty()) {
+         this.allMineUsed.clear();
+         this.setDirty();
+      }
+   }
+
    public void clearPending(UUID var1) {
       if (this.pending.remove(var1) != null) {
          this.setDirty();
@@ -330,6 +380,8 @@ public class HexGameData extends SavedData {
       this.qualityUp.clear();
       this.hexLocked.clear();
       this.sealed.clear();
+      this.allMineLocked.clear();
+      this.allMineUsed.clear();
       this.hexesLocked = false;
       this.setDirty();
    }
@@ -416,6 +468,17 @@ public class HexGameData extends SavedData {
       }
 
       var1.putIntArray("sealed", sealedSlots);
+      int[] allMineSlots = new int[this.allMineLocked.size()];
+      int allMineIndex = 0;
+
+      for (int allMineSlot : this.allMineLocked) {
+         allMineSlots[allMineIndex++] = allMineSlot;
+      }
+
+      var1.putIntArray("allMineLocks", allMineSlots);
+      ListTag allMineUsedTag = new ListTag();
+      this.allMineUsed.forEach(var1x -> allMineUsedTag.add(StringTag.valueOf(var1x.toString())));
+      var1.put("allMineUsed", allMineUsedTag);
       var1.putBoolean("hexesLocked", this.hexesLocked);
       return var1;
    }
@@ -433,6 +496,8 @@ public class HexGameData extends SavedData {
       this.qualityUp.clear();
       this.hexLocked.clear();
       this.sealed.clear();
+      this.allMineLocked.clear();
+      this.allMineUsed.clear();
       this.hexesLocked = false;
       this.mayhem = var1.getBooleanOr("mayhem", false);
       this.gameStart = var1.getLongOr("gameStart", 0L);
@@ -666,6 +731,22 @@ public class HexGameData extends SavedData {
       for (int sealedSlot : var1.getIntArray("sealed").orElse(new int[0])) {
          if (sealedSlot >= 0) {
             this.sealed.add(sealedSlot);
+         }
+      }
+
+      for (int allMineSlot : var1.getIntArray("allMineLocks").orElse(new int[0])) {
+         if (allMineSlot >= 0) {
+            this.allMineLocked.add(allMineSlot);
+         }
+      }
+
+      Tag allMineUsedTag = var1.get("allMineUsed");
+      if (allMineUsedTag instanceof ListTag allMineList) {
+         for (int i = 0; i < allMineList.size(); i++) {
+            UUID usedBy = parseUuid(allMineList.getStringOr(i, ""));
+            if (usedBy != null) {
+               this.allMineUsed.add(usedBy);
+            }
          }
       }
 

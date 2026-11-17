@@ -1157,7 +1157,7 @@
                                       {
                                           "type":  "objective_deny",
                                           "seconds":  30,
-                                          "cooldown":  900
+                                          "cooldown":  360
                                       }
                                   ]
                   },

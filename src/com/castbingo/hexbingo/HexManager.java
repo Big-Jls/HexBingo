@@ -289,6 +289,8 @@ public final class HexManager {
       MinecraftServer var1 = var0.getServer();
       // The World！需要逐 tick 冻结生物，不能等 20 tick 采样
       HexEffects.tickTheWorld(var1);
+      // 玻璃大炮的锁定槽需要逐 tick 校验，避免 1 秒空窗内塞入物品
+      HexEffects.tickLockedSlots(var1);
       if (var1.getTickCount() % 20 == 0) {
          HexGameData var2 = HexGameData.get(var1);
          HexEffects.ensureNightVision(var1);
