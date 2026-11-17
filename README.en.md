@@ -43,7 +43,7 @@ ReBongo: https://github.com/Big-Jls/rebongo
 ## Installation
 
 1. Install NeoForge 26.2.0.93+ and official LibX 26.2-8.0.0.
-2. Install ReBongo (`ReBongo-26.2-1.0.0-port.11.jar`, `modId` is `bongo`).
+2. Install ReBongo (`ReBongo-26.2-1.0.0-port.12.jar`, `modId` is `bongo`).
 3. Put `HexBingo-26.2-1.49.23.jar` into the client and server `mods` folders.
 4. Start a Hex Bingo match: `/bingo create bongo:<difficulty> bongo:mayhem`.
 5. Pick hexes when prompted.
@@ -254,7 +254,7 @@ Requires JDK 25, a NeoForge 26.2.0.93 installation, official LibX and a built Re
   -MinecraftDir "D:\minecraft\.minecraft" `
   -NeoForgeVersion "26.2-NeoForge_26.2.0.93" `
   -LibXJar "D:\minecraft\.minecraft\versions\26.2-NeoForge_26.2.0.93\mods\LibX-26.2-8.0.0.jar" `
-  -BongoJar ".\..\rebongo\dist\ReBongo-26.2-1.0.0-port.11.jar"
+  -BongoJar ".\..\rebongo\dist\ReBongo-26.2-1.0.0-port.12.jar"
 ```
 
 Output: `dist/HexBingo-<version>.jar`.
