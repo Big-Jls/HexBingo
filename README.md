@@ -407,7 +407,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 
 ## 素材状态
 
-- `dechi_song.ogg` 为第三方录音，**不在本仓库许可范围内**，计划替换为自制音频；替换完成前请勿再分发该文件。
+- `dechi_song.ogg` 为第三方录音，**不在本仓库许可范围内**，计划替换为自制音频；替换完成前请勿再分发该文件。音频来源与署名见「素材署名」。
 - `sounds/dragon_1.ogg` ~ `dragon_4.ogg` 来自 freesoundsite.com 的 Dragon Purring 免费音效合集，站点声明免费、无需署名、可商用；已转成单声道 64kbps，单文件约 15–18 KB。
 - 海克斯名称与文案参考《英雄联盟》强化符文，仅作玩法致敬；《英雄联盟》为 Riot Games, Inc. 的商标，本项目与 Riot Games 无关。
 - `textures/gui/dice_d4_*.png`（掷骰动画用三角骰子贴图）为本项目自绘，无第三方素材。
@@ -439,6 +439,11 @@ ReBongo：https://github.com/Big-Jls/rebongo
 - 依赖 **LibX**：**ModdingX（MelanX、noeppi_noeppi）**，Apache License 2.0。
 
 本项目为非官方附属，未使用上游图标，也不暗示任何官方关系（Apache License 2.0 第 6 条不授予商标权）。
+
+### 素材署名
+
+- 《得吃小曲》音频（`dechi_song.ogg`）：**@林晗aaaa**，https://space.bilibili.com/404083915
+  该文件为第三方录音，不在本仓库许可范围内，计划替换为自制音频；替换完成前请勿再分发该文件。
 
 ### 测试支持
 
