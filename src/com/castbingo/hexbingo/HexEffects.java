@@ -7587,6 +7587,12 @@ public final class HexEffects {
       return var2;
    }
 
+   /** 箱子生成位置：空气或水源方块都可以（水中直接把水替换成箱子）。 */
+   private static boolean canPlaceChest(ServerLevel var0, BlockPos var1) {
+      BlockState var2 = var0.getBlockState(var1);
+      return var2.isAir() || var2.is(Blocks.WATER);
+   }
+
    private static void spawnLootChest(ServerPlayer var0, int var1) {
       if (var0.level() instanceof ServerLevel var2) {
          ThreadLocalRandom var11 = ThreadLocalRandom.current();
@@ -7594,7 +7600,7 @@ public final class HexEffects {
 
          for (int var5 = 0; var5 < 16; var5++) {
             BlockPos var6 = var4.offset(var11.nextInt(5) - 2, var11.nextInt(3), var11.nextInt(5) - 2);
-            if (var2.getBlockState(var6).isAir()) {
+            if (canPlaceChest(var2, var6)) {
                var2.setBlockAndUpdate(var6, Blocks.CHEST.defaultBlockState());
                if (var2.getBlockEntity(var6) instanceof ChestBlockEntity var7) {
                   int var13 = Math.min(27, 3 + var1 * 2);
@@ -9977,7 +9983,7 @@ public final class HexEffects {
          for (int var4 = 0; var4 < 16; var4++) {
             BlockPos var5 = var3.offset(var2.nextInt(5) - 2, var2.nextInt(3), var2.nextInt(5) - 2);
             // 不要生成在玩家脚下所在的格子，否则箱子会把玩家卡在身上
-            if (!var5.equals(var3) && var1.getBlockState(var5).isAir()) {
+            if (!var5.equals(var3) && canPlaceChest(var1, var5)) {
                var1.setBlockAndUpdate(var5, Blocks.CHEST.defaultBlockState());
                if (var1.getBlockEntity(var5) instanceof ChestBlockEntity var6) {
                   var6.setLootTable(randomVanillaLootTable(var2));
@@ -10791,7 +10797,7 @@ public final class HexEffects {
 
       for (int var3 = 0; var3 < 12; var3++) {
          BlockPos var4 = var1.offset(var2.nextInt(9) - 4, 1, var2.nextInt(9) - 4);
-         if (var0.level.getBlockState(var4).isAir()) {
+         if (canPlaceChest(var0.level, var4)) {
             var0.level.setBlockAndUpdate(var4, Blocks.CHEST.defaultBlockState());
             if (var0.level.getBlockEntity(var4) instanceof ChestBlockEntity var5) {
                int var6 = 9 + var2.nextInt(10);
@@ -12117,8 +12123,7 @@ public final class HexEffects {
 
       for (int var6 = 0; var6 < 16 && !var5; var6++) {
          BlockPos var7 = var4.offset(var3.nextInt(5) - 2, var3.nextInt(3), var3.nextInt(5) - 2);
-         if (var2.getBlockState(var7).isAir()
-            && var2.getFluidState(var7).isEmpty()
+         if (canPlaceChest(var2, var7)
             && !var2.getBlockState(var7.below()).isAir()) {
             var2.setBlockAndUpdate(var7, Blocks.CHEST.defaultBlockState());
             if (var2.getBlockEntity(var7) instanceof ChestBlockEntity var8) {

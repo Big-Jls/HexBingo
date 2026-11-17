@@ -1,5 +1,13 @@
 # Changelog
 
+## 26.2-1.49.23 — 2026-11-18
+
+### Fixed
+
+- **Chest-granting hexes** (Stack Dragon, Hidden Pocket, Loot Hunter, Meteor):
+  chests can now spawn in water by replacing the water source block, instead
+  of failing the placement check when the target block is water.
+
 ## 26.2-1.49.22 — 2026-11-17
 
 ### Fixed
