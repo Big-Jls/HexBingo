@@ -44,7 +44,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 
 1. 安装 NeoForge 26.2.0.93+ 与官方 LibX 26.2-8.0.0。
 2. 安装 ReBongo（`ReBongo-26.2-1.0.0-port.12.jar`，`modId` 为 `bongo`）。
-3. 把 `HexBingo-26.2-1.49.23.jar` 放入客户端与服务端的 `mods`。
+3. 把 `HexBingo-26.2-1.49.24.jar` 放入客户端与服务端的 `mods`。
 4. 开一局 海克斯Bingo：/bingo create bongo:<难度> bongo:mayhem
 5. 按提示选择海克斯。
 
@@ -253,11 +253,11 @@ ReBongo：https://github.com/Big-Jls/rebongo
 需要 JDK 25、NeoForge 26.2.0.93 安装、官方 LibX 与已构建的 ReBongo jar：
 
 ```powershell
-.\build.ps1 -Version 26.2-1.49.23 `
+.\build.ps1 -Version 26.2-1.49.24 `
   -MinecraftDir "D:\minecraft\.minecraft" `
   -NeoForgeVersion "26.2-NeoForge_26.2.0.93" `
   -LibXJar "D:\minecraft\.minecraft\versions\26.2-NeoForge_26.2.0.93\mods\LibX-26.2-8.0.0.jar" `
-  -BongoJar ".\..\rebongo\dist\ReBongo-26.2-1.0.0-port.12.jar"
+  -BongoJar ".\..\rebongo\dist\ReBongo-26.2-1.0.0-port.13.jar"
 ```
 
 产物：`dist/HexBingo-<version>.jar`。
@@ -287,6 +287,10 @@ ReBongo：https://github.com/Big-Jls/rebongo
 感谢以下小伙伴对本模组的测试支持（排名不分先后）：summerH8、FoxTwoSour、Crawling_Fish、HikaQ 等。
 
 ## 更新日志
+
+### 1.49.24 调整
+
+- **地狱无门闯进来**（`nether_start`）：在地狱死亡不再被判定为“返回主世界”。死亡时会记录位置，重生后自动送回地狱（并铺 3x3 圆石平台），`/tp`、`/bp`、`/bingo tp` 仍然锁定，必须活着返回主世界才会解除。
 
 ### 1.49.23 调整
 

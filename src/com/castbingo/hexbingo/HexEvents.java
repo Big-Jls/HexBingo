@@ -227,6 +227,7 @@ public class HexEvents {
          HexEffects.onFaeDeath(var2);
          HexEffects.onVoyageDeath(var2);
          HexEffects.onTrapDeath(var2);
+         HexEffects.onNetherDeath(var2);
          HexEffects.clearLockedSlotMarkers(var2);
          HexEffects.restoreTransform(var2);
          HexEffects.onSpecialDeath(var2);
@@ -637,6 +638,7 @@ public class HexEvents {
    public void playerRespawn(PlayerRespawnEvent var1) {
       if (var1.getEntity() instanceof ServerPlayer var2) {
          HexEffects.onTrapRespawn(var2);
+         HexEffects.onNetherRespawn(var2);
       }
    }
 

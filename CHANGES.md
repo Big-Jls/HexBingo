@@ -1,5 +1,15 @@
 # Changelog
 
+## 26.2-1.49.24 — 2026-11-18
+
+### Fixed
+
+- **Breaking Into Hell** (`nether_start`): dying in the Nether no longer
+  counts as returning to the Overworld. The player is recorded at death and
+  sent back to the Nether on respawn (with a fresh cobblestone platform),
+  keeping `/tp`, `/bp` and `/bingo tp` locked until they return alive. The
+  hex description and messages now state this explicitly.
+
 ## 26.2-1.49.23 — 2026-11-18
 
 ### Fixed

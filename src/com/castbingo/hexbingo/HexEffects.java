@@ -381,6 +381,9 @@ public final class HexEffects {
    private static final Map<UUID, Double> VOYAGE_START_Y = new HashMap<>();
    private static final Set<UUID> NETHER_SENT = new HashSet<>();
    private static final Set<UUID> NETHER_ESCAPED = new HashSet<>();
+   // 在地狱死亡后待处理的玩家：重生时送回地狱，死亡不算“活着返回主世界”
+   private static final Set<UUID> NETHER_DIED = new HashSet<>();
+   private static final Map<UUID, BlockPos> NETHER_DEATH_POS = new HashMap<>();
    private static final TagKey<Structure> ANCIENT_CITY = TagKey.create(
       Registries.STRUCTURE, Identifier.fromNamespaceAndPath("hexbingo", "ancient_city")
    );
@@ -1389,6 +1392,8 @@ public final class HexEffects {
       SONG_BUFFS.remove(var0.getUUID());
       NETHER_SENT.remove(var0.getUUID());
       NETHER_ESCAPED.remove(var0.getUUID());
+      NETHER_DIED.remove(var0.getUUID());
+      NETHER_DEATH_POS.remove(var0.getUUID());
       SHIELD_READY.remove(var0.getUUID());
       BP_JAM_PLAYER.remove(var0.getUUID());
       var0.removeTag(BLACK_MARKET_USED_TAG);
@@ -1567,6 +1572,8 @@ public final class HexEffects {
          UUID var20 = var5.getUUID();
          if (NETHER_SENT.contains(var20) && !NETHER_ESCAPED.contains(var20) && var5.level().dimension() == Level.OVERWORLD) {
             NETHER_ESCAPED.add(var20);
+            NETHER_DIED.remove(var20);
+            NETHER_DEATH_POS.remove(var20);
             var5.sendSystemMessage(Component.translatable("hexbingo.msg.nether_return").withStyle(ChatFormatting.GREEN));
          }
 
@@ -4183,20 +4190,73 @@ public final class HexEffects {
                var5 = 100;
             }
 
-            for (int var6 = -1; var6 <= 1; var6++) {
-               for (int var7 = -1; var7 <= 1; var7++) {
-                  var2.setBlockAndUpdate(new BlockPos(var3 + var6, var5 - 1, var4 + var7), Blocks.COBBLESTONE.defaultBlockState());
-                  var2.setBlockAndUpdate(new BlockPos(var3 + var6, var5, var4 + var7), Blocks.AIR.defaultBlockState());
-                  var2.setBlockAndUpdate(new BlockPos(var3 + var6, var5 + 1, var4 + var7), Blocks.AIR.defaultBlockState());
-               }
-            }
-
+            buildNetherPlatform(var2, var3, var5, var4);
             var0.teleportTo(var2, var3 + 0.5, var5, var4 + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
             NETHER_SENT.add(var0.getUUID());
             NETHER_ESCAPED.remove(var0.getUUID());
+            NETHER_DIED.remove(var0.getUUID());
+            NETHER_DEATH_POS.remove(var0.getUUID());
             var0.sendSystemMessage(Component.translatable("hexbingo.msg.nether_start").withStyle(ChatFormatting.RED));
          }
       }
+   }
+
+   /** 在指定坐标铺 3x3 圆石落脚平台，供进入地狱与死亡重生使用。 */
+   private static void buildNetherPlatform(ServerLevel var0, int var1, int var2, int var3) {
+      for (int var4 = -1; var4 <= 1; var4++) {
+         for (int var5 = -1; var5 <= 1; var5++) {
+            var0.setBlockAndUpdate(new BlockPos(var1 + var4, var2 - 1, var3 + var5), Blocks.COBBLESTONE.defaultBlockState());
+            var0.setBlockAndUpdate(new BlockPos(var1 + var4, var2, var3 + var5), Blocks.AIR.defaultBlockState());
+            var0.setBlockAndUpdate(new BlockPos(var1 + var4, var2 + 1, var3 + var5), Blocks.AIR.defaultBlockState());
+         }
+      }
+   }
+
+   /** 地狱无门闯进来：在地狱死亡时记录，重生后送回地狱，死亡不能作为返回主世界的解除条件。 */
+   public static void onNetherDeath(ServerPlayer var0) {
+      if (var0.level().dimension() == Level.NETHER && isNetherLocked(var0)) {
+         NETHER_DIED.add(var0.getUUID());
+         NETHER_DEATH_POS.put(var0.getUUID(), var0.blockPosition());
+      }
+   }
+
+   public static void onNetherRespawn(ServerPlayer var0) {
+      if (!NETHER_DIED.remove(var0.getUUID())) {
+         return;
+      }
+
+      BlockPos var1 = NETHER_DEATH_POS.remove(var0.getUUID());
+      if (!isNetherLocked(var0)) {
+         return;
+      }
+
+      // 重生点仍在地狱（重生锚）：保持原位即可，限制继续生效
+      if (var0.level().dimension() == Level.NETHER) {
+         return;
+      }
+
+      MinecraftServer var2 = var0.level().getServer();
+      if (var2 == null) {
+         return;
+      }
+
+      ServerLevel var3 = var2.getLevel(Level.NETHER);
+      if (var3 == null) {
+         return;
+      }
+
+      int var4 = var1 != null ? var1.getX() : Mth.floor(var0.getX() / 8.0);
+      int var5 = var1 != null ? var1.getZ() : Mth.floor(var0.getZ() / 8.0);
+      int var6 = safeGroundY(var3, var4, var5, 120);
+      if (var6 < 0) {
+         var6 = 100;
+      }
+
+      buildNetherPlatform(var3, var4, var6, var5);
+      var0.teleportTo(var3, var4 + 0.5, var6, var5 + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+      var0.resetFallDistance();
+      var0.setRemainingFireTicks(0);
+      var0.sendSystemMessage(Component.translatable("hexbingo.msg.nether_death_return").withStyle(ChatFormatting.RED));
    }
 
    public static boolean isNetherLocked(ServerPlayer var0) {
