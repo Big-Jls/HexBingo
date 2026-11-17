@@ -1167,7 +1167,7 @@
                       "effects":  [
                                       {
                                           "type":  "xray",
-                                          "seconds":  20,
+                                          "seconds":  60,
                                           "cooldown":  300
                                       }
                                   ]

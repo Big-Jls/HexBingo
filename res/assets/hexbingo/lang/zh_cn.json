@@ -387,6 +387,7 @@
     "hexbingo.msg.corrupted":  "腐蚀背包：你的 5 个物品变成了腐肉！",
     "hexbingo.msg.black_market":  "黑市开张：下次打开村民交易界面时，该村民会升到最高等级。",
     "hexbingo.msg.black_market_used":  "黑市开张：该村民已升到最高等级，你获得村庄英雄 II。",
+  "hexbingo.msg.black_market_failed":  "黑市开张失败：无法提升该村民的交易等级，本次未消耗海克斯。",
     "hexbingo.msg.demon_pact":  "恶魔契约：你永久失去 10 点生命上限，但可以受到伤害。",
     "hexbingo.msg.demon_pact_task":  "恶魔契约：已完成「%s」。",
     "hexbingo.msg.demon_pact_none":  "恶魔契约：没有可完成的任务。",

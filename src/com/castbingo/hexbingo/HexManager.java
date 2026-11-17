@@ -56,6 +56,7 @@ public final class HexManager {
       MIRROR_OPEN.remove(var1);
       TASK_PICK_MODE.remove(var1);
       BREAK_LOCK_SEEN.remove(var1);
+      HexEffects.clearXrayMarkers(var0);
    }
 
    private static void updateBreakLock(MinecraftServer var0) {
@@ -286,6 +287,8 @@ public final class HexManager {
    @SubscribeEvent
    public static void onServerTick(Post var0) {
       MinecraftServer var1 = var0.getServer();
+      // The World！需要逐 tick 冻结生物，不能等 20 tick 采样
+      HexEffects.tickTheWorld(var1);
       if (var1.getTickCount() % 20 == 0) {
          HexGameData var2 = HexGameData.get(var1);
          HexEffects.ensureNightVision(var1);

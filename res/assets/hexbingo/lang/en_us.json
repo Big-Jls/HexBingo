@@ -387,6 +387,7 @@
     "hexbingo.msg.corrupted":  "Corrupt Backpacks: 5 of your items turned into rotten flesh!",
     "hexbingo.msg.black_market":  "Black Market: the next villager you trade with will reach max level.",
     "hexbingo.msg.black_market_used":  "Black Market: that villager reached max level; you gained Hero of the Village II.",
+  "hexbingo.msg.black_market_failed":  "Black Market failed: could not raise that villager's trade level; the hex was not consumed.",
     "hexbingo.msg.demon_pact":  "Demon Pact: you permanently lost 10 max health, but you can now take damage.",
     "hexbingo.msg.demon_pact_task":  "Demon Pact: completed \"%s\".",
     "hexbingo.msg.demon_pact_none":  "Demon Pact: no task available to complete.",

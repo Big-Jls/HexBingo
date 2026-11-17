@@ -42,7 +42,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 
 1. 安装 NeoForge 26.2.0.93+ 与官方 LibX 26.2-8.0.0。
 2. 安装 ReBongo（`ReBongo-26.2-1.0.0-port.11.jar`，`modId` 为 `bongo`）。
-3. 把 `HexBingo-26.2-1.49.18.jar` 放入客户端与服务端的 `mods`。
+3. 把 `HexBingo-26.2-1.49.19.jar` 放入客户端与服务端的 `mods`。
 4. 开一局 海克斯Bingo：/bingo create bongo:<难度> bongo:mayhem
 5. 按提示选择海克斯。
 
@@ -418,7 +418,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 需要 JDK 25、NeoForge 26.2.0.93 安装、官方 LibX 与已构建的 ReBongo jar：
 
 ```powershell
-.\build.ps1 -Version 26.2-1.49.18 `
+.\build.ps1 -Version 26.2-1.49.19 `
   -MinecraftDir "D:\minecraft\.minecraft" `
   -NeoForgeVersion "26.2-NeoForge_26.2.0.93" `
   -LibXJar "D:\minecraft\.minecraft\versions\26.2-NeoForge_26.2.0.93\mods\LibX-26.2-8.0.0.jar" `
@@ -445,6 +445,21 @@ ReBongo：https://github.com/Big-Jls/rebongo
 感谢以下小伙伴对本模组的测试支持（排名不分先后）：summerH8、FoxTwoSour、Crawling_Fish、HikaQ 等。
 
 ## 更新日志
+
+### 1.49.19 调整
+
+- **海克斯技能物品回收**：海克斯被潘多拉/潘是对的换走或对局重置时，背包内由海克斯发放的技能物品（带 `hexbingo_granted` 标记）统一下线，不再保留旧海克斯道具。
+- **维度放逐**（`nether_banish`）：放逐到期时玩家离线则保留记录，重登后自动送回原位；对局结束/技能被清除时也会先把在线玩家送回。
+- **精神控制**（`mind_control`）：施放者死亡立即结束控制并通知对方；不再选择其它维度的目标（避免白扣冷却）；移动方向改为跟随施放者视角。
+- **The World！**（`the_world`）：冻结改为逐 tick 生效，怪物不再每秒活动一次；移除 200 倍重力，空中目标不再被砸落。
+- **你摸不到**（`untouchable`）：对全维度敌对玩家生效，不再只在施放者所在维度锁定。
+- **ok回力镖**（`boomerang_biome`）：回收时间 40 秒 → 20 秒；海克斯被换走时同时清理飞行中的回力镖。
+- **透视**（`xray`）：配置时长修正为 60 秒；海克斯被换走后立即结束；离线/对局结束会真正删除标记实体（不再残留发光潜影贝）。
+- **仆从大师**（`pet_master`）：重启后清理同一玩家遗留的旧宠物，宠物保护改为只认登记在册的实例，避免无敌实体累积与改名冒用。
+- **尊我为王**（`crown_me_king`）：记录目标维度，只有同维度靠近才发奖；目标位置写入存档，重启后仍可领取；放置信标会备份并恢复原方块。
+- **中国人会飞**（`chinese_can_fly`）：背包满时不再每秒掉落烟花；重复获得不再多发鞘翅。
+- **黑市开张**（`black_market`）：不再先清空村民交易再反射，反射失败时不会破坏原有交易，并提示失败。
+- **CV工程师**（`task_copy`）：lockout 模式复制敌方已完成格后，解除本队该格锁定，不再留下锁死的新任务格。
 
 ### 1.49.18 调整
 

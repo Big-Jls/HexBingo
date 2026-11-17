@@ -40,6 +40,7 @@ public class HexGameData extends SavedData {
    private final Set<UUID> extraChoice = new HashSet<>();
    private final Map<UUID, Integer> refreshCharges = new HashMap<>();
    private final Map<UUID, CompoundTag> furnaces = new HashMap<>();
+   private final Map<UUID, CompoundTag> beacons = new HashMap<>();
    private final Map<UUID, Integer> qualityUp = new HashMap<>();
    private final Set<UUID> hexLocked = new HashSet<>();
    private final Set<Integer> sealed = new HashSet<>();
@@ -211,6 +212,22 @@ public class HexGameData extends SavedData {
       this.setDirty();
    }
 
+   public CompoundTag beacon(UUID var1) {
+      CompoundTag var2 = this.beacons.get(var1);
+      return var2 == null ? null : var2.copy();
+   }
+
+   public void setBeacon(UUID var1, CompoundTag var2) {
+      this.beacons.put(var1, var2.copy());
+      this.setDirty();
+   }
+
+   public void clearBeacon(UUID var1) {
+      if (this.beacons.remove(var1) != null) {
+         this.setDirty();
+      }
+   }
+
    public int qualityUp(UUID var1) {
       return this.qualityUp.getOrDefault(var1, 0);
    }
@@ -309,6 +326,7 @@ public class HexGameData extends SavedData {
       this.extraChoice.clear();
       this.refreshCharges.clear();
       this.furnaces.clear();
+      this.beacons.clear();
       this.qualityUp.clear();
       this.hexLocked.clear();
       this.sealed.clear();
@@ -381,6 +399,9 @@ public class HexGameData extends SavedData {
       CompoundTag furnaceTag = new CompoundTag();
       this.furnaces.forEach((var1x, var2x) -> furnaceTag.put(var1x.toString(), var2x));
       var1.put("furnaces", furnaceTag);
+      CompoundTag beaconTag = new CompoundTag();
+      this.beacons.forEach((var1x, var2x) -> beaconTag.put(var1x.toString(), var2x));
+      var1.put("beacons", beaconTag);
       CompoundTag var6 = new CompoundTag();
       this.qualityUp.forEach((var1x, var2x) -> var6.putInt(var1x.toString(), var2x));
       var1.put("qualityUp", var6);
@@ -408,6 +429,7 @@ public class HexGameData extends SavedData {
       this.extraChoice.clear();
       this.refreshCharges.clear();
       this.furnaces.clear();
+      this.beacons.clear();
       this.qualityUp.clear();
       this.hexLocked.clear();
       this.sealed.clear();
@@ -598,6 +620,15 @@ public class HexGameData extends SavedData {
          UUID var54 = parseUuid(var53);
          if (var54 != null) {
             this.furnaces.put(var54, furnaceTag.getCompoundOrEmpty(var53));
+         }
+      }
+
+      CompoundTag beaconTag = var1.getCompoundOrEmpty("beacons");
+
+      for (String var55 : beaconTag.keySet()) {
+         UUID var56 = parseUuid(var55);
+         if (var56 != null) {
+            this.beacons.put(var56, beaconTag.getCompoundOrEmpty(var55));
          }
       }
 

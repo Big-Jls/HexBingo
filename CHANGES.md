@@ -1,5 +1,43 @@
 # Changelog
 
+## 26.2-1.49.19 — 2026-11-17
+
+### Changed
+
+- Hex-granted skill items (`hexbingo_granted`) are now removed from the
+  inventory when hexes are rerolled (Pandora / Pan Is Right) or the game is
+  reset, instead of leaving stale skill items behind.
+
+### Fixed
+
+- **Nether Banish** (`nether_banish`): an offline player keeps the banish
+  record and is returned on next login; clearing the hex or ending the game
+  also returns online players first.
+- **Mind Control** (`mind_control`): ends when the caster dies and notifies the
+  other side; no longer picks a target in another dimension (wasting the
+  cooldown); the controlled target now follows the caster's view direction.
+- **The World!** (`the_world`): mobs are frozen every tick instead of once per
+  second; the 200x gravity modifier is gone, so airborne targets are no longer
+  slammed down.
+- **Untouchable** (`untouchable`): locks block breaking for enemies in every
+  dimension, not just the caster's dimension.
+- **Boomerang** (`boomerang_biome`): return time 40s -> 20s; the flying
+  boomerang is discarded when the hex is removed.
+- **X-Ray** (`xray`): config duration corrected to 60s; ends immediately when
+  the hex is removed; marker shulkers are actually discarded on logout/reset.
+- **Pet Master** (`pet_master`): stray pets left by a previous session are
+  cleaned up, and protection now only applies to tracked instances.
+- **Crown Me King** (`crown_me_king`): the target dimension is stored, the
+  beacon only triggers in the same dimension, the target survives restarts, and
+  the overwritten blocks are backed up and restored.
+- **Chinese Can Fly** (`chinese_can_fly`): no more fireworks dropped on the
+  ground when the inventory is full; duplicate kits no longer grant extra
+  elytras.
+- **Black Market** (`black_market`): no longer clears villager trades before
+  reflection; a failure leaves the trades intact and reports it.
+- **CV Engineer** (`task_copy`): copying a completed enemy slot in lockout mode
+  now releases the team's own lock on that slot.
+
 ## 26.2-1.49.18 — 2026-11-17
 
 ### Fixed

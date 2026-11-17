@@ -495,7 +495,7 @@ public final class HexEffects {
    private static final Map<UUID, List<Entity>> SUMMONED_PETS = new HashMap<>();
    // 被 /kill 移除的宠物不再自动补发，直到下一局重新获得该海克斯
    private static final Set<UUID> PET_DISMISSED = new HashSet<>();
-   private static final Map<UUID, BlockPos> BEACONS = new HashMap<>();
+   private static final Map<UUID, HexEffects.BeaconState> BEACONS = new HashMap<>();
    private static final Map<UUID, HexEffects.BoomerangState> BOOMERANGS = new HashMap<>();
    private static final Map<UUID, Long> FAE_UNTIL = new HashMap<>();
    private static final Map<UUID, Mob> FAE_DISGUISES = new HashMap<>();
@@ -1361,6 +1361,8 @@ public final class HexEffects {
    }
 
    public static void clearAll(ServerPlayer var0) {
+      // 海克斯被换走/重抽/对局重置时，回收该海克斯发放的技能物品
+      removeGrantedItems(var0);
       restoreFae(var0);
       FEAST_SCALE.remove(var0.getUUID());
       restorePumpkin(var0);
@@ -1369,6 +1371,9 @@ public final class HexEffects {
       HOOK_COOLDOWN.remove(var0.getUUID());
       DASH_COOLDOWN.remove(var0.getUUID());
       DASHING.remove(var0.getUUID());
+      if (BOOMERANGS.containsKey(var0.getUUID())) {
+         BOOMERANGS.remove(var0.getUUID()).entity.discard();
+      }
       HexEffects.PortableFurnace var8 = PORTABLE_FURNACES.remove(var0.getUUID());
       if (var8 != null) {
          MinecraftServer var9 = var0.level().getServer();
@@ -1447,9 +1452,13 @@ public final class HexEffects {
       DICE_PENDING.remove(var0.getUUID());
       BANISH_COOLDOWN.remove(var0.getUUID());
       THE_WORLD_COOLDOWN.remove(var0.getUUID());
-      BANISHED.remove(var0.getUUID());
+      if (BANISHED.containsKey(var0.getUUID())) {
+         returnFromBanish(var0, BANISHED.remove(var0.getUUID()));
+      }
       KILL_STACKS.remove(var0.getUUID());
-      BEACONS.remove(var0.getUUID());
+      if (BEACONS.containsKey(var0.getUUID())) {
+         clearBeaconFor(var0);
+      }
       VOYAGE_LOCK_MASK.remove(var0.getUUID());
       VOYAGE_START_Y.remove(var0.getUUID());
       GOLD_RUSH.remove(var0.getUUID());
@@ -1532,17 +1541,19 @@ public final class HexEffects {
          HexEffects.BanishState var24 = var23.getValue();
          if (var1 >= var24.until) {
             ServerPlayer var25 = var0.getPlayerList().getPlayer(var23.getKey());
-            if (var25 != null) {
-               ServerLevel var26 = var0.getLevel(var24.dimension);
-               if (var26 != null) {
-                  var25.teleportTo(var26, var24.x, var24.y, var24.z, Set.of(), var24.yaw, var24.pitch, false);
-                  var25.resetFallDistance();
-                  var25.setRemainingFireTicks(0);
-                  var25.sendSystemMessage(Component.translatable("hexbingo.msg.banish_return").withStyle(ChatFormatting.GREEN));
-               }
+            if (var25 == null) {
+               // 玩家离线：保留放逐记录，重登后由下一 tick 送回原位，避免永久留在下界
+               continue;
             }
 
-            // 到期即无条件清除：玩家放逐期间离线也不残留到下一局
+            ServerLevel var26 = var0.getLevel(var24.dimension);
+            if (var26 != null) {
+               var25.teleportTo(var26, var24.x, var24.y, var24.z, Set.of(), var24.yaw, var24.pitch, false);
+               var25.resetFallDistance();
+               var25.setRemainingFireTicks(0);
+            }
+
+            var25.sendSystemMessage(Component.translatable("hexbingo.msg.banish_return").withStyle(ChatFormatting.GREEN));
             var22.remove();
          }
       }
@@ -5204,6 +5215,8 @@ public final class HexEffects {
 
    private static void summonPet(ServerPlayer var0) {
       PET_DISMISSED.remove(var0.getUUID());
+      // 清理同一玩家遗留的旧宠物（例如服务器重启后 PETS 丢失的存档实体），避免无限累积
+      discardStrayPets(var0);
       // 先清理旧宠物，避免传送后重复生成
       TamableAnimal var2 = PETS.remove(var0.getUUID());
       if (var2 != null) {
@@ -5238,8 +5251,36 @@ public final class HexEffects {
          return true;
       }
 
-      Component var1 = var0.getCustomName();
-      return var1 != null && "无敌小宠物".equals(var1.getString());
+      // 只保护当前登记在册的宠物：旧版本残留的同名实体不再享受无敌，避免改名冒用
+      return false;
+   }
+
+   private static void discardStrayPets(ServerPlayer var0) {
+      MinecraftServer var1 = var0.level().getServer();
+      if (var1 != null) {
+         for (ServerLevel var2 : var1.getAllLevels()) {
+            for (Entity var3 : var2.getAllEntities()) {
+               if (var3 instanceof TamableAnimal var4
+                  && "无敌小宠物".equals(var4.getCustomName() != null ? var4.getCustomName().getString() : "")
+                  && var4.getOwnerReference() != null
+                  && var0.getUUID().equals(var4.getOwnerReference().getUUID())
+                  && !PETS.containsValue(var4)) {
+                  var4.discard();
+               }
+            }
+         }
+      }
+   }
+
+   private static void discardAllStrayPets(MinecraftServer var0) {
+      for (ServerLevel var1 : var0.getAllLevels()) {
+         for (Entity var2 : var1.getAllEntities()) {
+            if (var2 instanceof TamableAnimal var3
+               && "无敌小宠物".equals(var3.getCustomName() != null ? var3.getCustomName().getString() : "")) {
+               var3.discard();
+            }
+         }
+      }
    }
 
    private static void tickPet(ServerPlayer var0, HexEffect var1) {
@@ -5313,17 +5354,28 @@ public final class HexEffects {
             var0.sendSystemMessage(Component.translatable("hexbingo.msg.beacon_none").withStyle(ChatFormatting.GRAY));
          } else {
             BlockPos var11 = var3.blockPosition();
+            HashMap<BlockPos, BlockState> backup = new HashMap<>();
 
             for (int var12 = -1; var12 <= 1; var12++) {
                for (int var13 = -1; var13 <= 1; var13++) {
-                  var1.setBlockAndUpdate(var11.offset(var12, -1, var13), Blocks.IRON_BLOCK.defaultBlockState());
+                  BlockPos var14 = var11.offset(var12, -1, var13).immutable();
+                  backup.put(var14, var1.getBlockState(var14));
+                  var1.setBlockAndUpdate(var14, Blocks.IRON_BLOCK.defaultBlockState());
                }
             }
 
-            var1.setBlockAndUpdate(var11, Blocks.BEACON.defaultBlockState());
-            var1.setBlockAndUpdate(var11.above(), Blocks.AIR.defaultBlockState());
-            var1.setBlockAndUpdate(var11.above(2), Blocks.AIR.defaultBlockState());
-            BEACONS.put(var0.getUUID(), var11.immutable());
+            BlockPos var15 = var11.immutable();
+            backup.put(var15, var1.getBlockState(var15));
+            var1.setBlockAndUpdate(var15, Blocks.BEACON.defaultBlockState());
+            BlockPos var16 = var11.above().immutable();
+            backup.put(var16, var1.getBlockState(var16));
+            var1.setBlockAndUpdate(var16, Blocks.AIR.defaultBlockState());
+            BlockPos var17 = var11.above(2).immutable();
+            backup.put(var17, var1.getBlockState(var17));
+            var1.setBlockAndUpdate(var17, Blocks.AIR.defaultBlockState());
+            HexEffects.BeaconState var18 = new HexEffects.BeaconState(var1, var15, backup);
+            BEACONS.put(var0.getUUID(), var18);
+            saveBeacon(var0, var18);
             var0.sendSystemMessage(
                Component.translatable("hexbingo.msg.beacon", new Object[]{Component.literal(var11.getX() + ", " + var11.getZ())})
                   .withStyle(ChatFormatting.GOLD)
@@ -5333,13 +5385,87 @@ public final class HexEffects {
    }
 
    private static void tickBeacon(ServerPlayer var0) {
-      BlockPos var1 = BEACONS.get(var0.getUUID());
-      if (var1 != null && !(var0.blockPosition().distSqr(var1) > 64.0)) {
+      ensureBeacon(var0);
+      HexEffects.BeaconState var1 = BEACONS.get(var0.getUUID());
+      if (var1 != null && var0.level() == var1.level && !(var0.blockPosition().distSqr(var1.pos) > 64.0)) {
          BEACONS.remove(var0.getUUID());
+         restoreBeacon(var1);
+         MinecraftServer var2 = var0.level().getServer();
+         if (var2 != null) {
+            HexGameData.get(var2).clearBeacon(var0.getUUID());
+         }
+
          grantRandomHex(var0, "prismatic", "beacon");
          giveBeaconGear(var0);
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.beacon_reward").withStyle(ChatFormatting.GOLD));
       }
+   }
+
+   private static void saveBeacon(ServerPlayer var0, HexEffects.BeaconState var1) {
+      MinecraftServer var2 = var0.level().getServer();
+      if (var2 != null) {
+         CompoundTag var3 = new CompoundTag();
+         var3.putString("dim", var1.level.dimension().identifier().toString());
+         var3.putInt("x", var1.pos.getX());
+         var3.putInt("y", var1.pos.getY());
+         var3.putInt("z", var1.pos.getZ());
+         HexGameData.get(var2).setBeacon(var0.getUUID(), var3);
+      }
+   }
+
+   private static void ensureBeacon(ServerPlayer var0) {
+      if (BEACONS.containsKey(var0.getUUID())) {
+         return;
+      }
+
+      MinecraftServer var1 = var0.level().getServer();
+      if (var1 != null) {
+         CompoundTag var2 = HexGameData.get(var1).beacon(var0.getUUID());
+         if (var2 != null) {
+            String var3 = var2.getStringOr("dim", "");
+            ServerLevel var4 = null;
+
+            for (ServerLevel var5 : var1.getAllLevels()) {
+               if (var5.dimension().identifier().toString().equals(var3)) {
+                  var4 = var5;
+                  break;
+               }
+            }
+
+            if (var4 != null) {
+               BlockPos var6 = new BlockPos(var2.getIntOr("x", 0), var2.getIntOr("y", 0), var2.getIntOr("z", 0));
+               BEACONS.put(var0.getUUID(), new HexEffects.BeaconState(var4, var6, new HashMap<>()));
+            }
+         }
+      }
+   }
+
+   private static void restoreBeacon(HexEffects.BeaconState var0) {
+      if (var0 != null) {
+         for (Map.Entry<BlockPos, BlockState> var1 : var0.backup.entrySet()) {
+            var0.level.setBlockAndUpdate(var1.getKey(), var1.getValue());
+         }
+      }
+   }
+
+   private static void clearBeaconFor(ServerPlayer var0) {
+      HexEffects.BeaconState var1 = BEACONS.remove(var0.getUUID());
+      if (var1 != null) {
+         restoreBeacon(var1);
+      }
+
+      MinecraftServer var2 = var0.level().getServer();
+      if (var2 != null) {
+         HexGameData.get(var2).clearBeacon(var0.getUUID());
+      }
+   }
+
+   private static void restoreAllBeacons() {
+      for (HexEffects.BeaconState var1 : BEACONS.values()) {
+         restoreBeacon(var1);
+      }
+
+      BEACONS.clear();
    }
 
    private static void giveBeaconGear(ServerPlayer var0) {
@@ -5402,7 +5528,7 @@ public final class HexEffects {
          }
 
          var3.ticks++;
-         if (var3.ticks >= 40) {
+         if (var3.ticks >= 20) {
             var3.entity.discard();
             var1.remove();
             giveBoomerangItem(var4);
@@ -6037,6 +6163,7 @@ public final class HexEffects {
          } else {
             int var14 = (Integer)var5.get(ThreadLocalRandom.current().nextInt(var5.size()));
             var3.complete(var14);
+            releaseTeamSlotLock(var2, var3, var14);
             if (var4) {
                for (Team var8 : var2.getTeams()) {
                   if (var8 != var3 && !var8.completed(var14) && !isTaskShielded(var8, var2, var14)) {
@@ -6058,15 +6185,18 @@ public final class HexEffects {
    }
 
    private static void giveFlightKit(ServerPlayer var0) {
-      ItemStack var1 = questItem(Items.ELYTRA, "中国人会飞·鞘翅", "hexbingo.item.elytra.lore");
-      var1.set(DataComponents.UNBREAKABLE, Unit.INSTANCE);
-      var0.addItem(var1);
+      if (!hasNamedItem(var0, "中国人会飞·鞘翅")) {
+         ItemStack var1 = questItem(Items.ELYTRA, "中国人会飞·鞘翅", "hexbingo.item.elytra.lore");
+         var1.set(DataComponents.UNBREAKABLE, Unit.INSTANCE);
+         var0.addItem(var1);
+      }
+
       ensureFlightRocket(var0);
       var0.sendSystemMessage(Component.translatable("hexbingo.msg.flight_kit"));
    }
 
    private static void ensureFlightRocket(ServerPlayer var0) {
-      if (!hasNamedItem(var0, "中国人会飞·烟花")) {
+      if (!hasNamedItem(var0, "中国人会飞·烟花") && hasFreeSlot(var0)) {
          var0.addItem(questItem(Items.FIREWORK_ROCKET, "中国人会飞·烟花", "hexbingo.item.fly.lore"));
       }
    }
@@ -6144,6 +6274,10 @@ public final class HexEffects {
 
       if (hasHex(var0, "inventory_shuffle") && !hasNamedItem(var0, "混沌智")) {
          giveChaosMindItem(var0);
+      }
+
+      if (hasHex(var0, "crown_me_king")) {
+         ensureBeacon(var0);
       }
 
       if (hasHex(var0, "chinese_can_fly")) {
@@ -6226,6 +6360,26 @@ public final class HexEffects {
    private static boolean isHexGranted(ItemStack var0) {
       CustomData var1 = var0.get(DataComponents.CUSTOM_DATA);
       return var1 != null && var1.copyTag().getBooleanOr("hexbingo_granted", false);
+   }
+
+   /** 回收背包内所有由海克斯发放的技能物品（任务物品不受影响，因为没有该标记）。 */
+   private static void removeGrantedItems(ServerPlayer var0) {
+      for (int var1 = 0; var1 < var0.getInventory().getContainerSize(); var1++) {
+         ItemStack var2 = var0.getInventory().getItem(var1);
+         if (!var2.isEmpty() && isHexGranted(var2)) {
+            var0.getInventory().setItem(var1, ItemStack.EMPTY);
+         }
+      }
+   }
+
+   private static boolean hasFreeSlot(ServerPlayer var0) {
+      for (int var1 = 0; var1 < var0.getInventory().getContainerSize(); var1++) {
+         if (var0.getInventory().getItem(var1).isEmpty()) {
+            return true;
+         }
+      }
+
+      return false;
    }
 
    private static void giveTrapItem(ServerPlayer var0) {
@@ -7080,11 +7234,12 @@ public final class HexEffects {
    }
 
    private static void lockEnemyBreaking(ServerPlayer var0, int var1) {
-      if (var0.level() instanceof ServerLevel var2) {
+      MinecraftServer var2 = var0.level().getServer();
+      if (var2 != null) {
          Team var8 = team(var0);
          long var4 = System.currentTimeMillis() + Math.max(1, var1) * 1000L;
 
-         for (ServerPlayer var7 : var2.players()) {
+         for (ServerPlayer var7 : var2.getPlayerList().getPlayers()) {
             if (var7 != var0 && (var8 == null || !var8.hasPlayer(var7))) {
                if (shieldBlocks(var7, "block_break_block")) {
                   continue;
@@ -8175,6 +8330,31 @@ public final class HexEffects {
 
    public static boolean isBanishBlocked(ServerPlayer var0) {
       return BANISHED.containsKey(var0.getUUID()) && var0.level().dimension().equals(Level.NETHER);
+   }
+
+   private static void returnFromBanish(ServerPlayer var0, HexEffects.BanishState var1) {
+      MinecraftServer var2 = var0.level().getServer();
+      if (var2 != null) {
+         ServerLevel var3 = var2.getLevel(var1.dimension);
+         if (var3 != null) {
+            var0.teleportTo(var3, var1.x, var1.y, var1.z, Set.of(), var1.yaw, var1.pitch, false);
+            var0.resetFallDistance();
+            var0.setRemainingFireTicks(0);
+         }
+      }
+
+      var0.sendSystemMessage(Component.translatable("hexbingo.msg.banish_return").withStyle(ChatFormatting.GREEN));
+   }
+
+   private static void returnAllBanished(MinecraftServer var0) {
+      for (Map.Entry<UUID, HexEffects.BanishState> var1 : new ArrayList<>(BANISHED.entrySet())) {
+         ServerPlayer var2 = var0.getPlayerList().getPlayer(var1.getKey());
+         if (var2 != null) {
+            returnFromBanish(var2, var1.getValue());
+         }
+      }
+
+      BANISHED.clear();
    }
 
    private static boolean isTeleportCommand(String var0) {
@@ -9472,8 +9652,8 @@ public final class HexEffects {
             }
          }
 
-         Holder<Attribute>[] var6 = new Holder[]{Attributes.MOVEMENT_SPEED, Attributes.FLYING_SPEED, Attributes.GRAVITY};
-         double[] var7 = new double[]{-1.0, -1.0, 200.0};
+         Holder<Attribute>[] var6 = new Holder[]{Attributes.MOVEMENT_SPEED, Attributes.FLYING_SPEED};
+         double[] var7 = new double[]{-1.0, -1.0};
 
          for (ServerPlayer var8 : var1.getPlayerList().getPlayers()) {
             if (var8 != var0 && !var8.isSpectator()) {
@@ -9497,13 +9677,13 @@ public final class HexEffects {
       }
    }
 
-   // The World！的每 tick 维护与恢复
-   private static void tickTheWorld(MinecraftServer var0) {
+   // The World！的每 tick 维护与恢复（由 ServerTickEvent 逐 tick 调用）
+   public static void tickTheWorld(MinecraftServer var0) {
       if (THE_WORLD_UNTIL > 0L) {
          if (System.currentTimeMillis() >= THE_WORLD_UNTIL) {
             THE_WORLD_UNTIL = 0L;
             THE_WORLD_MOBS.clear();
-            Holder<Attribute>[] var1 = new Holder[]{Attributes.MOVEMENT_SPEED, Attributes.FLYING_SPEED, Attributes.GRAVITY};
+            Holder<Attribute>[] var1 = new Holder[]{Attributes.MOVEMENT_SPEED, Attributes.FLYING_SPEED};
 
             for (ServerPlayer var3 : var0.getPlayerList().getPlayers()) {
                for (int var4 = 0; var4 < var1.length; var4++) {
@@ -9597,24 +9777,21 @@ public final class HexEffects {
          return false;
       }
 
-      var0.addTag(BLACK_MARKET_USED_TAG);
-
       try {
-         Method var2 = Villager.class.getDeclaredMethod("updateTrades", ServerLevel.class);
+         Method var2 = Villager.class.getDeclaredMethod("increaseMerchantCareer", ServerLevel.class);
          var2.setAccessible(true);
-         Method var3 = Villager.class.getDeclaredMethod("increaseMerchantCareer", ServerLevel.class);
-         var3.setAccessible(true);
-         ServerLevel var4 = (ServerLevel)var0.level();
-         var1.getOffers().clear();
-         var1.setVillagerData(var1.getVillagerData().withLevel(1));
-         var2.invoke(var1, var4);
+         ServerLevel var3 = (ServerLevel)var0.level();
 
          while (var1.getVillagerData().level() < VillagerData.MAX_VILLAGER_LEVEL) {
-            var3.invoke(var1, var4);
+            var2.invoke(var1, var3);
          }
-      } catch (Exception var5) {
+      } catch (Exception var4) {
+         // 反射失败时不要动村民原有交易，避免清空后无法恢复
+         var0.sendSystemMessage(Component.translatable("hexbingo.msg.black_market_failed").withStyle(ChatFormatting.RED));
+         return false;
       }
 
+      var0.addTag(BLACK_MARKET_USED_TAG);
       var0.addEffect(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, -1, 1, true, false, false));
       var0.sendSystemMessage(Component.translatable("hexbingo.msg.black_market_used").withStyle(ChatFormatting.GOLD));
       return true;
@@ -10666,6 +10843,30 @@ public final class HexEffects {
    public static void onSpecialDeath(ServerPlayer var0) {
       endBatForm(var0, false);
       END_EXILE.remove(var0.getUUID());
+      endMindControlFor(var0);
+   }
+
+   private static void endMindControlFor(ServerPlayer var0) {
+      MinecraftServer var1 = var0.level().getServer();
+      HexEffects.MindState var2 = MIND_CONTROL.remove(var0.getUUID());
+      if (var2 != null && var1 != null) {
+         ServerPlayer var3 = var1.getPlayerList().getPlayer(var2.target);
+         if (var3 != null) {
+            var3.sendSystemMessage(Component.translatable("hexbingo.msg.mind_end").withStyle(ChatFormatting.GRAY));
+         }
+      }
+
+      for (Map.Entry<UUID, HexEffects.MindState> var4 : new ArrayList<>(MIND_CONTROL.entrySet())) {
+         if (var4.getValue().target.equals(var0.getUUID())) {
+            MIND_CONTROL.remove(var4.getKey());
+            if (var1 != null) {
+               ServerPlayer var5 = var1.getPlayerList().getPlayer(var4.getKey());
+               if (var5 != null) {
+                  var5.sendSystemMessage(Component.translatable("hexbingo.msg.mind_end").withStyle(ChatFormatting.GRAY));
+               }
+            }
+         }
+      }
    }
 
    private static void startEndExile(ServerPlayer var0, int var1) {
@@ -11114,7 +11315,7 @@ public final class HexEffects {
       }
 
       ServerPlayer var6 = nearestEnemy(var0, -1.0);
-      if (var6 == null) {
+      if (var6 == null || var6.level() != var0.level()) {
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.mind_no_target").withStyle(ChatFormatting.GRAY));
          return true;
       }
@@ -11205,9 +11406,9 @@ public final class HexEffects {
 
             var0.hurtMarked = true;
          } else {
-            // 目标：按施放者的 WASD 输入移动
+            // 目标：按施放者的 WASD 输入与朝向移动
             Input var10 = var8.getLastClientInput();
-            Vec3 var11 = var0.getLookAngle();
+            Vec3 var11 = var8.getLookAngle();
             double var12 = var11.x;
             double var13 = var11.z;
             double var14 = Math.sqrt(var12 * var12 + var13 * var13);
@@ -11438,6 +11639,13 @@ public final class HexEffects {
    }
 
    public static void tickXray(ServerPlayer var0) {
+      if (!hasHex(var0, "xray")) {
+         if (XRAY_UNTIL.remove(var0.getUUID()) != null) {
+            clearXrayMarkers(var0);
+         }
+         return;
+      }
+
       Long var1 = XRAY_UNTIL.get(var0.getUUID());
       if (var1 != null) {
          long var2 = System.currentTimeMillis();
@@ -11538,7 +11746,7 @@ public final class HexEffects {
       }
    }
 
-   private static void clearXrayMarkers(ServerPlayer var0) {
+   public static void clearXrayMarkers(ServerPlayer var0) {
       List<Shulker> var1 = XRAY_MARKERS.remove(var0.getUUID());
       if (var1 != null) {
          Scoreboard var2 = var0.level().getScoreboard();
@@ -11557,6 +11765,28 @@ public final class HexEffects {
             var3.discard();
          }
       }
+   }
+
+   /** 对局重置时清理所有残留标记，包括已离线玩家的实体。 */
+   private static void discardAllXrayMarkers() {
+      for (List<Shulker> var1 : XRAY_MARKERS.values()) {
+         for (Shulker var2 : var1) {
+            Scoreboard var3 = var2.level().getScoreboard();
+
+            for (String var5 : var2.entityTags()) {
+               if (var5.startsWith("hexbingo_xray_")) {
+                  PlayerTeam var6 = var3.getPlayerTeam(var5);
+                  if (var6 != null) {
+                     var3.removePlayerFromTeam(var2.getStringUUID(), var6);
+                  }
+               }
+            }
+
+            var2.discard();
+         }
+      }
+
+      XRAY_MARKERS.clear();
    }
 
    // 黑石行者：像冰霜行者一样在岩浆上行走——脚下岩浆结成临时黑石，几秒后还原回岩浆
@@ -12472,6 +12702,7 @@ public final class HexEffects {
       SEAL_USED.clear();
 
       for (ServerPlayer var2 : var0.getPlayerList().getPlayers()) {
+         removeGrantedItems(var2);
          endEndExile(var2, false);
          endSwordFly(var2, false);
          clearXrayMarkers(var2);
@@ -12485,7 +12716,8 @@ public final class HexEffects {
       FEAST_SCALE.clear();
 
       END_EXILE.clear();
-      XRAY_MARKERS.clear();
+      discardAllXrayMarkers();
+      restoreAllBeacons();
       TASK_SHIELDS.clear();
       // 踏剑飞行：在线玩家已在上方循环中还原，这里清掉离线玩家的残留状态
       SWORD_FLY_ON.clear();
@@ -12511,6 +12743,7 @@ public final class HexEffects {
       PETS.clear();
       PET_TIMER.clear();
       PET_DISMISSED.clear();
+      discardAllStrayPets(var0);
       QUAKES.clear();
       BLANK_USED.clear();
       ADVANCES.clear();
@@ -12526,7 +12759,7 @@ public final class HexEffects {
       GOLD_RUSH.clear();
       BEE_TARGETS.clear();
       HEX_BEES.clear();
-      BANISHED.clear();
+      returnAllBanished(var0);
 
       for (HexEffects.EggIncubation var6 : new ArrayList<>(INCUBATIONS)) {
          cancelIncubation(var6.owner, true);
@@ -12630,6 +12863,18 @@ public final class HexEffects {
    }
 
    private record DenyState(int taskIndex, long until) {
+   }
+
+   private static final class BeaconState {
+      private final ServerLevel level;
+      private final BlockPos pos;
+      private final Map<BlockPos, BlockState> backup;
+
+      private BeaconState(ServerLevel var0, BlockPos var1, Map<BlockPos, BlockState> var2) {
+         this.level = var0;
+         this.pos = var1;
+         this.backup = var2;
+      }
    }
 
    private static final class BanishState {
