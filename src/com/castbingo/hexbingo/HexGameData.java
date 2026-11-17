@@ -42,6 +42,7 @@ public class HexGameData extends SavedData {
    private final Map<UUID, CompoundTag> furnaces = new HashMap<>();
    private final Map<UUID, Integer> qualityUp = new HashMap<>();
    private final Set<UUID> hexLocked = new HashSet<>();
+   private final Set<Integer> sealed = new HashSet<>();
    private boolean hexesLocked;
 
    public static HexGameData get(MinecraftServer var0) {
@@ -259,6 +260,31 @@ public class HexGameData extends SavedData {
       }
    }
 
+   public Set<Integer> sealedSlots() {
+      return this.sealed;
+   }
+
+   public void sealSlot(int var1) {
+      if (this.sealed.add(var1)) {
+         this.setDirty();
+      }
+   }
+
+   public void setSealed(Set<Integer> var1) {
+      if (!this.sealed.equals(var1)) {
+         this.sealed.clear();
+         this.sealed.addAll(var1);
+         this.setDirty();
+      }
+   }
+
+   public void clearSealed() {
+      if (!this.sealed.isEmpty()) {
+         this.sealed.clear();
+         this.setDirty();
+      }
+   }
+
    public void clearPending(UUID var1) {
       if (this.pending.remove(var1) != null) {
          this.setDirty();
@@ -285,6 +311,7 @@ public class HexGameData extends SavedData {
       this.furnaces.clear();
       this.qualityUp.clear();
       this.hexLocked.clear();
+      this.sealed.clear();
       this.hexesLocked = false;
       this.setDirty();
    }
@@ -360,6 +387,14 @@ public class HexGameData extends SavedData {
       ListTag var16 = new ListTag();
       this.hexLocked.forEach(var1x -> var16.add(StringTag.valueOf(var1x.toString())));
       var1.put("hexLocked", var16);
+      int[] sealedSlots = new int[this.sealed.size()];
+      int sealedIndex = 0;
+
+      for (int sealedSlot : this.sealed) {
+         sealedSlots[sealedIndex++] = sealedSlot;
+      }
+
+      var1.putIntArray("sealed", sealedSlots);
       var1.putBoolean("hexesLocked", this.hexesLocked);
       return var1;
    }
@@ -375,6 +410,7 @@ public class HexGameData extends SavedData {
       this.furnaces.clear();
       this.qualityUp.clear();
       this.hexLocked.clear();
+      this.sealed.clear();
       this.hexesLocked = false;
       this.mayhem = var1.getBooleanOr("mayhem", false);
       this.gameStart = var1.getLongOr("gameStart", 0L);
@@ -593,6 +629,12 @@ public class HexGameData extends SavedData {
             if (var13 != null) {
                this.hexLocked.add(var13);
             }
+         }
+      }
+
+      for (int sealedSlot : var1.getIntArray("sealed").orElse(new int[0])) {
+         if (sealedSlot >= 0) {
+            this.sealed.add(sealedSlot);
          }
       }
 

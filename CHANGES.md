@@ -1,5 +1,25 @@
 # Changelog
 
+## 26.2-1.49.18 — 2026-11-17
+
+### Fixed
+
+- **Still Water** (`still_water`): excluded from the transform/beacon random
+  grant pools and the Pandora reroll pool, so it can no longer be obtained
+  before the final slot and lock every later hex.
+- **Blank Cell** (`blank_cell`): the one-use marker is now enforced, a renamed
+  piece of paper can no longer reopen the picker, and sealed slots can no
+  longer be completed with it.
+- **Seal** (`seal`): sealed slots are persisted in `HexGameData` and survive
+  restarts; the client barrier list is re-synced on join and cleared on reset.
+  Chain, blank cell, advance victory, demon pact and task copy now skip sealed
+  slots instead of completing them directly.
+- **Card Shuffle** (`card_shuffle`): sealed slots, all-mine locks, advance
+  victory timers and objective deny are remapped together with the tasks.
+- **Fae Magic** (`fae_magic`): logging out mid-transform keeps the expiry, so
+  rejoining either continues the disguise or restores cleanly; invisibility is
+  always cleared on restore.
+
 ## 26.2-1.49.17 — 2026-11-15
 
 ### Fixed

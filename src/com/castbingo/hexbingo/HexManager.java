@@ -910,7 +910,7 @@ public final class HexManager {
                continue;
             }
 
-            if ("seal".equals(var1) && HexEffects.isSealed(var7)) {
+            if ("seal".equals(var1) && HexEffects.isSealed(var2, var7)) {
                continue;
             }
 

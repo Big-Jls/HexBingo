@@ -42,7 +42,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 
 1. 安装 NeoForge 26.2.0.93+ 与官方 LibX 26.2-8.0.0。
 2. 安装 ReBongo（`ReBongo-26.2-1.0.0-port.11.jar`，`modId` 为 `bongo`）。
-3. 把 `HexBingo-26.2-1.49.17.jar` 放入客户端与服务端的 `mods`。
+3. 把 `HexBingo-26.2-1.49.18.jar` 放入客户端与服务端的 `mods`。
 4. 开一局 海克斯Bingo：/bingo create bongo:<难度> bongo:mayhem
 5. 按提示选择海克斯。
 
@@ -418,7 +418,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 需要 JDK 25、NeoForge 26.2.0.93 安装、官方 LibX 与已构建的 ReBongo jar：
 
 ```powershell
-.\build.ps1 -Version 26.2-1.49.17 `
+.\build.ps1 -Version 26.2-1.49.18 `
   -MinecraftDir "D:\minecraft\.minecraft" `
   -NeoForgeVersion "26.2-NeoForge_26.2.0.93" `
   -LibXJar "D:\minecraft\.minecraft\versions\26.2-NeoForge_26.2.0.93\mods\LibX-26.2-8.0.0.jar" `
@@ -445,6 +445,14 @@ ReBongo：https://github.com/Big-Jls/rebongo
 感谢以下小伙伴对本模组的测试支持（排名不分先后）：summerH8、FoxTwoSour、Crawling_Fish、HikaQ 等。
 
 ## 更新日志
+
+### 1.49.18 调整
+
+- **静水监狱**（`still_water`）：随机获得海克斯的途径（质变、尊我为王信标、潘多拉重抽）统一排除该海克斯，避免在最后一格之前提前触发导致本局后续海克斯全部锁死。
+- **空白格**（`blank_cell`）：严格落实一次性标记，已使用后改名纸张也无法再次打开选择界面；被封印的格子不再能被空白格点亮。
+- **封印**（`seal`）：封印格改为写入存档并跨重启保留，同时登录/重置时补发客户端同步；铁锁连环、空白格、预支胜利、恶魔契约、CV工程师等直接完成任务的路径统一跳过封印格。
+- **洗牌**（`card_shuffle`）：封印、全是我的小锁、预支胜利倒计时、目标封锁的格子下标随任务一起迁移，不再指向错误任务。
+- **精怪魔法**（`fae_magic`）：变形期间下线不再删除到期时间，重登后继续变形或正常收尾；收尾时无条件解除隐形，避免跨局永久隐身。
 
 ### 1.49.17 调整
 

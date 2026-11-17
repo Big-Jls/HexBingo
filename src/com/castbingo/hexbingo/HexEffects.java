@@ -469,8 +469,7 @@ public final class HexEffects {
    private static final Map<UUID, Long> THIEF_COOLDOWN = new HashMap<>();
    // 潘是对的：一次性全队重掷标记
    private static final Set<UUID> PAN_USED = new HashSet<>();
-   // 封印：被永久封印的任务下标（全员无法完成，客户端画屏障图标）
-   private static final Set<Integer> SEALED = new HashSet<>();
+   // 封印：被永久封印的任务下标由 HexGameData 持久化（跨重启保留）
    // 封印：已使用过（一局内一次性，用掉后不再补发）
    private static final Set<UUID> SEAL_USED = new HashSet<>();
    // 黑石行者：临时黑石 -> 还原回岩浆的时间
@@ -1867,7 +1866,7 @@ public final class HexEffects {
                               for (int var31 = 0; var31 < Math.max(1, (int)var13.amount); var31++) {
                                  int var35 = randomAdjacent(var4, var5, var6);
                                  if (var35 >= 0) {
-                                    completeTask(var4, var5, var35);
+                                    completeTask(var2, var4, var5, var35);
                                  }
                               }
                            }
@@ -2149,7 +2148,7 @@ public final class HexEffects {
                   return var7;
                }
 
-               completeTask(var3, var4, var6);
+               completeTask(var2, var3, var4, var6);
                var7 = var6;
             }
          }
@@ -2204,10 +2203,10 @@ public final class HexEffects {
       return var2;
    }
 
-   private static void completeTask(Bingo var0, Team var1, int var2) {
-      if (var2 >= 0 && var2 < var0.tasks().size() && !var1.completed(var2) && !var1.locked(var2)) {
-         var1.complete(var2);
-         var0.checkWin();
+   private static void completeTask(MinecraftServer var0, Bingo var1, Team var2, int var3) {
+      if (var3 >= 0 && var3 < var1.tasks().size() && !var2.completed(var3) && !var2.locked(var3) && !isSealed(var0, var3)) {
+         var2.complete(var3);
+         var1.checkWin();
       }
    }
 
@@ -3969,7 +3968,7 @@ public final class HexEffects {
             } else {
                int var6 = randomIncomplete(var8, var4);
                if (var6 >= 0) {
-                  completeTask(var8, var4, var6);
+                  completeTask(var7, var8, var4, var6);
                   var0.sendSystemMessage(
                      Component.translatable("hexbingo.msg.raven_good", new Object[]{var8.task(var6).contentName(var7)}).withStyle(ChatFormatting.LIGHT_PURPLE)
                   );
@@ -4202,7 +4201,7 @@ public final class HexEffects {
             } else {
                var4 = randomIncomplete(var2, var3);
                if (var4 >= 0) {
-                  completeTask(var2, var3, var4);
+                  completeTask(var1, var2, var3, var4);
                }
             }
 
@@ -5015,6 +5014,7 @@ public final class HexEffects {
                var7.removeIf(
                   var1x -> var1x.id().equals("pandora")
                      || var1x.id().equals("pan_is_right")
+                     || var1x.id().equals("still_water")
                      || var1x.id().equals(HexRegistry.OFFER_UPGRADE)
                      || var1x.id().equals(HexRegistry.ASCETIC)
                      || var1x.id().equals(HexRegistry.ALL_MINE)
@@ -6022,7 +6022,7 @@ public final class HexEffects {
          ArrayList<Integer> var5 = new ArrayList<>();
 
          for (int var6 = 0; var6 < var2.tasks().size(); var6++) {
-            if (!var3.completed(var6) && (var4 || !var3.locked(var6))) {
+            if (!var3.completed(var6) && (var4 || !var3.locked(var6)) && !isSealed(var1, var6)) {
                for (Team var7 : var2.getTeams()) {
                   if (var7 != var3 && var7.completed(var6)) {
                      var5.add(var6);
@@ -6909,7 +6909,8 @@ public final class HexEffects {
                   FAE_DISGUISES.remove(var4);
                }
 
-               FAE_UNTIL.remove(var4);
+               // 玩家离线时保留到期时间：重登后 ensureFae 会续上伪装或调用 restoreFae 收尾，
+               // 否则隐形标志会随玩家存档永久保留
             } else if (var6 != null && var1 < var6) {
                if (var7 != null && var7.isAlive()) {
                   if (var7.level() != var5.level()) {
@@ -6978,15 +6979,14 @@ public final class HexEffects {
    }
 
    public static void restoreFae(ServerPlayer var0) {
-      boolean var1 = FAE_UNTIL.remove(var0.getUUID()) != null;
+      FAE_UNTIL.remove(var0.getUUID());
       Mob var2 = FAE_DISGUISES.remove(var0.getUUID());
       if (var2 != null) {
          var2.discard();
       }
 
-      if (var1) {
-         var0.setInvisible(false);
-      }
+      // 无条件清除隐形：离线/重启后记录可能已丢失，不能只依赖 FAE_UNTIL 是否存在
+      var0.setInvisible(false);
 
       removeFaeModifier(var0, Attributes.MAX_HEALTH, 0);
       removeFaeModifier(var0, Attributes.MOVEMENT_SPEED, 1);
@@ -7698,7 +7698,8 @@ public final class HexEffects {
                if (!var3.hexes(var4).contains(var7.id())
                   && !var7.id().equals(HexRegistry.OFFER_UPGRADE)
                   && !var7.id().equals(HexRegistry.ASCETIC)
-                  && !var7.id().equals(HexRegistry.ALL_MINE)) {
+                  && !var7.id().equals(HexRegistry.ALL_MINE)
+                  && !var7.id().equals("still_water")) {
                   var5.add(var7);
                }
             }
@@ -8267,7 +8268,7 @@ public final class HexEffects {
       ArrayList<Integer> var5 = new ArrayList<>();
 
       for (int var6 = 0; var6 < var3.tasks().size(); var6++) {
-         if (!var4.completed(var6) && !var4.locked(var6) && var3.task(var6) != Task.EMPTY) {
+         if (!var4.completed(var6) && !var4.locked(var6) && var3.task(var6) != Task.EMPTY && !isSealed(var2, var6)) {
             var5.add(var6);
          }
       }
@@ -8509,7 +8510,7 @@ public final class HexEffects {
                return;
             }
 
-            completeTask(var2, var3, var6);
+            completeTask(var1, var2, var3, var6);
             broadcast(var1, Component.translatable("hexbingo.msg.destiny_dice_1").withStyle(ChatFormatting.LIGHT_PURPLE));
             break;
          }
@@ -8532,8 +8533,8 @@ public final class HexEffects {
                return;
             }
 
-            completeTask(var2, var3, var8);
-            completeTask(var2, var5, var9);
+            completeTask(var1, var2, var3, var8);
+            completeTask(var1, var2, var5, var9);
             broadcast(var1, Component.translatable("hexbingo.msg.destiny_dice_3").withStyle(ChatFormatting.LIGHT_PURPLE));
             break;
          }
@@ -9374,7 +9375,7 @@ public final class HexEffects {
    }
 
    public static boolean canUseBlankCell(ServerPlayer var0) {
-      return hasHex(var0, "blank_cell") && hasNamedItem(var0, "空白格");
+      return hasHex(var0, "blank_cell") && !BLANK_USED.contains(var0.getUUID()) && hasNamedItem(var0, "空白格");
    }
 
    public static void applyBlankCell(ServerPlayer var0, int var1) {
@@ -9385,12 +9386,12 @@ public final class HexEffects {
 
       Bingo var3 = Bingo.get(var2.overworld());
       Team var4 = var3.getTeam(var0);
-      if (!hasHex(var0, "blank_cell") || var4 == null || var1 < 0 || var1 >= var3.tasks().size()) {
+      if (!hasHex(var0, "blank_cell") || BLANK_USED.contains(var0.getUUID()) || var4 == null || var1 < 0 || var1 >= var3.tasks().size()) {
          return;
       }
 
       Task var5 = var3.task(var1);
-      if (var5 == Task.EMPTY || var4.completed(var1) || var4.locked(var1)) {
+      if (var5 == Task.EMPTY || var4.completed(var1) || var4.locked(var1) || isSealed(var2, var1)) {
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.blank_invalid").withStyle(ChatFormatting.GRAY));
          return;
       }
@@ -9639,6 +9640,7 @@ public final class HexEffects {
             for (int var9 = 0; var9 < var6; var9++) {
                if (!var5.completed(var9)
                   && !var5.locked(var9)
+                  && !isSealed(var3, var9)
                   && var4.task(var9).getType() != TaskTypeEmpty.INSTANCE
                   && var4.task(var9).weight() > var8) {
                   var8 = var4.task(var9).weight();
@@ -11987,21 +11989,22 @@ public final class HexEffects {
       return hasHex(var0, "seal") && !SEAL_USED.contains(var0.getUUID()) && hasNamedItem(var0, "封印");
    }
 
-   public static boolean isSealed(int var0) {
-      return SEALED.contains(var0);
+   public static boolean isSealed(MinecraftServer var0, int var1) {
+      return HexGameData.get(var0).sealedSlots().contains(var1);
    }
 
    public static void applySeal(ServerPlayer var0, int var1) {
       MinecraftServer var2 = var0.level().getServer();
       if (var2 != null && hasHex(var0, "seal") && sealReady(var0)) {
          Bingo var3 = Bingo.get(var2.overworld());
-         if (var1 >= 0 && var1 < var3.tasks().size() && !SEALED.contains(var1)) {
+         HexGameData var6 = HexGameData.get(var2);
+         if (var1 >= 0 && var1 < var3.tasks().size() && !var6.sealedSlots().contains(var1)) {
             if (taskShieldedByAnyTeam(var3, var3.task(var1))) {
                var0.sendSystemMessage(Component.translatable("hexbingo.msg.task_shield_block").withStyle(ChatFormatting.RED));
                return;
             }
 
-            SEALED.add(var1);
+            var6.sealSlot(var1);
             SEAL_USED.add(var0.getUUID());
             consumeNamedItem(var0, "封印");
             sendSealSync(var2);
@@ -12016,10 +12019,11 @@ public final class HexEffects {
    }
 
    private static void sendSealSync(MinecraftServer var0) {
-      int[] var1 = new int[SEALED.size()];
+      Set<Integer> var5 = HexGameData.get(var0).sealedSlots();
+      int[] var1 = new int[var5.size()];
       int var2 = 0;
 
-      for (int var3 : SEALED) {
+      for (int var3 : var5) {
          var1[var2++] = var3;
       }
 
@@ -12027,10 +12031,11 @@ public final class HexEffects {
    }
 
    public static void syncSealsTo(MinecraftServer var0, ServerPlayer var1) {
-      int[] var2 = new int[SEALED.size()];
+      Set<Integer> var5 = HexGameData.get(var0).sealedSlots();
+      int[] var2 = new int[var5.size()];
       int var3 = 0;
 
-      for (int var4 : SEALED) {
+      for (int var4 : var5) {
          var2[var3++] = var4;
       }
 
@@ -12039,7 +12044,13 @@ public final class HexEffects {
 
    /** 由 BingoTaskEvent 调用；命中被封印任务时立即退回并返回 true。 */
    public static boolean handleSeal(BingoTaskEvent var0) {
-      if (SEALED.isEmpty()) {
+      MinecraftServer var5 = var0.getLevel().getServer();
+      if (var5 == null) {
+         return false;
+      }
+
+      Set<Integer> var7 = HexGameData.get(var5).sealedSlots();
+      if (var7.isEmpty()) {
          return false;
       }
 
@@ -12053,13 +12064,12 @@ public final class HexEffects {
          }
       }
 
-      if (var2 < 0 || !SEALED.contains(var2)) {
+      if (var2 < 0 || !var7.contains(var2)) {
          return false;
       }
 
       Team var4 = var1.getTeam(var0.getPlayer());
-      MinecraftServer var5 = var0.getLevel().getServer();
-      if (var4 != null && var5 != null) {
+      if (var4 != null) {
          uncompleteSlot(var5, var1, var4, var2);
          Component var6 = Component.translatable("hexbingo.msg.seal_blocked", var0.getTask().contentName(var5)).withStyle(ChatFormatting.RED);
 
@@ -12364,6 +12374,45 @@ public final class HexEffects {
                }
             }
 
+            // 洗牌后同步迁移按“格子下标”记录的状态，避免封印/小锁/预支胜利/目标封锁指向错误任务
+            int[] var25 = new int[var3];
+
+            for (int var26 = 0; var26 < var3; var26++) {
+               var25[var5[var26]] = var26;
+            }
+
+            Set<Integer> var27 = new HashSet<>();
+
+            for (int var28 : HexGameData.get(var1).sealedSlots()) {
+               if (var28 >= 0 && var28 < var3) {
+                  var27.add(var25[var28]);
+               }
+            }
+
+            HexGameData.get(var1).setSealed(var27);
+            Set<Integer> var29 = new HashSet<>();
+
+            for (int var30 : ALL_MINE_LOCKED) {
+               if (var30 >= 0 && var30 < var3) {
+                  var29.add(var25[var30]);
+               }
+            }
+
+            ALL_MINE_LOCKED.clear();
+            ALL_MINE_LOCKED.addAll(var29);
+
+            for (HexEffects.AdvanceState var31 : ADVANCES) {
+               if (var31.slot >= 0 && var31.slot < var3) {
+                  var31.slot = var25[var31.slot];
+               }
+            }
+
+            if (OBJECTIVE_DENY != null && OBJECTIVE_DENY.taskIndex() >= 0 && OBJECTIVE_DENY.taskIndex() < var3) {
+               OBJECTIVE_DENY = new HexEffects.DenyState(var25[OBJECTIVE_DENY.taskIndex()], OBJECTIVE_DENY.until());
+            }
+
+            sendSealSync(var1);
+            sendAllMineLockSync(var1);
             var2.markDirty(true);
             var2.checkWin();
             Component var20 = Component.translatable("hexbingo.msg.card_shuffle").withStyle(ChatFormatting.LIGHT_PURPLE);
@@ -12419,7 +12468,7 @@ public final class HexEffects {
       SHRINK_COOLDOWN.clear();
       THIEF_COOLDOWN.clear();
       PAN_USED.clear();
-      SEALED.clear();
+      HexGameData.get(var0).clearSealed();
       SEAL_USED.clear();
 
       for (ServerPlayer var2 : var0.getPlayerList().getPlayers()) {
@@ -12431,6 +12480,8 @@ public final class HexEffects {
 
       ALL_MINE_USED.clear();
       ALL_MINE_LOCKED.clear();
+      sendSealSync(var0);
+      sendAllMineLockSync(var0);
       FEAST_SCALE.clear();
 
       END_EXILE.clear();
@@ -12532,7 +12583,7 @@ public final class HexEffects {
 
    private static final class AdvanceState {
       private final Team team;
-      private final int slot;
+      private int slot;
       private final long until;
       private boolean genuine;
 
