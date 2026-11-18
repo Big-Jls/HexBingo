@@ -1,5 +1,23 @@
 # Changelog
 
+## 26.2-1.49.25 — 2026-11-18
+
+### Fixed
+
+- **English and Chinese text accuracy**: corrected hex descriptions and
+  messages that did not match the implemented behaviour, including Glass
+  Cannon Bag (8x drops with Fortune/Luck), Forge Master (enchants current
+  gear on acquisition), Trapped With Me (20 second respawn jail), Wildcard
+  (all teams share the cell), Ascetic (clears the whole team), Backpack Thief
+  (placeholder order), End portal locator ("stronghold" instead of "End
+  fortress"), Rush Rush Rush naming, and the Dragon Tamer / dragon egg
+  incubation rules (falls, pushes and teleports keep the timer; destroying
+  the egg cancels it).
+- **README**: synced the English hex table with the language files (scope
+  bonuses +2/+5/+9, missing backticks on the `ended` row, outdated Sniffer
+  Egg and Nether Start entries), and renamed Pet Master to Minion Master to
+  match the Chinese name.
+
 ## 26.2-1.49.24 — 2026-11-18
 
 ### Fixed

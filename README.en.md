@@ -23,8 +23,8 @@ An add-on for [ReBongo](https://github.com/Big-Jls/rebongo) (the NeoForge 26.2 p
   - 2nd: 5 minutes into the match
   - 3rd: 10 minutes into the match
   - 4th: 15 minutes into the match, always prismatic
-- Some hexes grant right-click skill items (for example Chaos Mind, Untouchable, Dash Charge). They have their own cooldowns and cannot be dropped or stored in containers.
-- Dash Charge is a 5-second automatic dash: no forward key needed, steer with your view and keep the cast height; blocks in a 3×3 area along the path drop, obsidian or bedrock stops it, then it enters a 30-second cooldown.
+- Some hexes grant right-click skill items (for example Chaos Mind, You Cannot Touch Me, Rush Rush Rush). They have their own cooldowns and cannot be dropped or stored in containers.
+- Rush Rush Rush is a 5-second automatic dash: no forward key needed, steer with your view and keep the cast height; blocks in a 3×3 area along the path drop, obsidian or bedrock stops it, then it enters a 30-second cooldown.
 - The Ultimate Refresh button appears at the bottom of the selection screen only while you own that hex and still have charges. Each acquisition gives one use, it can be saved for a later selection, and it is cleared when the match ends.
 - Hexes come in three tiers: silver leans toward basic stats/resources, gold toward tactical abilities, prismatic toward powerful or rule-changing effects.
 
@@ -44,7 +44,7 @@ ReBongo: https://github.com/Big-Jls/rebongo
 
 1. Install NeoForge 26.2.0.93+ and official LibX 26.2-8.0.0.
 2. Install ReBongo (`ReBongo-26.2-1.0.0-port.12.jar`, `modId` is `bongo`).
-3. Put `HexBingo-26.2-1.49.24.jar` into the client and server `mods` folders.
+3. Put `HexBingo-26.2-1.49.25.jar` into the client and server `mods` folders.
 4. Start a Hex Bingo match: `/bingo create bongo:<difficulty> bongo:mayhem`.
 5. Pick hexes when prompted.
 
@@ -79,17 +79,17 @@ ReBongo: https://github.com/Big-Jls/rebongo
 | Experience Mastery | `experience_mastery` | Gain 500 experience and 8-32 random lapis lazuli. |
 | I See You | `i_see_you` | Every 2s, hostile mobs within 20 blocks glow. |
 | Golden Ascension | `golden_shift` | Gain a random gold hex. |
-| I Want It | `want_items` | Gain 5 random items (same weighted pool as the Pet Master pet). |
+| I Want It | `want_items` | Gain 5 random items (same weighted pool as the Minion Master pet). |
 | Dead Wood Blooms | `random_wood` | Gain 5 random wood types and 5 random flower types. |
 | Leg Day | `leg_day` | Permanent Speed I. |
 | Strength | `strong` | Permanent Strength II. |
-| Utility Scope | `scope_1` | Gain +1 block interaction range and +1 entity interaction range. |
+| Utility Scope | `scope_1` | Gain +2 block interaction range and +2 entity interaction range. Stacks with other scopes. |
 | Homeguard | `homeguard` | Gain speed while running continuously; each 10s raises the speed level. Stop for 0.2s and it fades. Max Speed IV. |
 | Stack Dragon | `stack_dragon` | Each mob kill adds a stack; every 15 stacks grants a loot chest. Higher stacks mean better loot. |
 | Hook Dizzy | `hook_dizzy` | Unlocks /bingo hook: pull yourself toward the block you are looking at. 5s cooldown. |
 | Pearl Stock | `pearl_stock` | Gain 8 ender pearls and 2 blaze powder. |
 | Practice Day | `practice_day` | Permanent Haste I. |
-| Breaking Into Hell | `nether_start` | Immediately sent to the Nether; /tp, /bp and /bingo tp are disabled until you return to the Overworld. |
+| Breaking Into Hell | `nether_start` | Immediately sent to the Nether; /tp, /bp and /bingo tp are disabled until you return to the Overworld alive. Dying in the Nether sends you back. |
 | Star Voyage | `star_voyage` | Teleported 256 blocks above your current height with a platform and a water bucket. You MUST land in water or you will die. Landing safely unlocks 1 random Bingo slot. |
 | Perspective Swap | `swap_tasks` | Randomly swap the positions of two tasks on the current Bingo card. |
 | Swift Scout | `mushroom_scout` | Random mushrooms (including nether fungi) grow in a 3 block radius around you. |
@@ -117,7 +117,7 @@ ReBongo: https://github.com/Big-Jls/rebongo
 | Fish God | `dolphin_dash` | Gain permanent Dolphin's Grace II while in water. |
 | Portable Furnace | `portable_furnace` | Gain 'Portable Furnace': right-click to open a furnace screen anywhere. Smelting continues after closing the screen. Its smelting speed is affected by Smelting Speed. |
 | Smelting Speed | `smelt_speed` | Nearby furnaces, blast furnaces and smokers smelt twice as fast. |
-| Meteor | `meteor` | Call down 5-10 amethyst meteors of varying size around you (never more than 500 blocks away). Enemy players get Slowness III while the ground under them crumbles block by block like a real earthquake; you gain a map marking every impact point. The craters spawn armored skeletons whose attacks can hurt players even while invulnerable. |
+| Meteor | `meteor` | Call down 5-10 amethyst meteors of varying size around you (never more than 500 blocks away). Enemy players get Slowness III while the ground under them crumbles block by block like a real earthquake; you gain a map marking every impact point. The craters spawn randomly equipped skeletons whose attacks can hurt players even while invulnerable. |
 | Quality Upgrade | `offer_upgrade` | Your next hex selection is guaranteed to contain at least 1 prismatic hex. Only offered during the first hex selection. |
 | Blind | `blind` | Gain 'Blind': right-click to blind all enemies for 8 seconds. Cooldown 3 minutes. |
 | Is It Over? | `is_it_over` | Teleport to the End outer islands for 10 minutes. You cannot be teleported during this time and return automatically when it ends. |
@@ -130,23 +130,23 @@ ReBongo: https://github.com/Big-Jls/rebongo
 | Ascetic | `ascetic` | Clear all of your team's completed cells and immediately gain 2 random prismatic hexes. Only appears in the third hex selection. |
 | DJ | `dj` | Gain 1 note block and 3 random music discs. |
 | Omen Compatible | `bad_omen` | Gain one level of Bad Omen every 30 seconds, up to level III. |
-| Sniffer Egg | `sniffer_egg` | Gain a sniffer egg; place it on moss to hatch it. |
+| Brother, You Smell Great | `sniffer_egg` | Gain a sniffer egg; place it on moss to hatch it. |
 
 ### Gold (55)
 
 | Name | id | Effect |
 |---|---|---|
 | Immunity Shield | `immunity_shield` | Every 3 minutes, become immune to the next skill-type hex from an opponent. |
-| Forge Master | `inventor` | Tools, weapons and armor you craft in the future gain random enchantments. |
+| Forge Master | `inventor` | When acquired, your current tools, weapons and armor are enchanted; tools, weapons and armor you craft later also gain random enchantments. |
 | Random Teleport | `random_teleport` | Unlocks /bingo rtp: randomly teleport nearby with a 5s cooldown. |
 | Cutting Edge Inventor | `cutting_edge` | All skill-type hex cooldowns are reduced by 50%. |
-| I Want More | `want_more_items` | Gain 10 random items (same weighted pool as the Pet Master pet). |
-| Greater Utility Scope | `scope_2` | Gain +2 block interaction range and +2 entity interaction range. |
+| I Want More | `want_more_items` | Gain 10 random items (same weighted pool as the Minion Master pet). |
+| Greater Utility Scope | `scope_2` | Gain +5 block interaction range and +5 entity interaction range. Stacks with other scopes. |
 | Prismatic Ascension | `prismatic_shift` | Gain a random prismatic hex. |
 | Silver Ascension | `silver_shift` | Immediately gain 2 random silver hexes. |
 | Little Bees | `bees` | Summon 10 angry bees around every enemy team. Bees can sting through invulnerability. |
 | Gluttonous Feast | `gluttonous_feast` | Permanently gain Hunger II. Eating any food grants a random level II buff for 15s, and your body grows a little larger each time. |
-| Big Brain | `big_brain` | All your inventory items become random items for 5s, then are restored. |
+| Big Brain | `big_brain` | All your inventory items become random items for 5s, then are restored. Note: items newly placed in your main inventory during this time are cleared. |
 | Flip the Table? | `flip_table_one` | Reroll one task that no team has completed yet. |
 | Soul Bomb | `soul_bomb` | Gain 3 soul sand, 2 wither skeleton skulls and 1 flint and steel. |
 | All Roads Lead to Rome | `village_road` | Teleport to the nearest village. |
@@ -159,7 +159,7 @@ ReBongo: https://github.com/Big-Jls/rebongo
 | Trapped With Friends | `friends_here` | Each nearby teammate grants +2% speed and Haste I (max +10%). |
 | Dechi Song | `dechi_song` | Plays the villager version of the Dechi song; grants random Luck III-V during it, and all pickaxes in your inventory gain Fortune II-III. |
 | Utopia | `utopia` | Scrambles all your potion effects and grants 5 new permanent random buffs or debuffs. |
-| Rush Rush Rush | `dash_charge` | Gain "Rush Rush Rush": right-click to dash forward for 5 seconds, steering with your view. Blocks in the way are broken and drop (except obsidian and bedrock), and creatures hit take 10 damage. 30 second cooldown after the dash ends. |
+| Rush Rush Rush | `dash_charge` | Gain "Rush Rush Rush": right-click to automatically dash forward for 5 seconds (no forward key needed), steering with your view. Blocks in a 3x3 area along the way are broken and drop (except obsidian and bedrock), and creatures hit take 10 damage. 30 second cooldown after the dash ends. |
 | Soul Out | `soul_out` | Immediately enter spectator mode for 30 seconds to scout freely, then return to the position where you entered spectator mode. |
 | Eighty-One Trials | `eighty_one_trials` | Teleport to the nearest trial chambers. |
 | Chaos Mind | `inventory_shuffle` | Right-click the skill item: randomly shuffle the inventory, offhand and armor slots of all enemy players (items may end up in equipment slots). Bound skill items are unaffected. 8 minute cooldown. |
@@ -180,44 +180,44 @@ ReBongo: https://github.com/Big-Jls/rebongo
 | Wildcard | `wildcard` | Randomly light up one cell on the Bingo card (shared by all teams). |
 | Destiny Dice | `destiny_dice` | Roll a die (revealed after an animation): complete a cell / remove an enemy cell / both complete a cell / reshuffle all cards. |
 | Great Migration | `great_migration` | All players are randomly teleported to overworld positions within 1000 blocks of each other. |
-| Dragon Tamer | `dragon_rider` | Gain a dragon egg; after placing it, it incubates for 3 minutes with a text-display countdown above it, and mining or moving it resets the timer. The hatched baby dragon has a built-in growth bar (shown at the bottom of the screen); its size and flying speed grow with it and it becomes an adult after 5 minutes, right-click with food to speed it up. Baby dragons circle you, break blocks they pass through with drops (but never workstations/containers such as crafting tables, furnaces, anvils or smithing tables, nor obsidian, bedrock or portals), knock back creatures for 4 damage, never attack any player and are fully invulnerable. Once adult, right-click to open the saddle screen, insert a saddle and right-click again to ride: look to steer, W to fly forward, Space to rise, Shift to dismount. While ridden the dragon no longer phases through blocks — blocks it hits are smashed so it keeps flying (ores drop normally, any other block is destroyed without drops and hovering in place does not dig), and circling/natural block breaking pause. |
+| Dragon Tamer | `dragon_rider` | Gain a dragon egg; after placing it, it incubates for 3 minutes with a text-display countdown above it; if it falls, is pushed or teleports, incubation continues at the new position, but destroying it cancels incubation. The hatched baby dragon has a built-in growth bar (shown at the bottom of the screen); its size and flying speed grow with it and it becomes an adult after 5 minutes, right-click with food to speed it up. Baby dragons circle you, break blocks they pass through with drops (but never workstations/containers such as crafting tables, furnaces, anvils or smithing tables, nor obsidian, bedrock or portals), knock back creatures for 4 damage, never attack any player and are fully invulnerable. Once adult, right-click to open the saddle screen, insert a saddle and right-click again to ride: look to steer, W to fly forward, Space to rise, Shift to dismount. While ridden the dragon no longer phases through blocks — blocks it hits are smashed so it keeps flying (ores drop normally, any other block is destroyed without drops and hovering in place does not dig), and circling/natural block breaking pause. |
 | Hatsune Miku | `mangrove_map` | Receive a map pointing to the nearest mangrove swamp biome. |
 | Blackstone Walker | `blackstone_walker` | Walk on lava like Frost Walker: the lava under your feet turns into temporary blackstone that melts back after a few seconds. |
 | Shrink | `shrink` | Gain 'Shrink': right-click to shrink the nearest enemy to 25% size (jump power and interaction range shrink too) for 60 seconds. Cooldown 8 minutes. |
 | Backpack Thief | `backpack_thief` | Gain 'Backpack Thief': right-click to randomly steal 3 items from the nearest enemy's inventory (bound skill items excluded). Cooldown 3 minutes. |
 | Near Line | `near_line` | When your team is 1 cell away from a bingo line, the whole team gains Haste II and Speed I. |
-| Sword Fly | `sword_fly` | Press R to fly by consuming sword durability (order: main hand → offhand → inventory → team backpack, always the lowest-tier sword first): a wooden sword flies 10 seconds at full durability, gold 15s, stone 20s, iron 30s, diamond 45s, netherite 60s. Flight speed ramps up with sword tier, never exceeding elytra speed; the sword being consumed is shown under your feet. |
+| Sword Flight | `sword_fly` | Press R to fly by consuming sword durability (order: main hand → offhand → inventory → team backpack, always the lowest-tier sword first): a wooden sword flies 10 seconds at full durability, gold 15s, stone 20s, iron 30s, diamond 45s, netherite 60s. Flight speed ramps up with sword tier, never exceeding elytra speed; the sword being consumed is shown under your feet. |
 | Hidden Compartment | `hidden_pocket` | Opening a loot chest has a 3% chance to spawn an extra random loot chest near you. |
 | Collector | `collector` | Your attacks instantly execute creatures and players whose current health is below 3% of their maximum. |
-| Fisherman | `fisherman` | Gain a fishing rod enchanted with Luck of the Sea X; fishing reels in anything except fish (same random item pool as Pet Master). |
-| It's Over! | ended | Killing the Ender Dragon immediately ends the current game with the killer's team winning; but in the End your team loses invulnerability — enderman, dragon and fall damage all apply normally (the Overworld and Nether are unaffected). |
+| Fisherman | `fisherman` | Gain a fishing rod enchanted with Luck of the Sea X; fishing reels in anything except fish (same random item pool as Minion Master). |
+| It's Over! | `ended` | Killing the Ender Dragon immediately ends the current game with the killer's team winning; but in the End your team loses invulnerability — enderman, dragon and fall damage all apply normally (the Overworld and Nether are unaffected). |
 
 ### Prismatic (40)
 
 | Name | id | Effect |
 |---|---|---|
 | Iron Chain | `chain_master` | Each completed team task gives a 1% + 0.1% per-completed-task chance (max 50%) to complete 1 adjacent task. |
-| I Really Want It | `want_lots_items` | Gain 15 random items (same weighted pool as the Pet Master pet). |
-| Greatest Utility Scope | `scope_3` | Gain +3 block interaction range and +3 entity interaction range. |
+| I Really Want It | `want_lots_items` | Gain 15 random items (same weighted pool as the Minion Master pet). |
+| Greatest Utility Scope | `scope_3` | Gain +9 block interaction range and +9 entity interaction range. Stacks with other scopes. |
 | Gold Rush | `gold_rush` | Attacking a mob grants 1-3 gold nuggets, 5s cooldown per mob. |
 | Ascension Ritual | `ascension` | Killing a hostile mob grants a random buff. |
 | Still Water Prison | `still_water` | All players can no longer receive any hex rewards. |
 | Pandora's Box | `pandora` | Reroll all of your current hexes. |
 | Goliath | `goliath` | Gain +30% size, max health, block break speed and attack damage. |
 | You Cannot Touch Me | `untouchable` | Right-click the skill item: enemy Bingo teams cannot break blocks for 30s. 5 minute cooldown. |
-| Glass Cannon Bag | `glass_cannon_bag` | The last 18 inventory slots are filled with barrier markers (items are moved out or dropped). Item drops are doubled. |
+| Glass Cannon Bag | `glass_cannon_bag` | The last 18 inventory slots are filled with barrier markers (items are moved out or dropped). Item drops are 8x, further boosted by Fortune and Luck (+25% per level). |
 | Back to Basics | `back_to_basics` | You cannot use a crafting table, but item drops are doubled (boosted by Looting) and you gain permanent Speed I. |
 | Archmage | `archmage` | After crafting, each material has a 10% chance to be refunded. |
-| Pet Master | `pet_master` | Gain an invincible pet that gives you a random item from the full item pool every 8s (valuable items are rarer). |
+| Minion Master | `pet_master` | Gain an invincible pet that gives you a random item from the full item pool every 8s (valuable items are rarer). |
 | Crown Me King | `crown_me_king` | A beacon marks an enemy position. Reach it to gain a prismatic hex, a randomly enchanted diamond armor set, an Efficiency IV diamond pickaxe and a Sharpness IV / Fire Aspect I diamond sword. |
 | Flip the Table! | `flip_table` | Reroll every task that no team has completed. |
 | OK Boomerang | `boomerang_biome` | Gain OK Boomerang: throw it toward an unfinished biome task and it returns. |
-| Trapped With Me | `rainbow_duel` | Gain a bound chain. Right-click to enter a bedrock duel with the nearest enemy; PvP is allowed, whoever dies first loses, the winner leaves at once, and both leave after 5 minutes without PvP. 3 minute cooldown. |
+| Trapped With Me | `rainbow_duel` | Gain a bound chain. Right-click to enter a bedrock duel with the nearest enemy; PvP is allowed, whoever dies first loses and is jailed for an extra 20 seconds after respawning, the winner leaves at once, and both leave after 5 minutes without PvP. 3 minute cooldown. |
 | Fey Magic | `fae_magic` | Gain Fey Magic: right-click to turn the enemy team into critters for 1 minute. 5 minute cooldown. |
 | Chinese Can Fly | `chinese_can_fly` | Gain an unbreakable elytra and one bound firework rocket that is always replenished. |
 | Spy | `spy` | Use /bingo spy <teammate> <enemy> to swap their positions and inventories. Bound items stay with their owner. Once per game. |
 | Common Wealth | `common_wealth` | Confiscate everyone's inventory items into a common pool, then redistribute them randomly. |
-| Chaos Shift | `chaos_shift` | Gain two random hexes of random colors. |
+| Chaos Shift | `chaos_shift` | Gain two random hexes. |
 | CV Engineer | `task_copy` | Randomly copies a task an opponent has completed but your team has not; in Lockout mode, directly claims that slot instead. |
 | Dimensional Banish | `nether_banish` | Banish one player from each enemy team to a random place in the Nether for 1 minute. Cooldown: 8 minutes. |
 | The World! | `the_world` | Gain the "The World" time-stop skill; right-click to stop time for 8 seconds so only you can move. Cooldown: 3 minutes. |
@@ -250,7 +250,7 @@ ReBongo: https://github.com/Big-Jls/rebongo
 Requires JDK 25, a NeoForge 26.2.0.93 installation, official LibX and a built ReBongo jar:
 
 ```powershell
-.\build.ps1 -Version 26.2-1.49.24 `
+.\build.ps1 -Version 26.2-1.49.25 `
   -MinecraftDir "D:\minecraft\.minecraft" `
   -NeoForgeVersion "26.2-NeoForge_26.2.0.93" `
   -LibXJar "D:\minecraft\.minecraft\versions\26.2-NeoForge_26.2.0.93\mods\LibX-26.2-8.0.0.jar" `
