@@ -44,7 +44,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 
 1. 安装 NeoForge 26.2.0.93+ 与官方 LibX 26.2-8.0.0。
 2. 安装 ReBongo（`ReBongo-26.2-1.0.0-port.12.jar`，`modId` 为 `bongo`）。
-3. 把 `HexBingo-26.2-1.49.26.jar` 放入客户端与服务端的 `mods`。
+3. 把 `HexBingo-26.2-1.49.27.jar` 放入客户端与服务端的 `mods`。
 4. 开一局 海克斯Bingo：/bingo create bongo:<难度> bongo:mayhem
 5. 按提示选择海克斯。
 
@@ -60,15 +60,11 @@ ReBongo：https://github.com/Big-Jls/rebongo
 
 | 命令 | 权限 | 说明 |
 |---|---|---|
-| `/bingo hex` | 所有人 | 重新打开当前待选的三选一界面（对应第 1 / 5 / 10 / 15 分钟那几次奖励） |
+| `/bingo hex` | 所有人 | 重新打开当前的海克斯三选一界面（仅在有未选择奖励时可用） |
 | `/bingo hexes` | **OP** | 自由选择：从你尚未拥有的海克斯里挑一个 |
-| `/bingo hexall` | **OP** | 给**所有在线玩家**各打开一次自由选择界面，每人从自己未拥有的海克斯里选一个 |
 | `/bingo rtp` | 所有人 | 随机传送（需对应海克斯） |
-| `/bingo hook` | 所有人 | 钩爪（需对应海克斯） |
 | `/bingo boomerang` | 所有人 | 回旋镖（需对应海克斯） |
-| `/bingo spy <队友> <目标>` | 所有人 | 间谍交换 |
-
-> `/bingo hexall` 不是 K 键的名单：K 只查看，`hexall` 是管理员给全服每人发一次「自由选一个」的机会。
+| `/bingo spy <队友> <目标>` | 所有人 | 间谍交换（需对应海克斯） |
 
 <!-- HEX-TABLE-START -->
 ## 海克斯一览（150）
@@ -87,7 +83,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 | 更万用瞄准镜 | `scope_1` | 方块交互距离 +2，实体交互距离 +2。可与其他瞄准镜叠加。 |
 | 家园卫士 | `homeguard` | 持续奔跑时越跑越快，每跑 10 秒提升一级，停止 0.2 秒后失去加速，最高速度 IV。 |
 | 叠角龙 | `stack_dragon` | 每击杀一个生物累计 1 层，每 15 层获得一个战利品箱，层数越高奖励越好。 |
-| 转到我眩晕了 | `hook_dizzy` | 获得 /bingo hook：把你拉向准星指向的方块，冷却 5 秒。 |
+| 转到我眩晕了 | `hook_dizzy` | 获得「转到我眩晕了」：右键把你拉向准星指向的方块，冷却 5 秒。 |
 | 珍珠储备 | `pearl_stock` | 获得 8 个末影珍珠和 2 个烈焰粉。 |
 | 练手日 | `practice_day` | 永久获得急迫 I。 |
 | 地狱无门闯进来 | `nether_start` | 立即被传送到地狱，并禁用 /tp、/bp 与 /bingo tp；必须活着返回主世界才会解除，在地狱死亡会被送回地狱。 |
@@ -253,7 +249,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 需要 JDK 25、NeoForge 26.2.0.93 安装、官方 LibX 与已构建的 ReBongo jar：
 
 ```powershell
-.\build.ps1 -Version 26.2-1.49.26 `
+.\build.ps1 -Version 26.2-1.49.27 `
   -MinecraftDir "D:\minecraft\.minecraft" `
   -NeoForgeVersion "26.2-NeoForge_26.2.0.93" `
   -LibXJar "D:\minecraft\.minecraft\versions\26.2-NeoForge_26.2.0.93\mods\LibX-26.2-8.0.0.jar" `
@@ -287,6 +283,11 @@ ReBongo：https://github.com/Big-Jls/rebongo
 感谢以下小伙伴对本模组的测试支持（排名不分先后）：summerH8、FoxTwoSour、Crawling_Fish、HikaQ 等。
 
 ## 更新日志
+
+### 1.49.27 调整
+
+- **指令与文档**：README 移除已不存在的 `/bingo hexall` 与 `/bingo hook`；钩爪改为右键技能物品说明，与代码实际注册的 `/bingo hex`、`/bingo hexes`、`/bingo rtp`、`/bingo boomerang`、`/bingo spy` 对齐。
+- 新增 CurseForge 用的 logo（`docs/logo-400.png`）。
 
 ### 1.49.26 调整
 

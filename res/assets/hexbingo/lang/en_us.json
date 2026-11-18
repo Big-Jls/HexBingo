@@ -253,7 +253,7 @@
     "hexbingo.hex.crown_me_king.name":  "Crown Me King",
     "hexbingo.hex.crown_me_king.desc":  "A beacon marks an enemy position. Reach it to gain a prismatic hex, a randomly enchanted diamond armor set, an Efficiency IV diamond pickaxe and a Sharpness IV / Fire Aspect I diamond sword.",
     "hexbingo.hex.hook_dizzy.name":  "Hook Dizzy",
-    "hexbingo.hex.hook_dizzy.desc":  "Unlocks /bingo hook: pull yourself toward the block you are looking at. 5s cooldown.",
+    "hexbingo.hex.hook_dizzy.desc":  "Gain 'Hook Dizzy': right-click to pull yourself toward the block you are looking at. 5s cooldown.",
     "hexbingo.hex.flip_table.name":  "Flip the Table!",
     "hexbingo.hex.flip_table.desc":  "Reroll every task that no team has completed.",
     "hexbingo.hex.flip_table_one.name":  "Flip the Table?",

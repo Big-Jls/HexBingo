@@ -1,5 +1,16 @@
 # Changelog
 
+## 26.2-1.49.27 — 2026-11-18
+
+### Fixed
+
+- **Command documentation**: removed `/bingo hexall` and `/bingo hook` from
+  the READMEs; neither command is registered any more. The Hook Dizzy hex is
+  now described as a right-click skill item. The documented commands now match
+  the code: `/bingo hex`, `/bingo hexes`, `/bingo rtp`, `/bingo boomerang`
+  and `/bingo spy`.
+- Added the CurseForge logo asset (`docs/logo-400.png`).
+
 ## 26.2-1.49.26 — 2026-11-18
 
 ### Fixed

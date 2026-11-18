@@ -44,7 +44,7 @@ ReBongo: https://github.com/Big-Jls/rebongo
 
 1. Install NeoForge 26.2.0.93+ and official LibX 26.2-8.0.0.
 2. Install ReBongo (`ReBongo-26.2-1.0.0-port.12.jar`, `modId` is `bongo`).
-3. Put `HexBingo-26.2-1.49.26.jar` into the client and server `mods` folders.
+3. Put `HexBingo-26.2-1.49.27.jar` into the client and server `mods` folders.
 4. Start a Hex Bingo match: `/bingo create bongo:<difficulty> bongo:mayhem`.
 5. Pick hexes when prompted.
 
@@ -60,15 +60,11 @@ ReBongo: https://github.com/Big-Jls/rebongo
 
 | Command | Permission | Description |
 |---|---|---|
-| `/bingo hex` | Everyone | Reopen the current pick-one-of-three screen (for the 1st / 5th / 10th / 15th minute rewards) |
+| `/bingo hex` | Everyone | Reopen the current hex selection screen (only while a pick is pending) |
 | `/bingo hexes` | **OP** | Free pick: choose one hex you do not own yet |
-| `/bingo hexall` | **OP** | Open the free-pick screen for **every online player**, each choosing from their own unowned hexes |
 | `/bingo rtp` | Everyone | Random teleport (requires the matching hex) |
-| `/bingo hook` | Everyone | Grappling hook (requires the matching hex) |
 | `/bingo boomerang` | Everyone | Boomerang (requires the matching hex) |
-| `/bingo spy <teammate> <target>` | Everyone | Spy swap |
-
-> `/bingo hexall` is not the K roster: K only displays information, while `hexall` lets an admin give every player one free pick.
+| `/bingo spy <teammate> <target>` | Everyone | Spy swap (requires the matching hex) |
 
 ## Hex list
 
@@ -86,7 +82,7 @@ ReBongo: https://github.com/Big-Jls/rebongo
 | Utility Scope | `scope_1` | Gain +2 block interaction range and +2 entity interaction range. Stacks with other scopes. |
 | Homeguard | `homeguard` | Gain speed while running continuously; each 10s raises the speed level. Stop for 0.2s and it fades. Max Speed IV. |
 | Stack Dragon | `stack_dragon` | Each mob kill adds a stack; every 15 stacks grants a loot chest. Higher stacks mean better loot. |
-| Hook Dizzy | `hook_dizzy` | Unlocks /bingo hook: pull yourself toward the block you are looking at. 5s cooldown. |
+| Hook Dizzy | `hook_dizzy` | Gain 'Hook Dizzy': right-click to pull yourself toward the block you are looking at. 5s cooldown. |
 | Pearl Stock | `pearl_stock` | Gain 8 ender pearls and 2 blaze powder. |
 | Practice Day | `practice_day` | Permanent Haste I. |
 | Breaking Into Hell | `nether_start` | Immediately sent to the Nether; /tp, /bp and /bingo tp are disabled until you return to the Overworld alive. Dying in the Nether sends you back. |
@@ -250,7 +246,7 @@ ReBongo: https://github.com/Big-Jls/rebongo
 Requires JDK 25, a NeoForge 26.2.0.93 installation, official LibX and a built ReBongo jar:
 
 ```powershell
-.\build.ps1 -Version 26.2-1.49.26 `
+.\build.ps1 -Version 26.2-1.49.27 `
   -MinecraftDir "D:\minecraft\.minecraft" `
   -NeoForgeVersion "26.2-NeoForge_26.2.0.93" `
   -LibXJar "D:\minecraft\.minecraft\versions\26.2-NeoForge_26.2.0.93\mods\LibX-26.2-8.0.0.jar" `

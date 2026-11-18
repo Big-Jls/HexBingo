@@ -253,7 +253,7 @@
     "hexbingo.hex.crown_me_king.name":  "尊我为王",
     "hexbingo.hex.crown_me_king.desc":  "敌方位置出现信标光柱，抵达后获得一个彩色海克斯、一套随机附魔钻石盔甲、效率 IV 钻石镐与锋利 IV/火焰附加 I 钻石剑。",
     "hexbingo.hex.hook_dizzy.name":  "转到我眩晕了",
-    "hexbingo.hex.hook_dizzy.desc":  "获得 /bingo hook：把你拉向准星指向的方块，冷却 5 秒。",
+    "hexbingo.hex.hook_dizzy.desc":  "获得「转到我眩晕了」：右键把你拉向准星指向的方块，冷却 5 秒。",
     "hexbingo.hex.flip_table.name":  "掀桌子！",
     "hexbingo.hex.flip_table.desc":  "重新随机所有未被任意队伍完成的任务。",
     "hexbingo.hex.flip_table_one.name":  "掀桌子？",
