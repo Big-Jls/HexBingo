@@ -1,5 +1,15 @@
 # Changelog
 
+## 26.2-1.49.26 — 2026-11-18
+
+### Fixed
+
+- **Hex selection screen (English)**: the per-card hint text now wraps to the
+  card width and is bottom-aligned, so `Hover a card for details` no longer
+  overlaps the neighbouring cards or overflows the card border.
+- The gap between the three hex cards was increased from 6 to 14 pixels;
+  click and hover hitboxes use the same constants as the rendering.
+
 ## 26.2-1.49.25 — 2026-11-18
 
 ### Fixed

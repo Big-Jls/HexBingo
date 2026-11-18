@@ -22,7 +22,8 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 public class HexSelectScreen extends Screen {
    private static final int CARD_W = 88;
    private static final int CARD_H = 138;
-   private static final int GAP = 6;
+   private static final int GAP = 14;
+   private static final int STEP = CARD_W + GAP;
    private static final int BUTTON_W = 100;
    private static final int BUTTON_H = 18;
    private final int rewardIndex;
@@ -53,33 +54,39 @@ public class HexSelectScreen extends Screen {
       int var9 = this.startX();
 
       for (int var10 = 0; var10 < this.hexes.size(); var10++) {
-         int var11 = var9 + var10 * 94;
-         boolean var12 = var2 >= var11 && var2 < var11 + 88 && var3 >= var5 && var3 < var5 + 138;
+         int var11 = var9 + var10 * STEP;
+         boolean var12 = var2 >= var11 && var2 < var11 + CARD_W && var3 >= var5 && var3 < var5 + CARD_H;
          if (var12) {
             var8 = var10;
          }
 
          if (var10 == this.selected) {
-            var1.fill(var11 - 2, var5 - 2, var11 + 88 + 2, var5 + 138 + 2, -10496);
+            var1.fill(var11 - 2, var5 - 2, var11 + CARD_W + 2, var5 + CARD_H + 2, -10496);
          }
 
          Hex var13 = this.hexes.get(var10);
-         var1.fill(var11, var5, var11 + 88, var5 + 138, !var12 && var10 != this.selected ? -15198176 : -13882310);
-         this.drawBorder(var1, var11, var5, 88, 138, var13.color());
-         var1.centeredText(this.font, Component.translatable("hexbingo.color." + var13.color().id), var11 + 44, var5 + 9, var13.color().rgb);
+         var1.fill(var11, var5, var11 + CARD_W, var5 + CARD_H, !var12 && var10 != this.selected ? -15198176 : -13882310);
+         this.drawBorder(var1, var11, var5, CARD_W, CARD_H, var13.color());
+         var1.centeredText(this.font, Component.translatable("hexbingo.color." + var13.color().id), var11 + CARD_W / 2, var5 + 9, var13.color().rgb);
          MutableComponent var14 = Component.translatable("hexbingo.hex." + var13.id() + ".name");
-         List<FormattedCharSequence> var15 = this.font.split(var14, 76);
+         List<FormattedCharSequence> var15 = this.font.split(var14, CARD_W - 12);
          int var16 = var5 + 9 + 9 + 7;
 
          for (FormattedCharSequence var18 : var15) {
-            var1.centeredText(this.font, var18, var11 + 44, var16, -1);
+            var1.centeredText(this.font, var18, var11 + CARD_W / 2, var16, -1);
             var16 += 9;
          }
 
          MutableComponent var19 = Component.translatable(
             var10 == this.selected ? "hexbingo.select.selected" : (var12 ? "hexbingo.select.click" : "hexbingo.select.hover")
          );
-         var1.centeredText(this.font, var19, var11 + 44, var5 + 138 - 18, var10 == this.selected ? -10496 : (var12 ? -10496 : -7303024));
+         List<FormattedCharSequence> var20 = this.font.split(var19, CARD_W - 8);
+         int var21 = var5 + CARD_H - 6 - var20.size() * 9;
+
+         for (FormattedCharSequence var22 : var20) {
+            var1.centeredText(this.font, var22, var11 + CARD_W / 2, var21, var10 == this.selected ? -10496 : (var12 ? -10496 : -7303024));
+            var21 += 9;
+         }
       }
 
       this.drawConfirmButton(var1, var2, var3);
@@ -171,8 +178,8 @@ public class HexSelectScreen extends Screen {
       int var6 = this.startX();
 
       for (int var7 = 0; var7 < this.hexes.size(); var7++) {
-         int var8 = var6 + var7 * 94;
-         if (var1 >= var8 && var1 < var8 + 88 && var3 >= var5 && var3 < var5 + 138) {
+         int var8 = var6 + var7 * STEP;
+         if (var1 >= var8 && var1 < var8 + CARD_W && var3 >= var5 && var3 < var5 + CARD_H) {
             return var7;
          }
       }
@@ -182,7 +189,7 @@ public class HexSelectScreen extends Screen {
 
    private int startX() {
       int var1 = this.hexes.size();
-      return (this.width - (88 * var1 + 6 * (var1 - 1))) / 2;
+      return (this.width - (CARD_W * var1 + GAP * (var1 - 1))) / 2;
    }
 
    private int cardY() {
@@ -194,7 +201,7 @@ public class HexSelectScreen extends Screen {
    }
 
    private int buttonY() {
-      return Math.min(this.height - 42, this.cardY() + 138 + 10);
+      return Math.min(this.height - 42, this.cardY() + CARD_H + 10);
    }
 
    private int refreshX() {

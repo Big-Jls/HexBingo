@@ -44,7 +44,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 
 1. 安装 NeoForge 26.2.0.93+ 与官方 LibX 26.2-8.0.0。
 2. 安装 ReBongo（`ReBongo-26.2-1.0.0-port.12.jar`，`modId` 为 `bongo`）。
-3. 把 `HexBingo-26.2-1.49.25.jar` 放入客户端与服务端的 `mods`。
+3. 把 `HexBingo-26.2-1.49.26.jar` 放入客户端与服务端的 `mods`。
 4. 开一局 海克斯Bingo：/bingo create bongo:<难度> bongo:mayhem
 5. 按提示选择海克斯。
 
@@ -253,7 +253,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 需要 JDK 25、NeoForge 26.2.0.93 安装、官方 LibX 与已构建的 ReBongo jar：
 
 ```powershell
-.\build.ps1 -Version 26.2-1.49.25 `
+.\build.ps1 -Version 26.2-1.49.26 `
   -MinecraftDir "D:\minecraft\.minecraft" `
   -NeoForgeVersion "26.2-NeoForge_26.2.0.93" `
   -LibXJar "D:\minecraft\.minecraft\versions\26.2-NeoForge_26.2.0.93\mods\LibX-26.2-8.0.0.jar" `
@@ -287,6 +287,11 @@ ReBongo：https://github.com/Big-Jls/rebongo
 感谢以下小伙伴对本模组的测试支持（排名不分先后）：summerH8、FoxTwoSour、Crawling_Fish、HikaQ 等。
 
 ## 更新日志
+
+### 1.49.26 调整
+
+- **海克斯选择界面（英文）**：卡片底部提示文字按卡片宽度自动换行并底部对齐，`Hover a card for details` 不再与相邻卡片重叠或超出边框。
+- 三张海克斯卡片之间的间距由 6 像素增至 14 像素；点击与悬停判定统一使用与渲染相同的尺寸常量。
 
 ### 1.49.25 调整
 
