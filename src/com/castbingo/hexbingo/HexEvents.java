@@ -478,8 +478,6 @@ public class HexEvents {
          return true;
       } else if (var1.is(Items.SPYGLASS) && var2.equals("矿物透视")) {
          return HexEffects.castXray(var0);
-      } else if (var1.is(Items.SLIME_BALL) && var2.equals("缩小术")) {
-         return HexEffects.castShrink(var0);
       } else if (var1.is(Items.BUNDLE) && var2.equals("背包小偷")) {
          return HexEffects.castBackpackThief(var0);
       } else if (var1.is(Items.BARRIER) && var2.equals("全是我的")) {
@@ -607,7 +605,6 @@ public class HexEvents {
       HexEffects.tickAdvances(var1.getServer());
       HexEffects.tickDragons(var1.getServer());
       HexEffects.tickIncubations(var1.getServer());
-      HexEffects.tickShrinks(var1.getServer());
       HexEffects.tickBlackstone(var1.getServer());
    }
 
@@ -657,7 +654,6 @@ public class HexEvents {
          HexEffects.onBatLogout(var2);
          HexEffects.onTrapLogout(var2);
          HexEffects.onSoulLogout(var2);
-         HexEffects.onShrinkLogout(var2);
          HexManager.onLogout(var2);
       }
    }
@@ -667,14 +663,6 @@ public class HexEvents {
       if (var1.getEntity() instanceof ServerPlayer var2) {
          HexEffects.onTrapRespawn(var2);
          HexEffects.onNetherRespawn(var2);
-      }
-   }
-
-   // 缩小术：被缩小的玩家起跳初速度减半，跳跃高度约为原来的 25%
-   @SubscribeEvent
-   public void livingJump(net.minecraftforge.event.entity.living.LivingEvent.LivingJumpEvent var1) {
-      if (var1.getEntity() instanceof ServerPlayer var2 && HexEffects.isShrunk(var2)) {
-         var2.setDeltaMovement(var2.getDeltaMovement().multiply(1.0, 0.5, 1.0));
       }
    }
 

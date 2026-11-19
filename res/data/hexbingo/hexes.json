@@ -1330,15 +1330,6 @@
                                   ]
                   },
                   {
-                      "id":  "shrink",
-                      "color":  "gold",
-                      "effects":  [
-                                      {
-                                          "type":  "shrink"
-                                      }
-                                  ]
-                  },
-                  {
                       "id":  "bad_omen",
                       "color":  "silver",
                       "effects":  [

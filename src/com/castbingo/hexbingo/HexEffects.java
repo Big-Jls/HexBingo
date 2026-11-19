@@ -460,8 +460,6 @@ public final class HexEffects {
    private static final String XRAY_TAG = "hexbingo_xray_marker";
    // 全是我的：已使用玩家与被锁定任务下标由 HexGameData 持久化（跨重启保留小锁）
    // 缩小术：被缩小玩家 -> 到期时间
-   private static final Map<UUID, Long> SHRINK_UNTIL = new HashMap<>();
-   private static final Map<UUID, Long> SHRINK_COOLDOWN = new HashMap<>();
    // 背包小偷
    private static final Map<UUID, Long> THIEF_COOLDOWN = new HashMap<>();
    // 潘是对的：一次性全队重掷标记
@@ -1055,10 +1053,6 @@ public final class HexEffects {
          // 黑石行者
          case "blackstone_walker":
             var0.sendSystemMessage(Component.translatable("hexbingo.msg.blackstone_walker").withStyle(ChatFormatting.GOLD));
-            break;
-         // 缩小术
-         case "shrink":
-            giveShrinkItem(var0);
             break;
          // 兼容灾厄
          case "bad_omen":
@@ -6236,10 +6230,6 @@ public final class HexEffects {
          giveXrayItem(var0);
       }
 
-      if (hasHex(var0, "shrink") && !hasNamedItem(var0, "缩小术")) {
-         giveShrinkItem(var0);
-      }
-
       if (hasHex(var0, "backpack_thief") && !hasNamedItem(var0, "背包小偷")) {
          giveThiefItem(var0);
       }
@@ -10977,7 +10967,7 @@ public final class HexEffects {
             }
          }
 
-         var4.sort((var5x, var6x) -> 0);
+         Collections.shuffle(var4, ThreadLocalRandom.current());
          Set<Task> var7 = TASK_SHIELDS.computeIfAbsent(var3.color.getName(), var0x -> new HashSet<>());
          MutableComponent var8 = Component.empty();
          int var9 = 0;
@@ -11789,114 +11779,6 @@ public final class HexEffects {
       }
    }
 
-   // 缩小术：右键把最近敌人缩小到 25%（体型、跳跃与交互范围同步缩小），持续 60 秒
-   private static void giveShrinkItem(ServerPlayer var0) {
-      if (!hasNamedItem(var0, "缩小术")) {
-         var0.addItem(questItem(Items.SLIME_BALL, "缩小术", "hexbingo.item.shrink.lore"));
-         var0.sendSystemMessage(Component.translatable("hexbingo.msg.shrink_item").withStyle(ChatFormatting.LIGHT_PURPLE));
-      }
-   }
-
-   public static boolean castShrink(ServerPlayer var0) {
-      if (!hasHex(var0, "shrink")) {
-         return false;
-      }
-
-      long var1 = System.currentTimeMillis();
-      Long var3 = SHRINK_COOLDOWN.get(var0.getUUID());
-      if (var3 != null && var1 < var3) {
-         long var4 = (var3 - var1 + 999L) / 1000L;
-         var0.sendSystemMessage(Component.translatable("hexbingo.msg.shrink_cooldown", var4).withStyle(ChatFormatting.GRAY));
-         return true;
-      }
-
-      ServerPlayer var6 = nearestEnemy(var0, -1.0);
-      if (var6 == null) {
-         var0.sendSystemMessage(Component.translatable("hexbingo.msg.shrink_none").withStyle(ChatFormatting.GRAY));
-         return true;
-      }
-
-      if (shieldBlocks(var6, "shrink")) {
-         return true;
-      }
-
-      SHRINK_UNTIL.put(var6.getUUID(), var1 + 60000L);
-      SHRINK_COOLDOWN.put(var0.getUUID(), var1 + skillCooldown(var0, 480000L));
-      applyShrinkModifiers(var6, true);
-      var0.sendSystemMessage(Component.translatable("hexbingo.msg.shrink_cast", var6.getDisplayName()).withStyle(ChatFormatting.LIGHT_PURPLE));
-      var6.sendSystemMessage(Component.translatable("hexbingo.msg.shrunk").withStyle(ChatFormatting.DARK_PURPLE));
-      return true;
-   }
-
-   private static void applyShrinkModifiers(ServerPlayer var0, boolean var1) {
-      AttributeInstance var2 = var0.getAttribute(HexAttributes.SCALE.get());
-      if (var2 != null) {
-         if (var1) {
-            Attr.addOrUpdate(var2, new AttributeModifier(modifierId("shrink", 0), "hexbingo", -0.75, Operation.MULTIPLY_BASE));
-         } else {
-            var2.removeModifier(modifierId("shrink", 0));
-         }
-      }
-
-      AttributeInstance var3 = var0.getAttribute(net.minecraftforge.common.ForgeMod.BLOCK_REACH.get());
-      if (var3 != null) {
-         if (var1) {
-            Attr.addOrUpdate(var3, new AttributeModifier(modifierId("shrink", 1), "hexbingo", -0.75, Operation.MULTIPLY_BASE));
-         } else {
-            var3.removeModifier(modifierId("shrink", 1));
-         }
-      }
-
-      AttributeInstance var4 = var0.getAttribute(net.minecraftforge.common.ForgeMod.ENTITY_REACH.get());
-      if (var4 != null) {
-         if (var1) {
-            Attr.addOrUpdate(var4, new AttributeModifier(modifierId("shrink", 2), "hexbingo", -0.75, Operation.MULTIPLY_BASE));
-         } else {
-            var4.removeModifier(modifierId("shrink", 2));
-         }
-      }
-
-      // 描述要求跳跃高度同步缩小，否则只有体型变小、跳跃依旧
-      AttributeInstance var5 = var0.getAttribute(Attributes.JUMP_STRENGTH);
-      if (var5 != null) {
-         if (var1) {
-            Attr.addOrUpdate(var5, new AttributeModifier(modifierId("shrink", 3), "hexbingo", -0.75, Operation.MULTIPLY_BASE));
-         } else {
-            var5.removeModifier(modifierId("shrink", 3));
-         }
-      }
-   }
-
-   public static boolean isShrunk(ServerPlayer var0) {
-      return SHRINK_UNTIL.containsKey(var0.getUUID());
-   }
-
-   public static void tickShrinks(MinecraftServer var0) {
-      if (SHRINK_UNTIL.isEmpty()) {
-         return;
-      }
-
-      long var1 = System.currentTimeMillis();
-
-      for (UUID var4 : new ArrayList<>(SHRINK_UNTIL.keySet())) {
-         Long var5 = SHRINK_UNTIL.get(var4);
-         if (var5 == null || var1 >= var5) {
-            SHRINK_UNTIL.remove(var4);
-            ServerPlayer var6 = var0.getPlayerList().getPlayer(var4);
-            if (var6 != null) {
-               applyShrinkModifiers(var6, false);
-               var6.sendSystemMessage(Component.translatable("hexbingo.msg.shrink_end").withStyle(ChatFormatting.GREEN));
-            }
-         }
-      }
-   }
-
-   public static void onShrinkLogout(ServerPlayer var0) {
-      if (SHRINK_UNTIL.remove(var0.getUUID()) != null) {
-         applyShrinkModifiers(var0, false);
-      }
-   }
-
    // 兼容灾厄：每 30 秒不祥之兆 +1 级，最高 III
    private static void tickBadOmen(ServerPlayer var0) {
       MobEffectInstance var1 = var0.getEffect(MobEffects.BAD_OMEN);
@@ -12647,8 +12529,6 @@ public final class HexEffects {
       DENY_COOLDOWN.clear();
       XRAY_UNTIL.clear();
       XRAY_COOLDOWN.clear();
-      SHRINK_UNTIL.clear();
-      SHRINK_COOLDOWN.clear();
       THIEF_COOLDOWN.clear();
       PAN_USED.clear();
       HexGameData.get(var0).clearSealed();
@@ -12659,7 +12539,6 @@ public final class HexEffects {
          endEndExile(var2, false);
          endSwordFly(var2, false);
          clearXrayMarkers(var2);
-         applyShrinkModifiers(var2, false);
       }
 
       HexGameData.get(var0).clearAllMineLocks();

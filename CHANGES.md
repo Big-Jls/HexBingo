@@ -17,10 +17,13 @@
 
 - 1.20.1 has no PVP gamerule and official Bongo has no `WinCondition.LOCK`;
   the related branches were removed.
-- Removed `pale_garden_map` (Red Light, Green Light) and `eighty_one_trials`
-  (Trial Chambers) because the Pale Garden biome and Trial Chambers structure
-  do not exist in 1.20.1. Total is now 148 hexes
-  (54 silver / 54 gold / 40 prismatic).
+- Removed `pale_garden_map` (Red Light, Green Light), `eighty_one_trials`
+  (Trial Chambers) and `shrink` because the Pale Garden biome, Trial Chambers
+  structure and the `SCALE` attribute do not exist in 1.20.1. Total is now
+  147 hexes (54 silver / 53 gold / 40 prismatic).
+- `gluttonous_feast` now states that the body cannot grow in 1.20.1.
+- `task_shield` now protects three random tasks instead of the
+  highest-weight tasks (official Bongo has no task weight).
 - Wolf/cat variants, pale garden, trial spawner and vault do not exist in
   1.20.1; substitutes are used where possible and those hexes are skipped
   otherwise.

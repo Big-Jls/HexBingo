@@ -15,7 +15,7 @@
 
 ## What is this
 
-An add-on for [ReBongo](https://github.com/Big-Jls/rebongo) (the NeoForge 26.2 port of Bongo) that adds **148 hex augments**: 54 silver / 54 gold / 40 prismatic. It includes a pick-one-of-three screen, skill items, passive effects, and both task-based and combat-based augments.
+An add-on for [ReBongo](https://github.com/Big-Jls/rebongo) (the NeoForge 26.2 port of Bongo) that adds **147 hex augments**: 54 silver / 53 gold / 40 prismatic. It includes a pick-one-of-three screen, skill items, passive effects, and both task-based and combat-based augments.
 
 ## Gameplay
 
@@ -179,7 +179,6 @@ ReBongo: https://github.com/Big-Jls/rebongo
 | Dragon Tamer | `dragon_rider` | Gain a dragon egg; after placing it, it incubates for 3 minutes with a text-display countdown above it; if it falls, is pushed or teleports, incubation continues at the new position, but destroying it cancels incubation. The hatched baby dragon has a built-in growth bar (shown at the bottom of the screen); its size and flying speed grow with it and it becomes an adult after 5 minutes, right-click with food to speed it up. Baby dragons circle you, break blocks they pass through with drops (but never workstations/containers such as crafting tables, furnaces, anvils or smithing tables, nor obsidian, bedrock or portals), knock back creatures for 4 damage, never attack any player and are fully invulnerable. Once adult, right-click to open the saddle screen, insert a saddle and right-click again to ride: look to steer, W to fly forward, Space to rise, Shift to dismount. While ridden the dragon no longer phases through blocks — blocks it hits are smashed so it keeps flying (ores drop normally, any other block is destroyed without drops and hovering in place does not dig), and circling/natural block breaking pause. |
 | Hatsune Miku | `mangrove_map` | Receive a map pointing to the nearest mangrove swamp biome. |
 | Blackstone Walker | `blackstone_walker` | Walk on lava like Frost Walker: the lava under your feet turns into temporary blackstone that melts back after a few seconds. |
-| Shrink | `shrink` | Gain 'Shrink': right-click to shrink the nearest enemy to 25% size (jump power and interaction range shrink too) for 60 seconds. Cooldown 8 minutes. |
 | Backpack Thief | `backpack_thief` | Gain 'Backpack Thief': right-click to randomly steal 3 items from the nearest enemy's inventory (bound skill items excluded). Cooldown 3 minutes. |
 | Near Line | `near_line` | When your team is 1 cell away from a bingo line, the whole team gains Haste II and Speed I. |
 | Sword Flight | `sword_fly` | Press R to fly by consuming sword durability (order: main hand → offhand → inventory → team backpack, always the lowest-tier sword first): a wooden sword flies 10 seconds at full durability, gold 15s, stone 20s, iron 30s, diamond 45s, netherite 60s. Flight speed ramps up with sword tier, never exceeding elytra speed; the sword being consumed is shown under your feet. |
