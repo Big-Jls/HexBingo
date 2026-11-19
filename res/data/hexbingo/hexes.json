@@ -1237,15 +1237,6 @@
                                   ]
                   },
                   {
-                      "id":  "pale_garden_map",
-                      "color":  "silver",
-                      "effects":  [
-                                      {
-                                          "type":  "pale_garden_map"
-                                      }
-                                  ]
-                  },
-                  {
                       "id":  "advance_victory",
                       "color":  "silver",
                       "effects":  [

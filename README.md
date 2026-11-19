@@ -15,7 +15,7 @@
 
 ## 简介
 
-为 [ReBongo](https://github.com/Big-Jls/rebongo)（Bongo 的 NeoForge 26.2 移植版）增加 **150 个海克斯强化**：55 银色 / 55 金色 / 40 彩色。包含三选一选择界面、技能物品、被动效果，以及任务类与战斗类强化。
+为 [ReBongo](https://github.com/Big-Jls/rebongo)（Bongo 的 NeoForge 26.2 移植版）增加 **149 个海克斯强化**：54 银色 / 55 金色 / 40 彩色。包含三选一选择界面、技能物品、被动效果，以及任务类与战斗类强化。
 
 ## 玩法
 
@@ -69,7 +69,7 @@ ReBongo：https://github.com/Big-Jls/rebongo
 | `/bingo spy <队友> <目标>` | 所有人 | 间谍交换（需对应海克斯） |
 
 <!-- HEX-TABLE-START -->
-## 海克斯一览（150）
+## 海克斯一览（149）
 
 ### 银色（55）
 
@@ -122,7 +122,6 @@ ReBongo：https://github.com/Big-Jls/rebongo
 | 结束了? | `is_it_over` | 传送到末地外岛 10 分钟，期间无法被任何传送带走，结束后自动返回。 |
 | 谁才是掠夺者 | `pillager_outpost` | 传送到最近的掠夺者前哨站。 |
 | 故乡的樱花开了 | `cherry_grove` | 传送到最近的樱花群系。 |
-| 一二三木头人 | `pale_garden_map` | 获得一张指向最近苍白花园群系的地图。 |
 | 预支胜利 | `advance_victory` | 立即点亮一格，但 5 分钟后熄灭，除非期间真正完成它。 |
 | 偷天换日 | `cell_swap` | 交换你与一名敌人的一个已完成格归属。 |
 | 地心游记 | `journey_core` | 传送到 Y=-50 的地下洞穴。 |
@@ -695,7 +694,6 @@ ReBongo：https://github.com/Big-Jls/rebongo
 
 - 新增银色 **谁才是掠夺者**（`pillager_outpost`）：传送到最近的掠夺者前哨站；附近没有时在 8 个方位 200 格外寻找陆地进行生成。
 - 新增银色 **故乡的樱花开了**（`cherry_grove`）：传送到最近的樱花群系。
-- 新增银色 **一二三木头人**（`pale_garden_map`）：获得一张指向最近苍白花园群系的地图。
 - **仆从大师**：`/kill` 现在可以正常移除无敌小宠物，且不会自动补发；创造模式等绕过无敌的伤害仍会被拦截。
 - **陨石**：地震改为随机逐格崩塌，不再瞬间清空整个区域。
 

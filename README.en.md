@@ -15,7 +15,7 @@
 
 ## What is this
 
-An add-on for [ReBongo](https://github.com/Big-Jls/rebongo) (the NeoForge 26.2 port of Bongo) that adds **150 hex augments**: 55 silver / 55 gold / 40 prismatic. It includes a pick-one-of-three screen, skill items, passive effects, and both task-based and combat-based augments.
+An add-on for [ReBongo](https://github.com/Big-Jls/rebongo) (the NeoForge 26.2 port of Bongo) that adds **149 hex augments**: 54 silver / 55 gold / 40 prismatic. It includes a pick-one-of-three screen, skill items, passive effects, and both task-based and combat-based augments.
 
 ## Gameplay
 
@@ -121,7 +121,6 @@ ReBongo: https://github.com/Big-Jls/rebongo
 | Is It Over? | `is_it_over` | Teleport to the End outer islands for 10 minutes. You cannot be teleported during this time and return automatically when it ends. |
 | Who Is the Pillager Now | `pillager_outpost` | Teleport to the nearest pillager outpost. |
 | The Cherry Blossoms of My Hometown Have Bloomed | `cherry_grove` | Teleport to the nearest cherry grove biome. |
-| Red Light, Green Light | `pale_garden_map` | Receive a map pointing to the nearest pale garden biome. |
 | Advance Victory | `advance_victory` | Instantly light up one cell, but it goes out after 5 minutes unless you genuinely complete it in time. |
 | Steal the Sky | `cell_swap` | Swap ownership of one completed cell between you and an enemy team. |
 | Journey to the Core | `journey_core` | Teleport to a cave at Y=-50. |

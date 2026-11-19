@@ -826,10 +826,6 @@ public final class HexEffects {
          case "cherry_grove":
             cherryGrove(var0);
             break;
-         // 一二三木头人：给予最近苍白花园群系的地图
-         case "pale_garden_map":
-            givePaleGardenMap(var0);
-            break;
          // 初音未来：给予最近红树林群系的地图
          case "mangrove_map":
             giveMangroveMap(var0);
@@ -3235,41 +3231,6 @@ public final class HexEffects {
       teleportSurface(var0, var2, var4, "hexbingo.msg.cherry_grove");
    }
 
-   // 一二三木头人：给予一张指向最近苍白花园群系的地图
-   private static void givePaleGardenMap(ServerPlayer var0) {
-      MinecraftServer var1 = var0.level().getServer();
-      if (var1 == null) {
-         return;
-      }
-
-      ServerLevel var2 = Levels.overworld(var1);
-      Pair<BlockPos, Holder<Biome>> var3 = var2.findClosestBiome3d(var0x -> var0x.is(Biomes.DARK_FOREST), var0.blockPosition(), 12800, 32, 96);
-      if (var3 == null) {
-         BlockPos var6 = createArtificialBiome(var2, var0, 500, "minecraft:pale_garden", "pale");
-         if (var6 == null) {
-            var0.sendSystemMessage(Component.translatable("hexbingo.msg.pale_garden_none").withStyle(ChatFormatting.GRAY));
-            return;
-         }
-
-         var0.addItem(paleGardenMap(var2, var6.getX(), var6.getZ()));
-         var0.sendSystemMessage(Component.translatable("hexbingo.msg.pale_garden_map").withStyle(ChatFormatting.GOLD));
-         return;
-      }
-
-      BlockPos var4 = var3.getFirst();
-      var0.addItem(paleGardenMap(var2, var4.getX(), var4.getZ()));
-      var0.sendSystemMessage(Component.translatable("hexbingo.msg.pale_garden_map").withStyle(ChatFormatting.GOLD));
-   }
-
-   private static ItemStack paleGardenMap(ServerLevel var0, int var1, int var2) {
-      var0.getChunk(var1 >> 4, var2 >> 4);
-      ItemStack var3 = MapItem.create(var0, var1, var2, (byte)1, true, true);
-      Stacks.setName(var3, Component.translatable("hexbingo.item.pale_garden_map"));
-      int var4 = var0.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, var1, var2);
-      MapItemSavedData.addTargetDecoration(var3, new BlockPos(var1, var4, var2), "+", MapDecoration.Type.RED_X);
-      return var3;
-   }
-
    // 初音未来：给予一张指向最近红树林群系的地图
    private static void giveMangroveMap(ServerPlayer var0) {
       MinecraftServer var1 = var0.level().getServer();
@@ -3339,16 +3300,6 @@ public final class HexEffects {
          for (int[] var15 : var14) {
             runCommand(var5, var2, var6, "place feature minecraft:trees_mangrove " + (var7 + var15[0]) + " " + var8 + " " + (var9 + var15[1]));
          }
-      } else {
-         int[][] var14 = new int[][]{{-10, -10}, {-4, -11}, {3, -9}, {10, -10}, {-11, 2}, {-5, 4}, {4, 3}, {11, 1}, {-9, 10}, {-2, 11}, {5, 10}, {10, 11}};
-
-         for (int[] var15 : var14) {
-            runCommand(var5, var2, var6, "place feature minecraft:pale_oak_creaking_checked " + (var7 + var15[0]) + " " + var8 + " " + (var9 + var15[1]));
-         }
-
-         runCommand(var5, var2, var6, "place feature minecraft:pale_moss_patch " + (var7 - 6) + " " + var8 + " " + (var9 - 6));
-         runCommand(var5, var2, var6, "place feature minecraft:pale_moss_patch " + (var7 + 6) + " " + var8 + " " + (var9 + 6));
-         runCommand(var5, var2, var6, "place feature minecraft:pale_garden_vegetation " + var7 + " " + var8 + " " + var9);
       }
 
       BlockPos var16 = safeSurfaceSpot(var2, new BlockPos(var7, var8, var9));
@@ -4677,7 +4628,7 @@ public final class HexEffects {
          try {
             var14 = var3.getCommands()
                .getDispatcher()
-               .execute("place structure minecraft:trial_chambers " + var8 + " " + var11 + " " + var9, var13);
+               .execute("place structure minecraft:ancient_city " + var8 + " " + var11 + " " + var9, var13);
          } catch (CommandSyntaxException var17) {
             var14 = 0;
          }
