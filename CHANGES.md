@@ -29,6 +29,9 @@
   contains a leftover disabled condition.
 - `goliath` keeps its health/damage bonus, but the scale and
   block-break-speed parts are data-only on 1.20.1.
+- Registered the custom sounds (`hexbingo:dechi_song`, `hexbingo:baby_dragon`)
+  in the SOUND_EVENT registry so the Dechi Song and Dragon Rider hexes can
+  actually play them on 1.20.1.
 - Wolf/cat variants, pale garden, trial spawner and vault do not exist in
   1.20.1; substitutes are used where possible and those hexes are skipped
   otherwise.

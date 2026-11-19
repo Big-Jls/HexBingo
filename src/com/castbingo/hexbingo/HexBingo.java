@@ -39,6 +39,7 @@ public final class HexBingo {
       IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
       ModLoadingContext.get().registerConfig(Type.COMMON, HexConfig.SPEC);
       HexAttributes.REGISTER.register(modBus);
+      HexSounds.REGISTER.register(modBus);
       HexRegistry.init();
       TaskTypes.registerType(EnchantTaskType.INSTANCE);
       HexMenus.REGISTER.register(modBus);

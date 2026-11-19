@@ -435,7 +435,7 @@ public final class HexEffects {
    private static Field PHANTOM_MOVE_TARGET;
    // PhantomMoveControl 的速度上限也是 private，成长条只能靠反射调节
    private static Field PHANTOM_MOVE_SPEED;
-   private static final SoundEvent BABY_DRAGON_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("hexbingo", "baby_dragon"));
+   private static final SoundEvent BABY_DRAGON_SOUND = HexSounds.BABY_DRAGON.get();
    // 致盲
    private static final Map<UUID, Long> BLIND_COOLDOWN = new HashMap<>();
    // 结束了？：被放逐到末地外岛
@@ -7246,7 +7246,7 @@ public final class HexEffects {
    }
 
    private static void playDechiSong(ServerPlayer var0, int var1) {
-      SoundEvent var2 = SoundEvent.createVariableRangeEvent(new ResourceLocation("hexbingo", "dechi_song"));
+      SoundEvent var2 = HexSounds.DECHI_SONG.get();
       var0.connection
          .send(
             new ClientboundSoundPacket(
