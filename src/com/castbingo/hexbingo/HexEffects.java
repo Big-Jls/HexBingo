@@ -7432,13 +7432,10 @@ public final class HexEffects {
                Component var4 = Component.translatable("hexbingo.msg.stack_dragon_win").withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
                var1.getPlayerList().getPlayers().forEach(var1x -> var1x.sendSystemMessage(var4));
 
-               try {
-                  Method var5 = Bongo.class.getDeclaredMethod("setWin", Team.class);
-                  var5.setAccessible(true);
-                  var5.invoke(var2, var3);
-               } catch (Exception var6) {
-                  HexBingo.LOGGER.error("Failed to force a stack dragon victory", var6);
+               for (int var5 = 0; var5 < 25; var5++) {
+                  var3.complete(var5);
                }
+               var2.checkWin();
             }
          }
       }
@@ -12461,12 +12458,11 @@ public final class HexEffects {
          return;
       }
 
-      try {
-         Method var4 = Bongo.class.getDeclaredMethod("setWin", Team.class);
-         var4.setAccessible(true);
-         var4.invoke(var2, var3);
-      } catch (Exception var5) {
-         // 反射失败兜底：直接停赛
+      for (int var4 = 0; var4 < 25; var4++) {
+         var3.complete(var4);
+      }
+      var2.checkWin();
+      if (!var2.won()) {
          var2.stop();
       }
 
