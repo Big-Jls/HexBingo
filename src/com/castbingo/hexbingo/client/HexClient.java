@@ -9,6 +9,7 @@ import com.castbingo.hexbingo.Hex;
 import com.castbingo.hexbingo.HexBingo;
 import com.castbingo.hexbingo.HexRegistry;
 import com.castbingo.hexbingo.network.HexDragonInputPayload;
+import com.castbingo.hexbingo.network.HexNetwork;
 import com.castbingo.hexbingo.network.HexRosterPayload;
 import com.castbingo.hexbingo.network.HexTaskListPayload;
 import java.util.ArrayList;
@@ -16,9 +17,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.entity.monster.Phantom;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.minecraftforge.event.TickEvent;
 
 public final class HexClient {
    /** 客户端缓存：被「封印」海克斯封印的任务下标。 */
@@ -65,7 +65,11 @@ public final class HexClient {
     * 骑在龙上时把 W / 空格状态上报服务端，只在按键变化时发送。
     * 只按坐骑类型判定：玩家用命名牌改掉名字后依然能操控。
     */
-   public static void dragonTick(net.neoforged.neoforge.client.event.ClientTickEvent.Post var9) {
+   public static void dragonTick(TickEvent.ClientTickEvent var9) {
+      if (var9.phase != TickEvent.Phase.END) {
+         return;
+      }
+
       Minecraft var0 = Minecraft.getInstance();
       boolean var1 = false;
       boolean var2 = false;
@@ -77,19 +81,19 @@ public final class HexClient {
       if (var1 != DRAGON_FORWARD || var2 != DRAGON_UP) {
          DRAGON_FORWARD = var1;
          DRAGON_UP = var2;
-         ClientPacketDistributor.sendToServer(new HexDragonInputPayload(var1, var2), new CustomPacketPayload[0]);
+         HexNetwork.sendToServer(new HexDragonInputPayload(var1, var2));
       }
    }
 
    /** 退出服务器（含切换服务器）时清空客户端缓存，避免成长条和按键状态残留到下个服务器。 */
-   public static void onLoggingOut(net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut var0) {
+   public static void onLoggingOut(net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingOut var0) {
       DRAGON_GROWTH = -1.0F;
       DRAGON_FORWARD = false;
       DRAGON_UP = false;
    }
 
    public static void open(int var0, List<String> var1, boolean var2) {
-      ArrayList var3 = new ArrayList(3);
+      List<Hex> var3 = new ArrayList<>(3);
 
       for (String var5 : var1) {
          Hex var6 = HexRegistry.byId(var5);
@@ -99,12 +103,12 @@ public final class HexClient {
       }
 
       if (var3.size() >= 3) {
-         Minecraft.getInstance().setScreenAndShow(new HexSelectScreen(var0, var3, var2));
+         Minecraft.getInstance().setScreen(new HexSelectScreen(var0, var3, var2));
       }
    }
 
    public static void openList(List<String> var0) {
-      ArrayList var1 = new ArrayList(var0.size());
+      List<Hex> var1 = new ArrayList<>(var0.size());
 
       for (String var3 : var0) {
          Hex var4 = HexRegistry.byId(var3);
@@ -115,17 +119,17 @@ public final class HexClient {
 
       HexBingo.LOGGER.info("Opening hex list screen with {} of {} entries", var1.size(), var0.size());
       if (!var1.isEmpty()) {
-         Minecraft.getInstance().setScreenAndShow(new HexListScreen(var1));
+         Minecraft.getInstance().setScreen(new HexListScreen(var1));
       }
    }
 
    public static void openRoster(HexRosterPayload var0) {
       HexBingo.LOGGER.info("Opening hex roster screen with {} teams", var0.teams().size());
-      Minecraft.getInstance().setScreenAndShow(new HexRosterScreen(var0));
+      Minecraft.getInstance().setScreen(new HexRosterScreen(var0));
    }
 
    public static void openMirror(List<String> var0) {
-      ArrayList var1 = new ArrayList(var0.size());
+      List<Hex> var1 = new ArrayList<>(var0.size());
 
       for (String var3 : var0) {
          Hex var4 = HexRegistry.byId(var3);
@@ -135,13 +139,13 @@ public final class HexClient {
       }
 
       if (!var1.isEmpty()) {
-         Minecraft.getInstance().setScreenAndShow(new HexListScreen(var1, true));
+         Minecraft.getInstance().setScreen(new HexListScreen(var1, true));
       }
    }
 
    public static void openTasks(HexTaskListPayload var0) {
       if (!var0.tasks().isEmpty()) {
-         Minecraft.getInstance().setScreenAndShow(new HexTaskScreen(var0));
+         Minecraft.getInstance().setScreen(new HexTaskScreen(var0));
       }
    }
 

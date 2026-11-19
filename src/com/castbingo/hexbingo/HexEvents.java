@@ -5,11 +5,12 @@
  */
 package com.castbingo.hexbingo;
 
-import io.github.noeppi_noeppi.mods.bongo.Bingo;
+import com.castbingo.hexbingo.compat.Stacks;
+
+import io.github.noeppi_noeppi.mods.bongo.Bongo;
 import io.github.noeppi_noeppi.mods.bongo.data.Team;
-import io.github.noeppi_noeppi.mods.bongo.event.BingoTaskEvent;
+import io.github.noeppi_noeppi.mods.bongo.event.BongoTaskEvent;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -19,46 +20,49 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.animal.bee.Bee;
+import net.minecraft.world.entity.animal.Bee;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.animal.frog.Frog;
 import net.minecraft.world.entity.monster.Phantom;
-import net.minecraft.world.entity.npc.villager.Villager;
+import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.projectile.EyeOfEnder;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
-import net.minecraft.world.level.gamerules.GameRules;
-import net.neoforged.bus.api.EventPriority;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.CommandEvent;
-import net.neoforged.neoforge.event.ItemStackedOnOtherEvent;
-import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
-import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
-import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Post;
-import net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Pre;
-import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent.Finish;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent.ItemCraftedEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerRespawnEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickItem;
-import net.neoforged.neoforge.event.entity.player.ItemFishedEvent;
-import net.neoforged.neoforge.event.level.BlockDropsEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
-import net.neoforged.neoforge.event.server.ServerStartedEvent;
-import net.neoforged.neoforge.event.server.ServerStoppingEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.minecraft.world.level.GameRules;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.CommandEvent;
+import net.minecraftforge.event.ItemStackedOnOtherEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.EntityTeleportEvent;
+import net.minecraftforge.event.entity.item.ItemTossEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
+import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.living.LivingDamageEvent;
+import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent.Finish;
+import net.minecraftforge.event.entity.player.PlayerEvent.ItemCraftedEvent;
+import net.minecraftforge.event.entity.player.PlayerContainerEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickItem;
+import net.minecraftforge.event.entity.player.ItemFishedEvent;
+import com.castbingo.hexbingo.compat.BlockDropsEvent;
+import net.minecraftforge.event.level.BlockEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
+import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 
 public class HexEvents {
    @SubscribeEvent
@@ -84,7 +88,7 @@ public class HexEvents {
    }
 
    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-   public void endedDamage(LivingIncomingDamageEvent var1) {
+   public void endedDamage(LivingHurtEvent var1) {
       // 结束了！：拥有者的队伍在末地失去无敌保护——末影人、末影龙、摔落等伤害正常生效
       if (var1.isCanceled()
          && var1.getEntity() instanceof ServerPlayer var2
@@ -94,27 +98,27 @@ public class HexEvents {
    }
 
    @SubscribeEvent
-   public void incomingDamage(LivingIncomingDamageEvent var1) {
+   public void incomingDamage(LivingHurtEvent var1) {
       HexEffects.incomingDamage(var1);
    }
 
    @SubscribeEvent(priority = EventPriority.HIGHEST)
-   public void dragonPetDamage(LivingIncomingDamageEvent var1) {
+   public void dragonPetDamage(LivingHurtEvent var1) {
       HexEffects.dragonPetDamage(var1);
    }
 
    @SubscribeEvent
-   public void damagePre(Pre var1) {
+   public void damagePre(LivingHurtEvent var1) {
       HexEffects.damageDealt(var1);
    }
 
    @SubscribeEvent
-   public void projectileDamage(LivingIncomingDamageEvent var1) {
+   public void projectileDamage(LivingHurtEvent var1) {
       HexEffects.snowballDamage(var1);
    }
 
    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-   public void beeDamage(LivingIncomingDamageEvent var1) {
+   public void beeDamage(LivingHurtEvent var1) {
       if (var1.isCanceled()
          && var1.getEntity() instanceof ServerPlayer
          && var1.getSource().getDirectEntity() instanceof Bee var3
@@ -124,7 +128,7 @@ public class HexEvents {
    }
 
    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-   public void meteorSkeletonDamage(LivingIncomingDamageEvent var1) {
+   public void meteorSkeletonDamage(LivingHurtEvent var1) {
       // 陨石坑的骷髅与海克斯小蜜蜂一致：无敌/关闭 PVP 时仍可伤害玩家
       if (var1.isCanceled() && var1.getEntity() instanceof ServerPlayer) {
          Entity var2 = var1.getSource().getEntity();
@@ -136,7 +140,7 @@ public class HexEvents {
    }
 
    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-   public void voyageDamage(LivingIncomingDamageEvent var1) {
+   public void voyageDamage(LivingHurtEvent var1) {
       if (var1.isCanceled()
          && var1.getEntity() instanceof ServerPlayer var2
          && HexEffects.isVoyageActive(var2)
@@ -146,12 +150,12 @@ public class HexEvents {
    }
 
    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-   public void trapDamage(LivingIncomingDamageEvent var1) {
+   public void trapDamage(LivingHurtEvent var1) {
       HexEffects.trapIncomingDamage(var1);
    }
 
    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-   public void wildBeeDamage(LivingIncomingDamageEvent var1) {
+   public void wildBeeDamage(LivingHurtEvent var1) {
       // 关闭伤害时，只有小蜜蜂海克斯召唤的蜜蜂可以攻击玩家，原版蜜蜂的蜇伤必须被拦下
       if (!var1.isCanceled()
          && var1.getEntity() instanceof ServerPlayer var2
@@ -163,14 +167,14 @@ public class HexEvents {
    }
 
    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-   public void demonPactDamage(LivingIncomingDamageEvent var1) {
+   public void demonPactDamage(LivingHurtEvent var1) {
       if (var1.getEntity() instanceof ServerPlayer var2 && HexEffects.isDemonPact(var2)) {
          var1.setCanceled(false);
       }
    }
 
    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-   public void totemDamage(LivingIncomingDamageEvent var1) {
+   public void totemDamage(LivingHurtEvent var1) {
       if (var1.isCanceled()
          && var1.getEntity() instanceof ServerPlayer var2
          && HexEffects.isHoldingTotemBulk(var2)) {
@@ -179,7 +183,7 @@ public class HexEvents {
    }
 
    @SubscribeEvent
-   public void beePoison(Post var1) {
+   public void beePoison(LivingDamageEvent var1) {
       if (var1.getEntity() instanceof ServerPlayer var2
          && var1.getSource().getDirectEntity() instanceof Bee var3
          && HexEffects.isHexBee(var3)) {
@@ -188,8 +192,11 @@ public class HexEvents {
    }
 
    @SubscribeEvent(priority = EventPriority.LOWEST)
-   public void playerTick(PlayerTickEvent.Post var1) {
-      if (var1.getEntity() instanceof ServerPlayer var2) {
+   public void playerTick(PlayerTickEvent var1) {
+      if (var1.phase != net.minecraftforge.event.TickEvent.Phase.END) {
+         return;
+      }
+      if (var1.player instanceof ServerPlayer var2) {
          HexEffects.feastHunger(var2);
          HexEffects.tickSoulOut(var2);
          HexEffects.tickSpiderMan(var2);
@@ -217,7 +224,7 @@ public class HexEvents {
    }
 
    @SubscribeEvent
-   public void damagePost(Post var1) {
+   public void damagePost(LivingDamageEvent var1) {
       HexEffects.damagePost(var1);
    }
 
@@ -236,7 +243,7 @@ public class HexEvents {
       HexEffects.death(var1);
    }
 
-   /** 在其它监听器（含 Bingo 的死亡锁格）处理完后再撤销星际航行失败带来的锁格。 */
+   /** 在其它监听器（含 Bongo 的死亡锁格）处理完后再撤销星际航行失败带来的锁格。 */
    @SubscribeEvent(priority = EventPriority.LOWEST)
    public void voyageDeathLock(LivingDeathEvent var1) {
       if (var1.getEntity() instanceof ServerPlayer var2) {
@@ -244,9 +251,23 @@ public class HexEvents {
       }
    }
 
-   @SubscribeEvent
-   public void blockDrops(BlockDropsEvent var1) {
-      HexEffects.blockDrops(var1);
+   @SubscribeEvent(priority = EventPriority.LOWEST)
+   public void blockDrops(BlockEvent.BreakEvent var1) {
+      if (var1.getPlayer() instanceof ServerPlayer var2 && var1.getLevel() instanceof ServerLevel var3) {
+         BlockState var4 = var3.getBlockState(var1.getPos());
+         BlockEntity var5 = var3.getBlockEntity(var1.getPos());
+         ItemStack var6 = var2.getMainHandItem();
+         java.util.List<ItemStack> var7 = Block.getDrops(var4, var3, var1.getPos(), var5, var2, var6);
+         java.util.List<ItemEntity> var8 = new java.util.ArrayList<>();
+         for (ItemStack var9 : var7) {
+            var8.add(new ItemEntity(var3, var1.getPos().getX() + 0.5, var1.getPos().getY() + 0.5, var1.getPos().getZ() + 0.5, var9));
+         }
+         int var10 = var8.size();
+         HexEffects.blockDrops(new BlockDropsEvent(var3, var1.getPos(), var4, var2, var6, var8));
+         for (int var11 = var10; var11 < var8.size(); var11++) {
+            var3.addFreshEntity(var8.get(var11));
+         }
+      }
    }
 
    @SubscribeEvent
@@ -261,7 +282,7 @@ public class HexEvents {
 
    @SubscribeEvent
    public void useItemFinish(Finish var1) {
-      if (var1.getEntity() instanceof ServerPlayer var2 && var1.getItem().has(DataComponents.FOOD)) {
+      if (var1.getEntity() instanceof ServerPlayer var2 && Stacks.isFood(var1.getItem())) {
          HexEffects.feastFoodBuff(var2);
       }
    }
@@ -334,7 +355,7 @@ public class HexEvents {
          && HexEffects.hasHex(var0, "hidden_pocket")
          && var1.getLevel().getBlockState(var1.getPos()).is(Blocks.CHEST)
          && var1.getLevel().getBlockEntity(var1.getPos()) instanceof ChestBlockEntity var2
-         && var2.getLootTable() != null) {
+            ) {
          HexEffects.tryHiddenPocket(var0);
       }
    }
@@ -464,7 +485,7 @@ public class HexEvents {
    }
 
    private static boolean isTrapItem(ItemStack var0) {
-      return var0.is(Items.IRON_CHAIN) && var0.getHoverName().getString().equals("和我一起困在这里");
+      return var0.is(Items.CHAIN) && var0.getHoverName().getString().equals("和我一起困在这里");
    }
 
    private static boolean isFaeItem(ItemStack var0) {
@@ -526,7 +547,7 @@ public class HexEvents {
             HexEffects.tradeFrog(var2, var7);
             var1.setCanceled(true);
          } else if (var1.getTarget() instanceof ServerPlayer var4 && var1.getItemStack().is(Items.SHEARS)) {
-            Bingo var9 = Bingo.get(var2.level());
+            Bongo var9 = Bongo.get(var2.level());
             Team var6 = var9.getTeam(var2);
             if (var6 != null && var6.hasPlayer(var4) && HexEffects.removePumpkin(var2, var4)) {
                var1.setCanceled(true);
@@ -556,18 +577,10 @@ public class HexEvents {
    }
 
    @SubscribeEvent
-   public void entityTickPre(net.neoforged.neoforge.event.tick.EntityTickEvent.Pre var1) {
-      // 骑行推进必须早于幻翼 tick，否则同 tick 内玩家会被摆到上一帧的龙背上
-      HexEffects.preTickDragon(var1.getEntity());
-   }
-
-   @SubscribeEvent
-   public void entityTick(net.neoforged.neoforge.event.tick.EntityTickEvent.Post var1) {
-      HexEffects.tickDragonPet(var1.getEntity());
-   }
-
-   @SubscribeEvent
-   public void serverTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post var1) {
+   public void serverTick(net.minecraftforge.event.TickEvent.ServerTickEvent var1) {
+      if (var1.phase != net.minecraftforge.event.TickEvent.Phase.END) {
+         return;
+      }
       HexEffects.tickDash(var1.getServer());
       HexEffects.tickBatForms(var1.getServer());
       HexEffects.tickPortableFurnaces(var1.getServer());
@@ -594,7 +607,7 @@ public class HexEvents {
    @SubscribeEvent
    public void teleport(EntityTeleportEvent var1) {
       // 末影珍珠、紫颂果属于玩家自身位移手段，不限制
-      if (var1 instanceof EntityTeleportEvent.EnderPearl || var1 instanceof EntityTeleportEvent.ItemConsumption) {
+      if (var1 instanceof EntityTeleportEvent.EnderPearl || var1 instanceof EntityTeleportEvent.ChorusFruit) {
          return;
       }
 
@@ -609,8 +622,9 @@ public class HexEvents {
       }
 
       // 放逐期间，其他玩家也不能传送到被放逐玩家的位置
-      if (var1.getTargetLevel() != null) {
-         ServerPlayer var3 = HexEffects.findEndExiledNear(var1.getTargetLevel(), var1.getTargetX(), var1.getTargetY(), var1.getTargetZ(), 4.0);
+      {
+         ServerLevel var1Level = (ServerLevel)var1.getEntity().level();
+         ServerPlayer var3 = HexEffects.findEndExiledNear(var1Level, var1.getTargetX(), var1.getTargetY(), var1.getTargetZ(), 4.0);
          if (var3 != null) {
             var1.setCanceled(true);
             if (var1.getEntity() instanceof ServerPlayer var4) {
@@ -644,7 +658,7 @@ public class HexEvents {
 
    // 缩小术：被缩小的玩家起跳初速度减半，跳跃高度约为原来的 25%
    @SubscribeEvent
-   public void livingJump(net.neoforged.neoforge.event.entity.living.LivingEvent.LivingJumpEvent var1) {
+   public void livingJump(net.minecraftforge.event.entity.living.LivingEvent.LivingJumpEvent var1) {
       if (var1.getEntity() instanceof ServerPlayer var2 && HexEffects.isShrunk(var2)) {
          var2.setDeltaMovement(var2.getDeltaMovement().multiply(1.0, 0.5, 1.0));
       }
@@ -656,8 +670,8 @@ public class HexEvents {
 
       for (ServerLevel var4 : var2.getAllLevels()) {
          GameRules var5 = var4.getGameRules();
-         if (!(Boolean)var5.get(GameRules.KEEP_INVENTORY)) {
-            var5.set(GameRules.KEEP_INVENTORY, true, var2);
+         if (!var5.getBoolean(GameRules.RULE_KEEPINVENTORY)) {
+            var5.getRule(GameRules.RULE_KEEPINVENTORY).set(true, var2);
          }
       }
    }
@@ -676,7 +690,7 @@ public class HexEvents {
    }
 
    @SubscribeEvent
-   public void taskCompleted(BingoTaskEvent var1) {
+   public void taskCompleted(BongoTaskEvent var1) {
       MinecraftServer var2 = var1.getLevel().getServer();
       if (var2 != null && HexGameData.get(var2).mayhem()) {
          if (HexEffects.handleHexItemAdvancement(var1)) {

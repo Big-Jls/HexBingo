@@ -8,24 +8,23 @@ package com.castbingo.hexbingo.client;
 import com.castbingo.hexbingo.HexBingo;
 import com.castbingo.hexbingo.network.HexMagnetTogglePayload;
 import com.castbingo.hexbingo.network.HexMidasPayload;
+import com.castbingo.hexbingo.network.HexNetwork;
 import com.castbingo.hexbingo.network.HexRosterRequestPayload;
 import com.castbingo.hexbingo.network.HexSpiderTogglePayload;
 import com.castbingo.hexbingo.network.HexSwordFlyTogglePayload;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.KeyMapping.Category;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent.Post;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.TickEvent.ClientTickEvent;
 
 public final class HexKeys {
-   public static final KeyMapping ROSTER = new KeyMapping("hexbingo.key.roster", 75, Category.MISC);
-   public static final KeyMapping SPIDER_TOGGLE = new KeyMapping("hexbingo.key.spider_toggle", 86, Category.MISC);
-   public static final KeyMapping MAGNET_TOGGLE = new KeyMapping("hexbingo.key.magnet_toggle", 84, Category.MISC);
-   public static final KeyMapping SWORD_FLY_TOGGLE = new KeyMapping("hexbingo.key.sword_fly_toggle", 82, Category.MISC);
-   public static final KeyMapping MIDAS = new KeyMapping("hexbingo.key.midas", 71, Category.MISC);
+   private static final String CATEGORY = "key.categories.misc";
+   public static final KeyMapping ROSTER = new KeyMapping("hexbingo.key.roster", 75, CATEGORY);
+   public static final KeyMapping SPIDER_TOGGLE = new KeyMapping("hexbingo.key.spider_toggle", 86, CATEGORY);
+   public static final KeyMapping MAGNET_TOGGLE = new KeyMapping("hexbingo.key.magnet_toggle", 84, CATEGORY);
+   public static final KeyMapping SWORD_FLY_TOGGLE = new KeyMapping("hexbingo.key.sword_fly_toggle", 82, CATEGORY);
+   public static final KeyMapping MIDAS = new KeyMapping("hexbingo.key.midas", 71, CATEGORY);
 
    public static void register(RegisterKeyMappingsEvent var0) {
       var0.register(ROSTER);
@@ -35,36 +34,39 @@ public final class HexKeys {
       var0.register(MIDAS);
    }
 
-   @SubscribeEvent
-   public static void clientTick(Post var0) {
+   public static void clientTick(ClientTickEvent var0) {
+      if (var0.phase != TickEvent.Phase.END) {
+         return;
+      }
+
       while (ROSTER.consumeClick()) {
          HexBingo.LOGGER.info("Hex roster key pressed");
          if (Minecraft.getInstance().getConnection() != null) {
-            ClientPacketDistributor.sendToServer(new HexRosterRequestPayload(), new CustomPacketPayload[0]);
+            HexNetwork.sendToServer(new HexRosterRequestPayload());
          }
       }
 
       while (SPIDER_TOGGLE.consumeClick()) {
          if (Minecraft.getInstance().getConnection() != null) {
-            ClientPacketDistributor.sendToServer(new HexSpiderTogglePayload(), new CustomPacketPayload[0]);
+            HexNetwork.sendToServer(new HexSpiderTogglePayload());
          }
       }
 
       while (MAGNET_TOGGLE.consumeClick()) {
          if (Minecraft.getInstance().getConnection() != null) {
-            ClientPacketDistributor.sendToServer(new HexMagnetTogglePayload(), new CustomPacketPayload[0]);
+            HexNetwork.sendToServer(new HexMagnetTogglePayload());
          }
       }
 
       while (SWORD_FLY_TOGGLE.consumeClick()) {
          if (Minecraft.getInstance().getConnection() != null) {
-            ClientPacketDistributor.sendToServer(new HexSwordFlyTogglePayload(), new CustomPacketPayload[0]);
+            HexNetwork.sendToServer(new HexSwordFlyTogglePayload());
          }
       }
 
       while (MIDAS.consumeClick()) {
          if (Minecraft.getInstance().getConnection() != null) {
-            ClientPacketDistributor.sendToServer(new HexMidasPayload(), new CustomPacketPayload[0]);
+            HexNetwork.sendToServer(new HexMidasPayload());
          }
       }
    }

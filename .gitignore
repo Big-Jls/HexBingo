@@ -4,6 +4,12 @@
 /dist/
 /build.args
 /build.sources
+/build-1.20.1/
+/build-tmp/
+/stage-1.20.1/
+/dist-1.20.1/
+/build-1.20.1.args
+/build-1.20.1.sources
 
 # IDE
 /.idea/

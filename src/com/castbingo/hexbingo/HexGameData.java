@@ -5,6 +5,8 @@
  */
 package com.castbingo.hexbingo;
 
+import com.castbingo.hexbingo.compat.Nbt;
+
 import com.mojang.serialization.Codec;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,16 +21,11 @@ import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraft.world.level.saveddata.SavedDataType;
 
 public class HexGameData extends SavedData {
    public static final Codec<HexGameData> CODEC = CompoundTag.CODEC.xmap(HexGameData::new, var0 -> var0.save(new CompoundTag()));
-   public static final SavedDataType<HexGameData> DATA_TYPE = new SavedDataType(
-      Identifier.fromNamespaceAndPath("hexbingo", "game"), HexGameData::new, CODEC, null
-   );
    private boolean mayhem;
    private long gameStart;
    private boolean allPrismatic;
@@ -50,7 +47,8 @@ public class HexGameData extends SavedData {
    private boolean hexesLocked;
 
    public static HexGameData get(MinecraftServer var0) {
-      return (HexGameData)var0.overworld().getDataStorage().computeIfAbsent(DATA_TYPE);
+      // overworld() 即 1.20.1 的 MinecraftServer#overworld()
+      return var0.overworld().getDataStorage().computeIfAbsent(HexGameData::new, HexGameData::new, "hexbingo");
    }
 
    public HexGameData() {
@@ -528,23 +526,23 @@ public class HexGameData extends SavedData {
       this.allMineUsed.clear();
       this.spyUsed.clear();
       this.hexesLocked = false;
-      this.mayhem = var1.getBooleanOr("mayhem", false);
-      this.gameStart = var1.getLongOr("gameStart", 0L);
-      this.allPrismatic = var1.getBooleanOr("allPrismatic", false);
-      int format = var1.getIntOr("format", 1);
-      CompoundTag var2 = var1.getCompoundOrEmpty("hexes");
+      this.mayhem = var1.getBoolean("mayhem");
+      this.gameStart = var1.getLong("gameStart");
+      this.allPrismatic = var1.getBoolean("allPrismatic");
+      int format = Nbt.getIntOr(var1, "format", 1);
+      CompoundTag var2 = Nbt.getCompoundOrEmpty(var1, "hexes");
 
-      for (String var4 : var2.keySet()) {
+      for (String var4 : Nbt.keys(var2)) {
          UUID var5 = parseUuid(var4);
          if (var5 != null) {
             ArrayList<String> var6 = new ArrayList<>();
             Tag var10 = var2.get(var4);
             if (format >= 2 && var10 instanceof ListTag var11) {
                for (int var12 = 0; var12 < var11.size(); var12++) {
-                  var6.add(var11.getStringOr(var12, ""));
+                  var6.add(var11.getString(var12));
                }
             } else {
-               String var13 = var2.getStringOr(var4, "");
+               String var13 = Nbt.getStringOr(var2, var4, "");
                if (!var13.isEmpty()) {
                   var6.addAll(List.of(var13.split(",")));
                }
@@ -556,20 +554,20 @@ public class HexGameData extends SavedData {
          }
       }
 
-      CompoundTag grantedTag = var1.getCompoundOrEmpty("granted");
+      CompoundTag grantedTag = Nbt.getCompoundOrEmpty(var1, "granted");
 
-      for (String uuidKey : grantedTag.keySet()) {
+      for (String uuidKey : Nbt.keys(grantedTag)) {
          UUID uuid = parseUuid(uuidKey);
          if (uuid != null) {
             HashMap<String, String> sources = new HashMap<>();
             Tag var20 = grantedTag.get(uuidKey);
             if (format >= 2 && var20 instanceof ListTag var21) {
                for (int var22 = 0; var22 < var21.size(); var22++) {
-                  CompoundTag var23 = var21.getCompoundOrEmpty(var22);
-                  sources.put(var23.getStringOr("id", ""), var23.getStringOr("prefix", ""));
+                  CompoundTag var23 = var21.getCompound(var22);
+                  sources.put(Nbt.getStringOr(var23, "id", ""), Nbt.getStringOr(var23, "prefix", ""));
                }
             } else {
-               String payload = grantedTag.getStringOr(uuidKey, "");
+               String payload = Nbt.getStringOr(grantedTag, uuidKey, "");
                if (!payload.isEmpty()) {
                   for (String entry : payload.split(",")) {
                      int split = entry.indexOf(124);
@@ -587,12 +585,12 @@ public class HexGameData extends SavedData {
       }
 
       // 兼容旧存档：之前的 transformed 标记统一按“质变”前缀显示
-      CompoundTag legacyTag = var1.getCompoundOrEmpty("transformed");
+      CompoundTag legacyTag = Nbt.getCompoundOrEmpty(var1, "transformed");
 
-      for (String uuidKey : legacyTag.keySet()) {
+      for (String uuidKey : Nbt.keys(legacyTag)) {
          UUID uuid = parseUuid(uuidKey);
          if (uuid != null) {
-            String payload = legacyTag.getStringOr(uuidKey, "");
+            String payload = Nbt.getStringOr(legacyTag, uuidKey, "");
             if (!payload.isEmpty()) {
                for (String hexId : payload.split(",")) {
                   this.granted.computeIfAbsent(uuid, var0 -> new HashMap<>()).put(hexId, "transformed");
@@ -601,9 +599,9 @@ public class HexGameData extends SavedData {
          }
       }
 
-      CompoundTag var16 = var1.getCompoundOrEmpty("pending");
+      CompoundTag var16 = Nbt.getCompoundOrEmpty(var1, "pending");
 
-      for (String var19 : var16.keySet()) {
+      for (String var19 : Nbt.keys(var16)) {
          UUID var22 = parseUuid(var19);
          if (var22 != null) {
             ArrayList var8 = new ArrayList();
@@ -613,7 +611,7 @@ public class HexGameData extends SavedData {
                   var8.add(var25.getInt(var26));
                }
             } else {
-               String var7 = var16.getStringOr(var19, "");
+               String var7 = Nbt.getStringOr(var16, var19, "");
                if (!var7.isEmpty()) {
                   for (String var12 : var7.split(",")) {
                      try {
@@ -630,19 +628,19 @@ public class HexGameData extends SavedData {
          }
       }
 
-      CompoundTag var18 = var1.getCompoundOrEmpty("offers");
+      CompoundTag var18 = Nbt.getCompoundOrEmpty(var1, "offers");
 
-      for (String var23 : var18.keySet()) {
+      for (String var23 : Nbt.keys(var18)) {
          UUID var26 = parseUuid(var23);
          if (var26 != null) {
             Tag var27 = var18.get(var23);
             if (format >= 2 && var27 instanceof CompoundTag var28) {
-               int var29 = var28.getIntOr("reward", 0);
+               int var29 = Nbt.getIntOr(var28, "reward", 0);
                ArrayList<String> var30 = new ArrayList<>();
                Tag var31 = var28.get("ids");
                if (var31 instanceof ListTag var32) {
                   for (int var33 = 0; var33 < var32.size(); var33++) {
-                     var30.add(var32.getStringOr(var33, ""));
+                     var30.add(var32.getString(var33));
                   }
                }
 
@@ -650,7 +648,7 @@ public class HexGameData extends SavedData {
                   this.offers.put(var26, new HexGameData.Offer(var29, var30));
                }
             } else {
-               String var30 = var18.getStringOr(var23, "");
+               String var30 = Nbt.getStringOr(var18, var23, "");
                int var35 = var30.indexOf(124);
                if (var35 >= 0) {
                   try {
@@ -666,10 +664,10 @@ public class HexGameData extends SavedData {
          }
       }
 
-      CompoundTag var21 = var1.getCompoundOrEmpty("teams");
+      CompoundTag var21 = Nbt.getCompoundOrEmpty(var1, "teams");
 
-      for (String var27 : var21.keySet()) {
-         int[] var31 = var21.getIntArray(var27).orElse(new int[]{0, 0, 0, 0});
+      for (String var27 : Nbt.keys(var21)) {
+         int[] var31 = var21.getIntArray(var27);
          if (var31.length < 4) {
             var31 = Arrays.copyOf(var31, 4);
          }
@@ -680,13 +678,13 @@ public class HexGameData extends SavedData {
       Tag var25 = var1.get("extraChoice");
       if (format >= 2 && var25 instanceof ListTag var26) {
          for (int var27 = 0; var27 < var26.size(); var27++) {
-            UUID var28 = parseUuid(var26.getStringOr(var27, ""));
+            UUID var28 = parseUuid(var26.getString(var27));
             if (var28 != null) {
                this.extraChoice.add(var28);
             }
          }
       } else {
-         String var29 = var1.getStringOr("extraChoice", "");
+         String var29 = Nbt.getStringOr(var1, "extraChoice", "");
 
          for (String var40 : var29.split(",")) {
             UUID var44 = parseUuid(var40);
@@ -696,42 +694,42 @@ public class HexGameData extends SavedData {
          }
       }
 
-      CompoundTag refreshTag = var1.getCompoundOrEmpty("refreshes");
+      CompoundTag refreshTag = Nbt.getCompoundOrEmpty(var1, "refreshes");
 
-      for (String var50 : refreshTag.keySet()) {
+      for (String var50 : Nbt.keys(refreshTag)) {
          UUID var51 = parseUuid(var50);
          if (var51 != null) {
-            int var52 = refreshTag.getIntOr(var50, 0);
+            int var52 = Nbt.getIntOr(refreshTag, var50, 0);
             if (var52 > 0) {
                this.refreshCharges.put(var51, var52);
             }
          }
       }
 
-      CompoundTag furnaceTag = var1.getCompoundOrEmpty("furnaces");
+      CompoundTag furnaceTag = Nbt.getCompoundOrEmpty(var1, "furnaces");
 
-      for (String var53 : furnaceTag.keySet()) {
+      for (String var53 : Nbt.keys(furnaceTag)) {
          UUID var54 = parseUuid(var53);
          if (var54 != null) {
-            this.furnaces.put(var54, furnaceTag.getCompoundOrEmpty(var53));
+            this.furnaces.put(var54, Nbt.getCompoundOrEmpty(furnaceTag, var53));
          }
       }
 
-      CompoundTag beaconTag = var1.getCompoundOrEmpty("beacons");
+      CompoundTag beaconTag = Nbt.getCompoundOrEmpty(var1, "beacons");
 
-      for (String var55 : beaconTag.keySet()) {
+      for (String var55 : Nbt.keys(beaconTag)) {
          UUID var56 = parseUuid(var55);
          if (var56 != null) {
-            this.beacons.put(var56, beaconTag.getCompoundOrEmpty(var55));
+            this.beacons.put(var56, Nbt.getCompoundOrEmpty(beaconTag, var55));
          }
       }
 
-      CompoundTag var29 = var1.getCompoundOrEmpty("qualityUp");
+      CompoundTag var29 = Nbt.getCompoundOrEmpty(var1, "qualityUp");
 
-      for (String var37 : var29.keySet()) {
+      for (String var37 : Nbt.keys(var29)) {
          UUID var41 = parseUuid(var37);
          if (var41 != null) {
-            int var45 = var29.getIntOr(var37, 0);
+            int var45 = Nbt.getIntOr(var29, var37, 0);
             if (var45 > 0) {
                this.qualityUp.put(var41, var45);
             }
@@ -741,13 +739,13 @@ public class HexGameData extends SavedData {
       Tag var34 = var1.get("hexLocked");
       if (format >= 2 && var34 instanceof ListTag var35) {
          for (int var36 = 0; var36 < var35.size(); var36++) {
-            UUID var37 = parseUuid(var35.getStringOr(var36, ""));
+            UUID var37 = parseUuid(var35.getString(var36));
             if (var37 != null) {
                this.hexLocked.add(var37);
             }
          }
       } else {
-         String var38 = var1.getStringOr("hexLocked", "");
+         String var38 = Nbt.getStringOr(var1, "hexLocked", "");
 
          for (String var47 : var38.split(",")) {
             UUID var13 = parseUuid(var47);
@@ -757,13 +755,13 @@ public class HexGameData extends SavedData {
          }
       }
 
-      for (int sealedSlot : var1.getIntArray("sealed").orElse(new int[0])) {
+      for (int sealedSlot : var1.getIntArray("sealed")) {
          if (sealedSlot >= 0) {
             this.sealed.add(sealedSlot);
          }
       }
 
-      for (int allMineSlot : var1.getIntArray("allMineLocks").orElse(new int[0])) {
+      for (int allMineSlot : var1.getIntArray("allMineLocks")) {
          if (allMineSlot >= 0) {
             this.allMineLocked.add(allMineSlot);
          }
@@ -772,7 +770,7 @@ public class HexGameData extends SavedData {
       Tag allMineUsedTag = var1.get("allMineUsed");
       if (allMineUsedTag instanceof ListTag allMineList) {
          for (int i = 0; i < allMineList.size(); i++) {
-            UUID usedBy = parseUuid(allMineList.getStringOr(i, ""));
+            UUID usedBy = parseUuid(allMineList.getString(i));
             if (usedBy != null) {
                this.allMineUsed.add(usedBy);
             }
@@ -782,14 +780,14 @@ public class HexGameData extends SavedData {
       Tag spyUsedTag = var1.get("spyUsed");
       if (spyUsedTag instanceof ListTag spyUsedList) {
          for (int i = 0; i < spyUsedList.size(); i++) {
-            UUID usedBy = parseUuid(spyUsedList.getStringOr(i, ""));
+            UUID usedBy = parseUuid(spyUsedList.getString(i));
             if (usedBy != null) {
                this.spyUsed.add(usedBy);
             }
          }
       }
 
-      this.hexesLocked = var1.getBooleanOr("hexesLocked", false);
+      this.hexesLocked = var1.getBoolean("hexesLocked");
    }
 
    private static UUID parseUuid(String var0) {

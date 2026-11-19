@@ -7,16 +7,14 @@ package com.castbingo.hexbingo.client;
 
 import com.castbingo.hexbingo.Hex;
 import com.castbingo.hexbingo.network.HexMirrorPickPayload;
+import com.castbingo.hexbingo.network.HexNetwork;
 import com.castbingo.hexbingo.network.HexPickPayload;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 public class HexListScreen extends Screen {
    private static final int ROW_H = 22;
@@ -45,10 +43,10 @@ public class HexListScreen extends Screen {
       return false;
    }
 
-   public void extractRenderState(GuiGraphicsExtractor var1, int var2, int var3, float var4) {
+   public void render(GuiGraphics var1, int var2, int var3, float var4) {
       var1.fill(0, 0, this.width, this.height, -535818216);
-      var1.centeredText(this.font, this.title, this.width / 2, 14, -10496);
-      var1.centeredText(
+      var1.drawCenteredString(this.font, this.title, this.width / 2, 14, -10496);
+      var1.drawCenteredString(
          this.font,
          Component.translatable(
             this.mirror ? "hexbingo.mirror.subtitle" : "hexbingo.list.subtitle", new Object[]{Component.literal(Integer.toString(this.hexes.size()))}
@@ -57,7 +55,7 @@ public class HexListScreen extends Screen {
          28,
          -4144960
       );
-      byte var5 = 24;
+      int var5 = 24;
       int var6 = this.width - 48;
       int var7 = this.height - 44;
       int var8 = var7 - 46;
@@ -76,8 +74,8 @@ public class HexListScreen extends Screen {
             int var16 = var15 ? -13882310 : (var14 ? -14935012 : -15198176);
             var1.fill(var5, var12, var5 + var6, var12 + 22 - 2, var16);
             HexRender.drawBorder(var1, var5, var12, var6, 20, var13.color());
-            var1.text(this.font, Component.translatable("hexbingo.color." + var13.color().id), var5 + 8, var12 + 7, var13.color().rgb, false);
-            var1.text(this.font, Component.translatable("hexbingo.hex." + var13.id() + ".name"), var5 + 68, var12 + 7, -1, false);
+            var1.drawString(this.font, Component.translatable("hexbingo.color." + var13.color().id), var5 + 8, var12 + 7, var13.color().rgb, false);
+            var1.drawString(this.font, Component.translatable("hexbingo.hex." + var13.id() + ".name"), var5 + 68, var12 + 7, -1, false);
          }
       }
 
@@ -91,7 +89,7 @@ public class HexListScreen extends Screen {
       }
 
       this.drawConfirmButton(var1, var2, var3);
-      var1.centeredText(
+      var1.drawCenteredString(
          this.font,
          Component.translatable(this.mirror ? "hexbingo.mirror.hint" : "hexbingo.list.hint"),
          this.width / 2,
@@ -103,7 +101,7 @@ public class HexListScreen extends Screen {
       }
    }
 
-   private void drawConfirmButton(GuiGraphicsExtractor var1, int var2, int var3) {
+   private void drawConfirmButton(GuiGraphics var1, int var2, int var3) {
       int var4 = this.buttonX();
       int var5 = this.buttonY();
       boolean var6 = this.selected >= 0;
@@ -115,7 +113,7 @@ public class HexListScreen extends Screen {
       var1.fill(var4, var5 + 18 - 1, var4 + 100, var5 + 18, var9);
       var1.fill(var4, var5, var4 + 1, var5 + 18, var9);
       var1.fill(var4 + 100 - 1, var5, var4 + 100, var5 + 18, var9);
-      var1.centeredText(this.font, Component.translatable("hexbingo.select.confirm"), this.width / 2, var5 + 5, var6 ? -1 : -8947849);
+      var1.drawCenteredString(this.font, Component.translatable("hexbingo.select.confirm"), this.width / 2, var5 + 5, var6 ? -1 : -8947849);
    }
 
    private int hoveredRow(double var1, double var3, int var5, int var6, int var7) {
@@ -127,20 +125,20 @@ public class HexListScreen extends Screen {
       }
    }
 
-   public boolean mouseClicked(MouseButtonEvent var1, boolean var2) {
-      if (var1.button() == 0) {
-         int var3 = this.hoveredRow(var1.x(), var1.y(), 24, this.width - 48, this.height - 44);
-         if (var3 >= 0) {
-            this.selected = var3;
+   public boolean mouseClicked(double var1, double var3, int var5) {
+      if (var5 == 0) {
+         int var6 = this.hoveredRow(var1, var3, 24, this.width - 48, this.height - 44);
+         if (var6 >= 0) {
+            this.selected = var6;
             return true;
          }
 
-         if (this.selected >= 0 && this.isOverButton(var1.x(), var1.y())) {
+         if (this.selected >= 0 && this.isOverButton(var1, var3)) {
             String var4 = this.hexes.get(this.selected).id();
             if (this.mirror) {
-               ClientPacketDistributor.sendToServer(new HexMirrorPickPayload(var4), new CustomPacketPayload[0]);
+               HexNetwork.sendToServer(new HexMirrorPickPayload(var4));
             } else {
-               ClientPacketDistributor.sendToServer(new HexPickPayload(var4), new CustomPacketPayload[0]);
+               HexNetwork.sendToServer(new HexPickPayload(var4));
             }
 
             this.onClose();
@@ -148,11 +146,11 @@ public class HexListScreen extends Screen {
          }
       }
 
-      return super.mouseClicked(var1, var2);
+      return super.mouseClicked(var1, var3, var5);
    }
 
-   public boolean mouseScrolled(double var1, double var3, double var5, double var7) {
-      this.scroll = Math.max(0, this.scroll - (int)(var7 * 22.0 * 2.0));
+   public boolean mouseScrolled(double var1, double var3, double var5) {
+      this.scroll = Math.max(0, this.scroll - (int)(var5 * 22.0 * 2.0));
       return true;
    }
 

@@ -5,13 +5,37 @@
  */
 package com.castbingo.hexbingo;
 
+import net.minecraft.nbt.StringTag;
+
+import com.castbingo.hexbingo.compat.Msgs;
+
+import com.castbingo.hexbingo.network.HexNetwork;
+
+import com.castbingo.hexbingo.compat.Teleport;
+
+import net.minecraft.advancements.Advancement;
+
+import com.castbingo.hexbingo.compat.Stacks;
+
+import com.castbingo.hexbingo.compat.SingleRecipeInput;
+
+import com.castbingo.hexbingo.compat.Clock;
+
+import com.castbingo.hexbingo.compat.Levels;
+
+import com.castbingo.hexbingo.compat.InventoryItems;
+
+import com.castbingo.hexbingo.compat.Attr;
+
+import com.castbingo.hexbingo.compat.Nbt;
+
 import com.mojang.datafixers.util.Pair;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import io.github.noeppi_noeppi.mods.bongo.Bingo;
+import io.github.noeppi_noeppi.mods.bongo.Bongo;
 import io.github.noeppi_noeppi.mods.bongo.data.Team;
 import io.github.noeppi_noeppi.mods.bongo.data.WinCondition;
 import io.github.noeppi_noeppi.mods.bongo.data.task.GameTasks;
-import io.github.noeppi_noeppi.mods.bongo.event.BingoTaskEvent;
+import io.github.noeppi_noeppi.mods.bongo.event.BongoTaskEvent;
 import io.github.noeppi_noeppi.mods.bongo.task.Task;
 import io.github.noeppi_noeppi.mods.bongo.task.TaskType;
 import io.github.noeppi_noeppi.mods.bongo.task.TaskTypeAdvancement;
@@ -39,7 +63,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import net.minecraft.ChatFormatting;
-import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -47,7 +70,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.Registry;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -56,15 +78,13 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -73,14 +93,12 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BiomeTags;
-import net.minecraft.tags.BlockItemTags;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.StructureTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.Unit;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.SimpleMenuProvider;
@@ -91,15 +109,10 @@ import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.clock.ServerClockManager;
-import net.minecraft.world.clock.WorldClock;
-import net.minecraft.world.clock.WorldClocks;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityReference;
-import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -112,15 +125,14 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation;
 import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ambient.Bat;
-import net.minecraft.world.entity.animal.bee.Bee;
-import net.minecraft.world.entity.animal.feline.Cat;
-import net.minecraft.world.entity.animal.feline.CatVariant;
+import net.minecraft.world.entity.animal.Bee;
+import net.minecraft.world.entity.animal.Cat;
+import net.minecraft.world.entity.animal.CatVariant;
 import net.minecraft.world.entity.animal.frog.Frog;
-import net.minecraft.world.entity.animal.parrot.Parrot;
-import net.minecraft.world.entity.animal.parrot.Parrot.Variant;
-import net.minecraft.world.entity.animal.sheep.Sheep;
-import net.minecraft.world.entity.animal.wolf.Wolf;
-import net.minecraft.world.entity.animal.wolf.WolfVariant;
+import net.minecraft.world.entity.animal.Parrot;
+import net.minecraft.world.entity.animal.Parrot.Variant;
+import net.minecraft.world.entity.animal.Sheep;
+import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.item.FallingBlockEntity;
@@ -129,17 +141,16 @@ import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.Phantom;
 import net.minecraft.world.entity.monster.Shulker;
-import net.minecraft.world.entity.monster.skeleton.Skeleton;
-import net.minecraft.world.entity.npc.villager.Villager;
-import net.minecraft.world.entity.npc.villager.VillagerData;
-import net.minecraft.world.entity.player.Input;
+import net.minecraft.world.entity.monster.Skeleton;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.VillagerData;
 import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.EyeOfEnder;
 import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.world.entity.projectile.throwableitemprojectile.Snowball;
+import net.minecraft.world.entity.projectile.Snowball;
 import net.minecraft.world.food.FoodData;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
@@ -151,22 +162,16 @@ import net.minecraft.world.item.BoneMealItem;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraft.world.item.MapItem;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.SpawnEggItem;
-import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
 import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.GameType;
@@ -181,43 +186,38 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.entity.BrushableBlockEntity;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.border.WorldBorder;
-import net.minecraft.world.level.portal.TeleportTransition;
-import net.minecraft.world.level.saveddata.maps.MapDecorationTypes;
+import net.minecraft.world.level.saveddata.maps.MapDecoration;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
-import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
-import net.minecraft.world.scores.TeamColor;
 import net.minecraft.world.phys.Vec3;
 import com.castbingo.hexbingo.network.HexDiceRollPayload;
 import com.castbingo.hexbingo.network.HexSealPayload;
 import com.castbingo.hexbingo.network.HexAllMineLockPayload;
 import com.castbingo.hexbingo.network.HexDragonGrowthPayload;
 import net.minecraft.world.phys.HitResult.Type;
-import net.neoforged.neoforge.event.CommandEvent;
-import net.neoforged.neoforge.event.ItemStackedOnOtherEvent;
-import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Post;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Pre;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent.ItemCraftedEvent;
-import net.neoforged.neoforge.event.entity.player.ItemFishedEvent;
-import net.neoforged.neoforge.event.level.BlockDropsEvent;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.minecraftforge.event.CommandEvent;
+import net.minecraftforge.event.ItemStackedOnOtherEvent;
+import net.minecraftforge.event.entity.item.ItemTossEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.living.LivingDamageEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent.ItemCraftedEvent;
+import net.minecraftforge.event.entity.player.ItemFishedEvent;
+import com.castbingo.hexbingo.compat.BlockDropsEvent;
+import net.minecraftforge.items.IItemHandlerModifiable;
 
 /**
  * 海克斯效果实现集合。
@@ -282,10 +282,10 @@ public final class HexEffects {
       Items.TORCHFLOWER,
       Items.PITCHER_PLANT
    );
-   private static final Map<UUID, Holder<MobEffect>> SONG_BUFFS = new HashMap<>();
+   private static final Map<UUID, MobEffect> SONG_BUFFS = new HashMap<>();
    // 间谍：一次性使用标记由 HexGameData 持久化（跨重启保留）
    private static final Set<String> BOUND_ITEM_NAMES = Set.of("转到我眩晕了", "ok回力镖", "玻璃大炮锁定槽", "中国人会飞·鞘翅", "中国人会飞·烟花", "和我一起困在这里", "精怪魔法", "冲冲冲", "随身工作台", "便携熔炉", "The World", "维度放逐", "对方不在服务区", "海神", "你摸不到", "混沌智", "目标封锁", "致盲", "蝙蝠形态", "精神控制", "矿物透视", "镜像复制", "空白格", "缩小术", "背包小偷", "潘是对的", "封印", "全是我的");
-   private static final Identifier WILDCARD_TEXTURE = Identifier.fromNamespaceAndPath("hexbingo", "textures/gui/wildcard.png");
+   private static final ResourceLocation WILDCARD_TEXTURE = new ResourceLocation("hexbingo", "textures/gui/wildcard.png");
    private static final String BLACK_MARKET_USED_TAG = "hexbingo_black_market_used";
    private static final Map<UUID, Long> DICE_NEXT = new HashMap<>();
    private static final Map<UUID, HexEffects.DicePending> DICE_PENDING = new HashMap<>();
@@ -362,8 +362,6 @@ public final class HexEffects {
       Items.DEBUG_STICK,
       Items.BEDROCK,
       Items.SPAWNER,
-      Items.TRIAL_SPAWNER,
-      Items.VAULT,
       Items.END_PORTAL_FRAME,
       Items.KNOWLEDGE_BOOK,
       Items.INFESTED_STONE,
@@ -385,28 +383,28 @@ public final class HexEffects {
    private static final Set<UUID> NETHER_DIED = new HashSet<>();
    private static final Map<UUID, BlockPos> NETHER_DEATH_POS = new HashMap<>();
    private static final TagKey<Structure> ANCIENT_CITY = TagKey.create(
-      Registries.STRUCTURE, Identifier.fromNamespaceAndPath("hexbingo", "ancient_city")
+      Registries.STRUCTURE, new ResourceLocation("hexbingo", "ancient_city")
    );
    private static final TagKey<Structure> PILLAGER_OUTPOST = TagKey.create(
-      Registries.STRUCTURE, Identifier.fromNamespaceAndPath("hexbingo", "pillager_outpost")
+      Registries.STRUCTURE, new ResourceLocation("hexbingo", "pillager_outpost")
    );
    private static final TagKey<Structure> DESERT_PYRAMID = TagKey.create(
-      Registries.STRUCTURE, Identifier.fromNamespaceAndPath("hexbingo", "desert_pyramid")
+      Registries.STRUCTURE, new ResourceLocation("hexbingo", "desert_pyramid")
    );
    private static final TagKey<Structure> JUNGLE_PYRAMID = TagKey.create(
-      Registries.STRUCTURE, Identifier.fromNamespaceAndPath("hexbingo", "jungle_pyramid")
+      Registries.STRUCTURE, new ResourceLocation("hexbingo", "jungle_pyramid")
    );
    private static final TagKey<Structure> TRIAL_CHAMBERS = TagKey.create(
-      Registries.STRUCTURE, Identifier.fromNamespaceAndPath("hexbingo", "trial_chambers")
+      Registries.STRUCTURE, new ResourceLocation("hexbingo", "trial_chambers")
    );
    private static final TagKey<Structure> BASTION_REMNANT = TagKey.create(
-      Registries.STRUCTURE, Identifier.fromNamespaceAndPath("hexbingo", "bastion_remnant")
+      Registries.STRUCTURE, new ResourceLocation("hexbingo", "bastion_remnant")
    );
    private static final TagKey<Structure> NETHER_FORTRESS = TagKey.create(
-      Registries.STRUCTURE, Identifier.fromNamespaceAndPath("hexbingo", "fortress")
+      Registries.STRUCTURE, new ResourceLocation("hexbingo", "fortress")
    );
    private static final TagKey<Structure> NETHER_RUINED_PORTAL = TagKey.create(
-      Registries.STRUCTURE, Identifier.fromNamespaceAndPath("hexbingo", "nether_ruined_portal")
+      Registries.STRUCTURE, new ResourceLocation("hexbingo", "nether_ruined_portal")
    );
    private static final Map<UUID, HexEffects.HomeguardState> HOMEGUARD = new HashMap<>();
    private static final Map<UUID, Long> BREAK_LOCK = new HashMap<>();
@@ -440,7 +438,7 @@ public final class HexEffects {
    private static Field PHANTOM_MOVE_TARGET;
    // PhantomMoveControl 的速度上限也是 private，成长条只能靠反射调节
    private static Field PHANTOM_MOVE_SPEED;
-   private static final SoundEvent BABY_DRAGON_SOUND = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath("hexbingo", "baby_dragon"));
+   private static final SoundEvent BABY_DRAGON_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("hexbingo", "baby_dragon"));
    // 致盲
    private static final Map<UUID, Long> BLIND_COOLDOWN = new HashMap<>();
    // 结束了？：被放逐到末地外岛
@@ -552,7 +550,7 @@ public final class HexEffects {
       Items.CRIMSON_STEM,
       Items.WARPED_STEM
    );
-   private static final Holder<Attribute>[] ALL_ATTRIBUTES = new Holder[]{
+   private static final Attribute[] ALL_ATTRIBUTES = new Attribute[]{
       Attributes.MAX_HEALTH,
       Attributes.ARMOR,
       Attributes.ARMOR_TOUGHNESS,
@@ -560,39 +558,35 @@ public final class HexEffects {
       Attributes.ATTACK_SPEED,
       Attributes.MOVEMENT_SPEED,
       Attributes.KNOCKBACK_RESISTANCE,
-      Attributes.LUCK,
-      Attributes.BLOCK_BREAK_SPEED,
-      Attributes.BLOCK_INTERACTION_RANGE,
-      Attributes.ENTITY_INTERACTION_RANGE,
-      Attributes.SCALE
+      Attributes.LUCK
    };
-   private static final List<EntityType<? extends Mob>> FAE_TYPES = List.of(EntityTypes.WOLF, EntityTypes.CAT, EntityTypes.FOX, EntityTypes.RABBIT);
+   private static final List<EntityType<? extends Mob>> FAE_TYPES = List.of(EntityType.WOLF, EntityType.CAT, EntityType.FOX, EntityType.RABBIT);
    // 饕餮盛宴：累计进食次数 -> 体型加成
    private static final Map<UUID, Integer> FEAST_SCALE = new HashMap<>();
-   private static final Holder<MobEffect>[] ALL_EFFECTS = new Holder[]{
-      MobEffects.SPEED,
-      MobEffects.HASTE,
-      MobEffects.STRENGTH,
-      MobEffects.RESISTANCE,
+   private static final MobEffect[] ALL_EFFECTS = new MobEffect[]{
+      MobEffects.MOVEMENT_SPEED,
+      MobEffects.DIG_SPEED,
+      MobEffects.DAMAGE_BOOST,
+      MobEffects.DAMAGE_RESISTANCE,
       MobEffects.REGENERATION,
       MobEffects.ABSORPTION,
       MobEffects.NIGHT_VISION,
       MobEffects.WATER_BREATHING,
       MobEffects.FIRE_RESISTANCE,
-      MobEffects.JUMP_BOOST,
+      MobEffects.JUMP,
       MobEffects.SLOW_FALLING,
       MobEffects.DOLPHINS_GRACE,
       MobEffects.HUNGER,
       MobEffects.HERO_OF_THE_VILLAGE
    };
-   private static final Holder<MobEffect>[] FEAST_BUFFS = new Holder[]{
-      MobEffects.SPEED,
-      MobEffects.HASTE,
-      MobEffects.STRENGTH,
-      MobEffects.RESISTANCE,
+   private static final MobEffect[] FEAST_BUFFS = new MobEffect[]{
+      MobEffects.MOVEMENT_SPEED,
+      MobEffects.DIG_SPEED,
+      MobEffects.DAMAGE_BOOST,
+      MobEffects.DAMAGE_RESISTANCE,
       MobEffects.REGENERATION,
       MobEffects.ABSORPTION,
-      MobEffects.JUMP_BOOST,
+      MobEffects.JUMP,
       MobEffects.FIRE_RESISTANCE,
       MobEffects.WATER_BREATHING,
       MobEffects.NIGHT_VISION,
@@ -649,11 +643,11 @@ public final class HexEffects {
             Team var10 = team(var0);
             if (var10 != null) {
                for (ServerPlayer var18 : onlineTeamPlayers(var0.level().getServer(), var10)) {
-                  Holder var19 = attribute(var3.key);
+                  Attribute var19 = attribute(var3.key);
                   if (var19 != null) {
                      AttributeInstance var20 = var18.getAttribute(var19);
                      if (var20 != null) {
-                        var20.addOrReplacePermanentModifier(new AttributeModifier(modifierId(var1, var2), var3.amount, operation(var3.operation)));
+                        var20.addPermanentModifier(new AttributeModifier(modifierId(var1, var2), "hexbingo", var3.amount, operation(var3.operation)));
                      }
                   }
                }
@@ -795,7 +789,7 @@ public final class HexEffects {
             if (var17 != null) {
                teleportToStructure(
                   var0,
-                  var17.overworld(),
+                  Levels.overworld(var17),
                   StructureTags.SHIPWRECK,
                   "hexbingo.msg.love_tribute",
                   "hexbingo.msg.love_tribute_none",
@@ -808,10 +802,10 @@ public final class HexEffects {
          case "nearest_ruined_portal": {
             MinecraftServer var17 = var0.level().getServer();
             if (var17 != null) {
-               ServerLevel var18 = var0.level().dimension() == Level.NETHER ? var17.getLevel(Level.NETHER) : var17.overworld();
+               ServerLevel var18 = var0.level().dimension() == Level.NETHER ? var17.getLevel(Level.NETHER) : Levels.overworld(var17);
                teleportToStructure(
                   var0,
-                  var18 == null ? var17.overworld() : var18,
+                  var18 == null ? Levels.overworld(var17) : var18,
                   StructureTags.RUINED_PORTAL,
                   "hexbingo.msg.ruined_portal",
                   "hexbingo.msg.ruined_portal_none",
@@ -857,7 +851,7 @@ public final class HexEffects {
                HashSet<UUID> var14 = new HashSet<>();
                var14.add(var0.getUUID());
 
-               for (Team var16 : Bingo.get(var12.overworld()).getTeams()) {
+               for (Team var16 : Bongo.get(Levels.overworld(var12)).getTeams()) {
                   var14.addAll(var16.getPlayers());
                }
 
@@ -967,11 +961,11 @@ public final class HexEffects {
             break;
          // 玻璃大炮任务版生命上限（当前数据未使用）
          case "glass_cannon_task":
-            applyNegativeAttribute(var0, var1, var2, Attributes.MAX_HEALTH, -var3.percent, Operation.ADD_MULTIPLIED_BASE);
+            applyNegativeAttribute(var0, var1, var2, Attributes.MAX_HEALTH, -var3.percent, Operation.MULTIPLY_BASE);
             break;
          // 无甲任务版护甲降低（当前数据未使用）
          case "no_armor_task_xp":
-            applyNegativeAttribute(var0, var1, var2, Attributes.ARMOR, -var3.amount, Operation.ADD_VALUE);
+            applyNegativeAttribute(var0, var1, var2, Attributes.ARMOR, -var3.amount, Operation.ADDITION);
             break;
          // 种子礼包
          case "seed_gift":
@@ -1205,24 +1199,24 @@ public final class HexEffects {
    }
 
    private static void applyAttribute(ServerPlayer var0, String var1, int var2, HexEffect var3) {
-      Holder var4 = attribute(var3.key);
+      Attribute var4 = attribute(var3.key);
       if (var4 != null) {
          AttributeInstance var5 = var0.getAttribute(var4);
          if (var5 != null) {
-            var5.addOrUpdateTransientModifier(new AttributeModifier(modifierId(var1, var2), var3.amount, operation(var3.operation)));
+            Attr.addOrUpdate(var5, new AttributeModifier(modifierId(var1, var2), "hexbingo", var3.amount, operation(var3.operation)));
          }
       }
    }
 
-   private static void applyNegativeAttribute(ServerPlayer var0, String var1, int var2, Holder<Attribute> var3, double var4, Operation var6) {
+   private static void applyNegativeAttribute(ServerPlayer var0, String var1, int var2, Attribute var3, double var4, Operation var6) {
       AttributeInstance var7 = var0.getAttribute(var3);
       if (var7 != null) {
-         var7.addOrUpdateTransientModifier(new AttributeModifier(modifierId(var1, var2), var4, var6));
+         Attr.addOrUpdate(var7, new AttributeModifier(modifierId(var1, var2), "hexbingo", var4, var6));
       }
    }
 
    private static void applyPermanentEffect(ServerPlayer var0, HexEffect var1) {
-      Holder var2 = effect(var1.key);
+      MobEffect var2 = effect(var1.key);
       if (var2 != null) {
          var0.addEffect(new MobEffectInstance(var2, -1, var1.amplifier, true, false, false));
       }
@@ -1230,12 +1224,10 @@ public final class HexEffects {
 
    public static void feastFoodBuff(ServerPlayer var0) {
       if (hasHex(var0, "gluttonous_feast")) {
-         Holder var1 = FEAST_BUFFS[ThreadLocalRandom.current().nextInt(FEAST_BUFFS.length)];
+         MobEffect var1 = FEAST_BUFFS[ThreadLocalRandom.current().nextInt(FEAST_BUFFS.length)];
          var0.addEffect(new MobEffectInstance(var1, 300, 1, false, true, true));
          growFeastScale(var0);
-         var0.sendOverlayMessage(
-            Component.translatable("hexbingo.msg.feast_buff", new Object[]{((MobEffect)var1.value()).getDisplayName()}).withStyle(ChatFormatting.GOLD)
-         );
+         Msgs.overlay(var0, Component.translatable("hexbingo.msg.feast_buff", new Object[]{var1.getDisplayName()}).withStyle(ChatFormatting.GOLD));
       }
    }
 
@@ -1249,17 +1241,17 @@ public final class HexEffects {
       Integer var1 = FEAST_SCALE.get(var0.getUUID());
       if (var1 != null && var1 > 0) {
          double var2 = Math.min(0.5, 0.02 * var1);
-         var0.getAttribute(Attributes.SCALE)
-            .addOrUpdateTransientModifier(new AttributeModifier(modifierId("gluttonous_feast_scale", 0), var2, Operation.ADD_VALUE));
+         var0.getAttribute(HexAttributes.SCALE.get())
+            .addTransientModifier(new AttributeModifier(modifierId("gluttonous_feast_scale", 0), "hexbingo", var2, Operation.ADDITION));
       }
    }
 
    public static void checkEnchantedItemTasks(ServerPlayer var0) {
-      Bingo var1 = Bingo.get(var0.level());
+      Bongo var1 = Bongo.get(var0.level());
       if (var1.canCompleteTasks(var0)) {
          List<ItemStack> var2 = var1.getElementsOf(TaskTypeItem.INSTANCE).toList();
          if (!var2.isEmpty()) {
-            NonNullList<ItemStack> var3 = var0.getInventory().getNonEquipmentItems();
+            NonNullList<ItemStack> var3 = InventoryItems.nonEquipment(var0);
 
             for (ItemStack var5 : var2) {
                int var6 = 0;
@@ -1286,16 +1278,14 @@ public final class HexEffects {
       } else if (var0.is(Items.ENCHANTED_BOOK) && var1.is(Items.ENCHANTED_BOOK)) {
          // 附魔书任务：任意附魔、任意附加组件都算获得
          return true;
-      } else if (ItemStack.isSameItemSameComponents(var0, var1)) {
+      } else if (ItemStack.isSameItemSameTags(var0, var1)) {
          return true;
-      } else if (var1.has(DataComponents.ENCHANTMENTS) || var1.has(DataComponents.STORED_ENCHANTMENTS)) {
+      } else if (Stacks.hasEnchantments(var1)) {
          return false;
       } else {
          ItemStack var2 = var0.copy();
-         var2.remove(DataComponents.ENCHANTMENTS);
-         var2.remove(DataComponents.STORED_ENCHANTMENTS);
-         var2.remove(DataComponents.REPAIR_COST);
-         return ItemStack.isSameItemSameComponents(var2, var1);
+         Stacks.clearEnchantments(var2);
+         return ItemStack.isSameItemSameTags(var2, var1);
       }
    }
 
@@ -1303,7 +1293,7 @@ public final class HexEffects {
       if (hasHex(var0, "gluttonous_feast") && var0.tickCount % 10 == 0) {
          MinecraftServer var1 = var0.level().getServer();
          if (var1 != null) {
-            Bingo var2 = Bingo.get(var1.overworld());
+            Bongo var2 = Bongo.get(Levels.overworld(var1));
             if (var2.running() && var2.getTeam(var0) != null && var2.getSettings().game().invulnerable()) {
                FoodData var3 = var0.getFoodData();
                if (var3.getFoodLevel() >= 20) {
@@ -1340,10 +1330,10 @@ public final class HexEffects {
                            applyFeastScale(var0);
                            break;
                         case "glass_cannon_task":
-                           applyNegativeAttribute(var0, var4, var7, Attributes.MAX_HEALTH, -var8.percent, Operation.ADD_MULTIPLIED_BASE);
+                           applyNegativeAttribute(var0, var4, var7, Attributes.MAX_HEALTH, -var8.percent, Operation.MULTIPLY_BASE);
                            break;
                         case "no_armor_task_xp":
-                           applyNegativeAttribute(var0, var4, var7, Attributes.ARMOR, -var8.amount, Operation.ADD_VALUE);
+                           applyNegativeAttribute(var0, var4, var7, Attributes.ARMOR, -var8.amount, Operation.ADDITION);
                            break;
                         // 孤勇者已禁用
                         // case "play_song_buff":
@@ -1496,18 +1486,18 @@ public final class HexEffects {
          }
       }
 
-      for (Holder var4 : ALL_ATTRIBUTES) {
+      for (Attribute var4 : ALL_ATTRIBUTES) {
          AttributeInstance var5 = var0.getAttribute(var4);
          if (var5 != null) {
             for (AttributeModifier var7 : new ArrayList<AttributeModifier>(var5.getModifiers())) {
-               if (var7.id().getNamespace().equals("hexbingo")) {
-                  var5.removeModifier(var7.id());
+               if (var7.getName().startsWith("hexbingo")) {
+                  var5.removeModifier(var7.getId());
                }
             }
          }
       }
 
-      for (Holder var11 : ALL_EFFECTS) {
+      for (MobEffect var11 : ALL_EFFECTS) {
          if (var11 != MobEffects.NIGHT_VISION) {
             MobEffectInstance var12 = var0.getEffect(var11);
             if (var12 != null && var12.isInfiniteDuration()) {
@@ -1538,8 +1528,7 @@ public final class HexEffects {
       tickEndExile(var0);
       if (DAY_NIGHT_UNTIL > 0L && var1 >= DAY_NIGHT_UNTIL) {
          DAY_NIGHT_UNTIL = 0L;
-         Registry<WorldClock> var21 = var0.registryAccess().lookupOrThrow(Registries.WORLD_CLOCK);
-         var0.clockManager().setPaused(var21.getOrThrow(WorldClocks.OVERWORLD), false);
+         Clock.setPaused(var0, false);
       }
 
       Iterator<Map.Entry<UUID, HexEffects.BanishState>> var22 = BANISHED.entrySet().iterator();
@@ -1556,7 +1545,7 @@ public final class HexEffects {
 
             ServerLevel var26 = var0.getLevel(var24.dimension);
             if (var26 != null) {
-               var25.teleportTo(var26, var24.x, var24.y, var24.z, Set.of(), var24.yaw, var24.pitch, false);
+               Teleport.teleport(var25, var26, new Vec3(var24.x, var24.y, var24.z), var24.yaw, var24.pitch);
                var25.resetFallDistance();
                var25.setRemainingFireTicks(0);
             }
@@ -1566,7 +1555,7 @@ public final class HexEffects {
          }
       }
 
-      Bingo var3 = Bingo.get(var0.overworld());
+      Bongo var3 = Bongo.get(Levels.overworld(var0));
 
       for (ServerPlayer var5 : var0.getPlayerList().getPlayers()) {
          UUID var20 = var5.getUUID();
@@ -1711,8 +1700,8 @@ public final class HexEffects {
                      // 临门一脚：只差 1 格成线时全队获得急迫 II 与速度 I
                      case "near_line":
                         if (var5.tickCount / 20 % 2 == 0 && var8 != null && isNearLine(var8, var3.tasks().size())) {
-                           var5.addEffect(new MobEffectInstance(MobEffects.HASTE, 100, 1, false, false, true));
-                           var5.addEffect(new MobEffectInstance(MobEffects.SPEED, 100, 0, false, false, true));
+                           var5.addEffect(new MobEffectInstance(MobEffects.DIG_SPEED, 100, 1, false, false, true));
+                           var5.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 100, 0, false, false, true));
                         }
                         break;
                   }
@@ -1729,7 +1718,7 @@ public final class HexEffects {
    }
 
    private static void updateScalingAttribute(ServerPlayer var0, String var1, int var2, HexEffect var3, int var4) {
-      Holder var5 = attribute(var3.key);
+      Attribute var5 = attribute(var3.key);
       if (var5 != null) {
          AttributeInstance var6 = var0.getAttribute(var5);
          if (var6 != null) {
@@ -1737,14 +1726,14 @@ public final class HexEffects {
             if (var7 <= 0.0) {
                var6.removeModifier(modifierId(var1, var2));
             } else {
-               var6.addOrUpdateTransientModifier(new AttributeModifier(modifierId(var1, var2), var7, operation(var3.operation)));
+               Attr.addOrUpdate(var6, new AttributeModifier(modifierId(var1, var2), "hexbingo", var7, operation(var3.operation)));
             }
          }
       }
    }
 
    private static void updateTeamCountAttribute(ServerPlayer var0, String var1, int var2, HexEffect var3, Team var4) {
-      Holder var5 = attribute(var3.key);
+      Attribute var5 = attribute(var3.key);
       if (var5 != null && var4 != null) {
          AttributeInstance var6 = var0.getAttribute(var5);
          if (var6 != null) {
@@ -1763,13 +1752,13 @@ public final class HexEffects {
             if (var15 <= 0.0) {
                var6.removeModifier(modifierId(var1, var2));
             } else {
-               var6.addOrUpdateTransientModifier(new AttributeModifier(modifierId(var1, var2), var15, operation(var3.operation)));
+               Attr.addOrUpdate(var6, new AttributeModifier(modifierId(var1, var2), "hexbingo", var15, operation(var3.operation)));
             }
          }
       }
    }
 
-   private static void updateHoldingItemSpeed(ServerPlayer var0, String var1, int var2, HexEffect var3, Bingo var4, Team var5) {
+   private static void updateHoldingItemSpeed(ServerPlayer var0, String var1, int var2, HexEffect var3, Bongo var4, Team var5) {
       AttributeInstance var6 = var0.getAttribute(Attributes.MOVEMENT_SPEED);
       if (var6 != null && var5 != null) {
          boolean var7 = false;
@@ -1786,7 +1775,7 @@ public final class HexEffects {
          }
 
          if (var7) {
-            var6.addOrUpdateTransientModifier(new AttributeModifier(modifierId(var1, var2), var3.percent, Operation.ADD_MULTIPLIED_BASE));
+            Attr.addOrUpdate(var6, new AttributeModifier(modifierId(var1, var2), "hexbingo", var3.percent, Operation.MULTIPLY_BASE));
          } else {
             var6.removeModifier(modifierId(var1, var2));
          }
@@ -1794,7 +1783,7 @@ public final class HexEffects {
    }
 
    private static boolean holdsItem(ServerPlayer var0, Item var1) {
-      for (ItemStack var3 : var0.getInventory().getNonEquipmentItems()) {
+      for (ItemStack var3 : InventoryItems.nonEquipment(var0)) {
          if (!var3.isEmpty() && var3.getItem() == var1) {
             return true;
          }
@@ -1804,27 +1793,27 @@ public final class HexEffects {
    }
 
    private static void cleanse(ServerPlayer var0) {
-      Holder[] var1 = new Holder[]{
-         MobEffects.SLOWNESS,
-         MobEffects.MINING_FATIGUE,
+      MobEffect[] var1 = new MobEffect[]{
+         MobEffects.MOVEMENT_SLOWDOWN,
+         MobEffects.DIG_SLOWDOWN,
          MobEffects.WEAKNESS,
          MobEffects.POISON,
          MobEffects.WITHER,
          MobEffects.BLINDNESS,
-         MobEffects.NAUSEA,
+         MobEffects.CONFUSION,
          MobEffects.HUNGER,
          MobEffects.LEVITATION,
          MobEffects.DARKNESS,
          MobEffects.UNLUCK
       };
 
-      for (Holder var5 : var1) {
+      for (MobEffect var5 : var1) {
          var0.removeEffect(var5);
       }
    }
 
    private static void aura(ServerPlayer var0, Team var1, HexEffect var2) {
-      Holder var3 = effect(var2.key);
+      MobEffect var3 = effect(var2.key);
       if (var3 != null) {
          double var4 = var2.radius > 0.0 ? var2.radius : 12.0;
          double var6 = var4 * var4;
@@ -1858,13 +1847,13 @@ public final class HexEffects {
       }
    }
 
-   public static void onTask(BingoTaskEvent var0) {
+   public static void onTask(BongoTaskEvent var0) {
       ServerPlayer var1 = var0.getPlayer();
       MinecraftServer var2 = var1.level().getServer();
       if (var2 != null) {
          HexGameData var3 = HexGameData.get(var2);
          if (var3.mayhem()) {
-            Bingo var4 = var0.getBingo();
+            Bongo var4 = var0.getBongo();
             Team var5 = var4.getTeam(var1);
             if (var5 != null) {
                int var6 = var4.tasks().indexOf(var0.getTask());
@@ -2016,7 +2005,7 @@ public final class HexEffects {
                      for (Hex var23 : hexes(var21)) {
                         for (HexEffect var25 : var23.effects()) {
                            if (var25.type.equals("team_rally")) {
-                              Holder var26 = effect(var25.key);
+                              MobEffect var26 = effect(var25.key);
                               if (var26 != null) {
                                  var21.addEffect(new MobEffectInstance(var26, var25.seconds * 20, var25.amplifier, true, false, false));
                               }
@@ -2031,7 +2020,7 @@ public final class HexEffects {
    }
 
    private static void applyTimedEffect(ServerPlayer var0, HexEffect var1) {
-      Holder var2 = effect(var1.key);
+      MobEffect var2 = effect(var1.key);
       if (var2 != null && var1.seconds > 0) {
          var0.addEffect(new MobEffectInstance(var2, var1.seconds * 20, var1.amplifier, true, false, false));
       }
@@ -2042,7 +2031,7 @@ public final class HexEffects {
          var1 = 5;
       }
 
-      var0.addEffect(new MobEffectInstance(MobEffects.SPEED, var1 * 20, var2, true, false, false));
+      var0.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, var1 * 20, var2, true, false, false));
    }
 
    private static void scoutEnemies(ServerPlayer var0, Team var1, HexEffect var2) {
@@ -2062,7 +2051,7 @@ public final class HexEffects {
    private static void rerollTasks(ServerPlayer var0, String var1) {
       MinecraftServer var2 = var0.level().getServer();
       if (var2 != null) {
-         Bingo var3 = Bingo.get(var2.overworld());
+         Bongo var3 = Bongo.get(Levels.overworld(var2));
          if (var3.running()) {
             ArrayList<Task> var4 = new ArrayList<>(var3.tasks());
             int var5 = var4.size();
@@ -2114,7 +2103,7 @@ public final class HexEffects {
                      }
 
                      var3.setTasks(var4);
-                     var3.markDirty(true);
+                     var3.setChanged(true);
                      var3.checkWin();
                      var0.sendSystemMessage(
                         Component.translatable("hexbingo.msg.flip_tasks", new Object[]{var22.size()}).withStyle(ChatFormatting.LIGHT_PURPLE)
@@ -2137,7 +2126,7 @@ public final class HexEffects {
                      Task var15 = (Task)var19.get(var21.nextInt(var19.size()));
                      var4.set(var27, var15);
                      var3.setTasks(var4);
-                     var3.markDirty(true);
+                     var3.setChanged(true);
                      var3.checkWin();
                      var22.add(taskChangeMessage(var2, var14, var15));
                   }
@@ -2160,7 +2149,7 @@ public final class HexEffects {
       MinecraftServer var2 = var0.level().getServer();
       int var7 = -1;
       if (var2 != null) {
-         Bingo var3 = Bingo.get(var2.overworld());
+         Bongo var3 = Bongo.get(Levels.overworld(var2));
          Team var4 = var3.getTeam(var0);
          if (var4 != null) {
             for (int var5 = 0; var5 < var1; var5++) {
@@ -2178,7 +2167,7 @@ public final class HexEffects {
       return var7;
    }
 
-   private static int randomAdjacent(Bingo var0, Team var1, int var2) {
+   private static int randomAdjacent(Bongo var0, Team var1, int var2) {
       if (var2 >= 0 && var0.tasks().size() == 25) {
          ArrayList<Integer> var3 = new ArrayList<>(4);
          int var4 = var2 / 5;
@@ -2206,12 +2195,12 @@ public final class HexEffects {
       }
    }
 
-   private static int randomIncomplete(Bingo var0, Team var1) {
+   private static int randomIncomplete(Bongo var0, Team var1) {
       List var2 = incompleteTasks(var0, var1);
       return var2.isEmpty() ? -1 : (Integer)var2.get(ThreadLocalRandom.current().nextInt(var2.size()));
    }
 
-   private static List<Integer> incompleteTasks(Bingo var0, Team var1) {
+   private static List<Integer> incompleteTasks(Bongo var0, Team var1) {
       ArrayList var2 = new ArrayList();
       int var3 = var0.tasks().size();
 
@@ -2224,14 +2213,14 @@ public final class HexEffects {
       return var2;
    }
 
-   private static void completeTask(MinecraftServer var0, Bingo var1, Team var2, int var3) {
+   private static void completeTask(MinecraftServer var0, Bongo var1, Team var2, int var3) {
       if (var3 >= 0 && var3 < var1.tasks().size() && !var2.completed(var3) && !var2.locked(var3) && !isSealed(var0, var3)) {
          var2.complete(var3);
          var1.checkWin();
       }
    }
 
-   private static void lockEnemyTasks(Bingo var0, Team var1, int var2) {
+   private static void lockEnemyTasks(Bongo var0, Team var1, int var2) {
       for (Team var4 : var0.getTeams()) {
          if (var4 != var1 && !var4.getPlayers().isEmpty()) {
             for (int var5 = 0; var5 < var2; var5++) {
@@ -2253,7 +2242,7 @@ public final class HexEffects {
       }
    }
 
-   private static void revealTasks(MinecraftServer var0, Bingo var1, Team var2, int var3) {
+   private static void revealTasks(MinecraftServer var0, Bongo var1, Team var2, int var3) {
       List var4 = incompleteTasks(var1, var2);
       if (!var4.isEmpty()) {
          MutableComponent var5 = Component.literal("[海克斯] 未完成任务: ");
@@ -2326,7 +2315,7 @@ public final class HexEffects {
       return var0.getElement(var0.getType()).orElse(null);
    }
 
-   public static void incomingDamage(LivingIncomingDamageEvent var0) {
+   public static void incomingDamage(LivingHurtEvent var0) {
       // 无敌小宠物：拦截创造模式等绕过无敌的伤害，但放行 /kill（generic_kill）
       if (isProtectedPet(var0.getEntity()) && !var0.getSource().is(DamageTypes.GENERIC_KILL)) {
          var0.setCanceled(true);
@@ -2376,7 +2365,7 @@ public final class HexEffects {
                            THORNS.set(Boolean.TRUE);
 
                            try {
-                              var20.hurtServer(var1.level(), var1.damageSources().thorns(var1), (float)(var5 * var12.percent));
+                              var20.hurt(var1.damageSources().thorns(var1), (float)(var5 * var12.percent));
                            } finally {
                               THORNS.set(Boolean.FALSE);
                            }
@@ -2384,7 +2373,7 @@ public final class HexEffects {
                         break;
                      case "slow_attacker":
                         if (var4 instanceof LivingEntity var15 && var7.nextDouble() < var12.chance) {
-                           var15.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, var12.seconds * 20, var12.amplifier, false, false, false));
+                           var15.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, var12.seconds * 20, var12.amplifier, false, false, false));
                         }
                         break;
                      case "ignite_attacker":
@@ -2398,24 +2387,24 @@ public final class HexEffects {
       }
    }
 
-   public static void damageDealt(Pre var0) {
+   public static void damageDealt(LivingHurtEvent var0) {
       if (var0.getSource().getEntity() instanceof ServerPlayer var1) {
          // 蝙蝠形态无法攻击
          if (isBatForm(var1)) {
-            var0.setNewDamage(0.0F);
+            var0.setAmount(0.0F);
             return;
          }
 
          HexEffects.Temp var7 = TEMP_DAMAGE.get(var1.getUUID());
          if (var7 != null && var7.active()) {
-            var0.setNewDamage(var0.getNewDamage() * (1.0F + var7.value()));
+            var0.setAmount(var0.getAmount() * (1.0F + var7.value()));
          }
 
          if (isAhead(var1)) {
             for (Hex var4 : hexes(var1)) {
                for (HexEffect var6 : var4.effects()) {
                   if (var6.type.equals("ahead_power")) {
-                     var0.setNewDamage((float)(var0.getNewDamage() * (1.0 + var6.percent)));
+                     var0.setAmount((float)(var0.getAmount() * (1.0 + var6.percent)));
                   }
                }
             }
@@ -2423,12 +2412,12 @@ public final class HexEffects {
       }
    }
 
-   public static void damagePost(Post var0) {
+   public static void damagePost(LivingDamageEvent var0) {
       if (var0.getSource().getEntity() instanceof ServerPlayer var1) {
          List<Hex> var18 = hexes(var1);
          HexEffects.Temp var3 = TEMP_LIFESTEAL.get(var1.getUUID());
          if (var3 != null && var3.active()) {
-            var1.heal(var0.getHealthDamage() * var3.value());
+            var1.heal(var0.getAmount() * var3.value());
          }
 
          if (!var18.isEmpty()) {
@@ -2439,12 +2428,13 @@ public final class HexEffects {
                for (HexEffect var9 : var7.effects()) {
                   switch (var9.type) {
                      case "lifesteal":
-                        var1.heal((float)(var0.getHealthDamage() * var9.percent));
+                        var1.heal((float)(var0.getAmount() * var9.percent));
                         break;
                      case "gold_on_hit":
-                        if (!(var4 instanceof LivingEntity var10) || var4 instanceof ServerPlayer) {
-                           break;
-                        }
+                        if (var4 instanceof ServerPlayer) {
+                  break;
+               }
+               LivingEntity var10 = var4;
 
                         long var13 = System.currentTimeMillis();
                         Long var15 = GOLD_RUSH.get(var10.getUUID());
@@ -2458,11 +2448,12 @@ public final class HexEffects {
                      case "collector":
                         // 收集者：击杀生命值低于 3% 的生物和玩家
                         if (var4 != var1 && !var4.isDeadOrDying() && var4.getHealth() > 0.0F && var4.getHealth() < var4.getMaxHealth() * 0.03F) {
-                           var4.hurtServer(var1.level(), var1.damageSources().playerAttack(var1), Float.MAX_VALUE);
+                           var4.hurt(var1.damageSources().playerAttack(var1), Float.MAX_VALUE);
                         }
                         break;
                      case "poison_blade":
-                        if (var4 instanceof LivingEntity var16 && var4 != var1 && var5.nextDouble() < var9.chance) {
+                        if (var4 != var1 && var5.nextDouble() < var9.chance) {
+                  LivingEntity var16 = var4;
                            var16.addEffect(new MobEffectInstance(MobEffects.POISON, var9.seconds * 20, var9.amplifier, false, false, false));
                         }
                   }
@@ -2491,7 +2482,7 @@ public final class HexEffects {
                }
 
                if (var5.type.equals("kill_random_buff") && var0.getEntity() instanceof Monster) {
-                  Holder var6 = randomBuff();
+                  MobEffect var6 = randomBuff();
                   var1.addEffect(new MobEffectInstance(var6, 1200, ThreadLocalRandom.current().nextInt(2), true, false, false));
                }
             }
@@ -2503,15 +2494,15 @@ public final class HexEffects {
       }
    }
 
-   private static Holder<MobEffect> randomBuff() {
-      Holder[] var0 = new Holder[]{
-         MobEffects.SPEED, MobEffects.HASTE, MobEffects.STRENGTH, MobEffects.RESISTANCE, MobEffects.REGENERATION, MobEffects.ABSORPTION
+   private static MobEffect randomBuff() {
+      MobEffect[] var0 = new MobEffect[]{
+         MobEffects.MOVEMENT_SPEED, MobEffects.DIG_SPEED, MobEffects.DAMAGE_BOOST, MobEffects.DAMAGE_RESISTANCE, MobEffects.REGENERATION, MobEffects.ABSORPTION
       };
       return var0[ThreadLocalRandom.current().nextInt(var0.length)];
    }
 
    private static boolean isBehind(ServerPlayer var0) {
-      Bingo var1 = Bingo.get(var0.level());
+      Bongo var1 = Bongo.get(var0.level());
       Team var2 = var1.getTeam(var0);
       if (var2 == null) {
          return false;
@@ -2530,7 +2521,7 @@ public final class HexEffects {
    }
 
    private static boolean isAhead(ServerPlayer var0) {
-      Bingo var1 = Bingo.get(var0.level());
+      Bongo var1 = Bongo.get(var0.level());
       Team var2 = var1.getTeam(var0);
       if (var2 == null) {
          return false;
@@ -2601,7 +2592,7 @@ public final class HexEffects {
                var0.sendSystemMessage(Component.translatable("hexbingo.rtp.failed").withStyle(ChatFormatting.RED));
                return true;
             } else {
-               var0.teleportTo(var5, var7.getX() + 0.5, var7.getY(), var7.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+               Teleport.teleport(var0, var5, new Vec3(var7.getX() + 0.5, var7.getY(), var7.getZ() + 0.5), var0.getYRot(), var0.getXRot());
                RTP_COOLDOWN.put(var0.getUUID(), var2 + skillCooldown(var0, 5000L));
                var0.sendSystemMessage(Component.translatable("hexbingo.rtp.success").withStyle(ChatFormatting.GREEN));
                return true;
@@ -2750,7 +2741,7 @@ public final class HexEffects {
    private static void swapTasks(ServerPlayer var0) {
       MinecraftServer var1 = var0.level().getServer();
       if (var1 != null) {
-         Bingo var2 = Bingo.get(var1.overworld());
+         Bongo var2 = Bongo.get(Levels.overworld(var1));
          if (var2.running()) {
             ArrayList var3 = new ArrayList(var2.tasks());
             if (var3.size() >= 2) {
@@ -2775,7 +2766,7 @@ public final class HexEffects {
                var3.set(var5, (Task)var3.get(var6));
                var3.set(var6, var7);
                var2.setTasks(var3);
-               var2.markDirty(true);
+               var2.setChanged(true);
                var2.checkWin();
                var0.sendSystemMessage(
                   Component.translatable("hexbingo.msg.swap_tasks", new Object[]{var7.contentName(var1), ((Task)var3.get(var5)).contentName(var1)})
@@ -2840,7 +2831,7 @@ public final class HexEffects {
          if (var3 == null) {
             var0.sendSystemMessage(Component.translatable("hexbingo.rtp.failed").withStyle(ChatFormatting.RED));
          } else {
-            var0.teleportTo(var1, var3.getX() + 0.5, var3.getY(), var3.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+            Teleport.teleport(var0, var1, new Vec3(var3.getX() + 0.5, var3.getY(), var3.getZ() + 0.5), var0.getYRot(), var0.getXRot());
             var0.sendSystemMessage(Component.translatable("hexbingo.msg.wormhole").withStyle(ChatFormatting.AQUA));
          }
       }
@@ -2858,21 +2849,21 @@ public final class HexEffects {
 
    private static void summonCats(ServerPlayer var0) {
       if (var0.level() instanceof ServerLevel var1) {
-         Registry var12 = var1.registryAccess().lookupOrThrow(Registries.CAT_VARIANT);
+         Registry var12 = var1.registryAccess().registryOrThrow(Registries.CAT_VARIANT);
          ThreadLocalRandom var3 = ThreadLocalRandom.current();
          String[] var4 = new String[]{"all_black", "black", "british_shorthair", "calico", "jellie", "persian", "ragdoll", "red", "siamese", "tabby", "white"};
          int var5 = 0;
          List<Entity> var13 = SUMMONED_PETS.computeIfAbsent(var0.getUUID(), var6 -> new ArrayList<>());
 
          for (String var9 : var4) {
-            CatVariant var10 = (CatVariant)var12.getValue(Identifier.fromNamespaceAndPath("minecraft", var9));
+            CatVariant var10 = (CatVariant)var12.get(new ResourceLocation("minecraft", var9));
             if (var10 != null) {
-               Cat var11 = (Cat)EntityTypes.CAT.create(var1, EntitySpawnReason.MOB_SUMMONED);
+               Cat var11 = (Cat)EntityType.CAT.create(var1);
                if (var11 != null) {
                   var11.setPos(var0.getX() + var3.nextDouble() * 6.0 - 3.0, var0.getY(), var0.getZ() + var3.nextDouble() * 6.0 - 3.0);
-                  setVariant(var11, Cat.class, "DATA_VARIANT_ID", var12.wrapAsHolder(var10));
-                  var11.setTame(true, true);
-                  var11.setOwner(var0);
+                  setVariant(var11, Cat.class, "DATA_VARIANT_ID", var10);
+                  var11.setTame(true);
+                  var11.setOwnerUUID(var0.getUUID());
                   var11.setPersistenceRequired();
                   var1.addFreshEntity(var11);
                   var13.add(var11);
@@ -2887,21 +2878,19 @@ public final class HexEffects {
 
    private static void summonWolves(ServerPlayer var0) {
       if (var0.level() instanceof ServerLevel var1) {
-         Registry var12 = var1.registryAccess().lookupOrThrow(Registries.WOLF_VARIANT);
          ThreadLocalRandom var3 = ThreadLocalRandom.current();
          String[] var4 = new String[]{"ashen", "black", "chestnut", "pale", "rusty", "snowy", "spotted", "striped", "woods"};
          int var5 = 0;
          List<Entity> var13 = SUMMONED_PETS.computeIfAbsent(var0.getUUID(), var6 -> new ArrayList<>());
 
          for (String var9 : var4) {
-            WolfVariant var10 = (WolfVariant)var12.getValue(Identifier.fromNamespaceAndPath("minecraft", var9));
+            Object var10 = var9;
             if (var10 != null) {
-               Wolf var11 = (Wolf)EntityTypes.WOLF.create(var1, EntitySpawnReason.MOB_SUMMONED);
+               Wolf var11 = (Wolf)EntityType.WOLF.create(var1);
                if (var11 != null) {
                   var11.setPos(var0.getX() + var3.nextDouble() * 6.0 - 3.0, var0.getY(), var0.getZ() + var3.nextDouble() * 6.0 - 3.0);
-                  setVariant(var11, Wolf.class, "DATA_VARIANT_ID", var12.wrapAsHolder(var10));
-                  var11.setTame(true, true);
-                  var11.setOwner(var0);
+                  var11.setTame(true);
+                  var11.setOwnerUUID(var0.getUUID());
                   var11.setPersistenceRequired();
                   var1.addFreshEntity(var11);
                   var13.add(var11);
@@ -2955,7 +2944,7 @@ public final class HexEffects {
       Team var5 = team(var0);
       int var6 = 0;
 
-      for (Team var8 : Bingo.get(var1.overworld()).getTeams()) {
+      for (Team var8 : Bongo.get(Levels.overworld(var1)).getTeams()) {
          if (var8 != var5 && !var8.getPlayers().isEmpty()) {
             long jamEnd = var2 + 180000L;
             BP_JAM.put(var8.color, jamEnd);
@@ -3042,7 +3031,7 @@ public final class HexEffects {
    private static void nearestVillage(ServerPlayer var0) {
       MinecraftServer var1 = var0.level().getServer();
       if (var1 != null) {
-         ServerLevel var2 = var1.overworld();
+         ServerLevel var2 = Levels.overworld(var1);
          BlockPos var3 = var2.findNearestMapStructure(StructureTags.VILLAGE, var0.blockPosition(), 100, false);
          if (var3 == null) {
             if (!generateStructure(var0, var2, "minecraft:village", "hexbingo.msg.village_tp")) {
@@ -3052,7 +3041,7 @@ public final class HexEffects {
             BlockPos var4 = structureCenter(var2, var3, StructureTags.VILLAGE);
             BlockPos var5 = var4 == null ? null : findSpotNear(var2, var4, 16, 8);
             if (var5 != null) {
-               var0.teleportTo(var2, var5.getX() + 0.5, var5.getY(), var5.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+               Teleport.teleport(var0, var2, new Vec3(var5.getX() + 0.5, var5.getY(), var5.getZ() + 0.5), var0.getYRot(), var0.getXRot());
                var0.sendSystemMessage(Component.translatable("hexbingo.msg.village_tp").withStyle(ChatFormatting.GOLD));
             } else {
                var2.getChunk(var3.getX() >> 4, var3.getZ() >> 4);
@@ -3063,7 +3052,7 @@ public final class HexEffects {
                      var0.sendSystemMessage(Component.translatable("hexbingo.msg.village_fail").withStyle(ChatFormatting.RED));
                   }
                } else {
-                  var0.teleportTo(var2, var3.getX() + 0.5, var7, var3.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+                  Teleport.teleport(var0, var2, new Vec3(var3.getX() + 0.5, var7, var3.getZ() + 0.5), var0.getYRot(), var0.getXRot());
                   var0.sendSystemMessage(Component.translatable("hexbingo.msg.village_tp").withStyle(ChatFormatting.GOLD));
                }
             }
@@ -3078,7 +3067,7 @@ public final class HexEffects {
          return;
       }
 
-      ServerLevel var2 = var1.overworld();
+      ServerLevel var2 = Levels.overworld(var1);
       Pair<BlockPos, Holder<Biome>> var3 = var2.findClosestBiome3d(var0x -> var0x.is(Biomes.DEEP_DARK), var0.blockPosition(), 12800, 32, 96);
       if (var3 == null) {
          BlockPos var5 = createArtificialDeepDark(var2, var0, 500);
@@ -3087,14 +3076,14 @@ public final class HexEffects {
             return;
          }
 
-         var0.teleportTo(var2, var5.getX() + 0.5, var5.getY(), var5.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+         Teleport.teleport(var0, var2, new Vec3(var5.getX() + 0.5, var5.getY(), var5.getZ() + 0.5), var0.getYRot(), var0.getXRot());
          var0.resetFallDistance();
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.gaze_abyss").withStyle(ChatFormatting.DARK_PURPLE));
          return;
       }
 
       BlockPos var4 = findDeepDarkSpot(var2, var3.getFirst());
-      var0.teleportTo(var2, var4.getX() + 0.5, var4.getY(), var4.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+      Teleport.teleport(var0, var2, new Vec3(var4.getX() + 0.5, var4.getY(), var4.getZ() + 0.5), var0.getYRot(), var0.getXRot());
       var0.resetFallDistance();
       var0.sendSystemMessage(Component.translatable("hexbingo.msg.gaze_abyss").withStyle(ChatFormatting.DARK_PURPLE));
    }
@@ -3107,9 +3096,9 @@ public final class HexEffects {
          }
       }
 
-      int var6 = var0.getMinY() + 2;
+      int var6 = var0.getMinBuildHeight() + 2;
 
-      for (int var2 = Math.min(var0.getMaxY() - 2, var1.getY() + 24); var2 >= var6; var2 -= 2) {
+      for (int var2 = Math.min(var0.getMaxBuildHeight() - 2, var1.getY() + 24); var2 >= var6; var2 -= 2) {
          for (int var3 = -8; var3 <= 8; var3 += 2) {
             for (int var4 = -8; var4 <= 8; var4 += 2) {
                BlockPos var5 = var1.offset(var3, var2 - var1.getY(), var4);
@@ -3124,7 +3113,7 @@ public final class HexEffects {
       }
 
       // 没有现成洞穴时，在深暗层高度直接挖一个安全落脚点
-      return carveSafeSpot(var0, new BlockPos(var1.getX(), Math.max(var0.getMinY() + 20, -51), var1.getZ()));
+      return carveSafeSpot(var0, new BlockPos(var1.getX(), Math.max(var0.getMinBuildHeight() + 20, -51), var1.getZ()));
    }
 
    // 谁才是掠夺者：传送到最近的掠夺者前哨站，找不到就在 8 个方向 200 格外生成一座
@@ -3134,13 +3123,13 @@ public final class HexEffects {
          return;
       }
 
-      ServerLevel var2 = var1.overworld();
+      ServerLevel var2 = Levels.overworld(var1);
       BlockPos var3 = var2.findNearestMapStructure(PILLAGER_OUTPOST, var0.blockPosition(), 100, false);
       if (var3 != null) {
          BlockPos var4 = structureCenter(var2, var3, PILLAGER_OUTPOST);
          BlockPos var7 = var4 == null ? null : findSpotNear(var2, var4, 24, 8);
          if (var7 != null) {
-            var0.teleportTo(var2, var7.getX() + 0.5, var7.getY(), var7.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+            Teleport.teleport(var0, var2, new Vec3(var7.getX() + 0.5, var7.getY(), var7.getZ() + 0.5), var0.getYRot(), var0.getXRot());
             var0.resetFallDistance();
             var0.sendSystemMessage(Component.translatable("hexbingo.msg.pillager_outpost").withStyle(ChatFormatting.GOLD));
             return;
@@ -3161,7 +3150,7 @@ public final class HexEffects {
 
       BlockPos var6 = safeSurfaceSpot(var2, var5);
       if (var6 == null) {
-         int var7 = Math.max(var2.getMinY() + 2, var5.getY() + 1);
+         int var7 = Math.max(var2.getMinBuildHeight() + 2, var5.getY() + 1);
          var6 = carveSafeSpot(var2, new BlockPos(var5.getX(), var7, var5.getZ()));
       }
 
@@ -3224,7 +3213,7 @@ public final class HexEffects {
          return;
       }
 
-      ServerLevel var2 = var1.overworld();
+      ServerLevel var2 = Levels.overworld(var1);
       Pair<BlockPos, Holder<Biome>> var3 = var2.findClosestBiome3d(var0x -> var0x.is(Biomes.CHERRY_GROVE), var0.blockPosition(), 12800, 32, 96);
       if (var3 == null) {
          BlockPos var6 = createArtificialBiome(var2, var0, 500, "minecraft:cherry_grove", "cherry");
@@ -3239,7 +3228,7 @@ public final class HexEffects {
 
       BlockPos var4 = safeSurfaceSpot(var2, var3.getFirst());
       if (var4 == null) {
-         int var5 = Math.max(var2.getMinY() + 2, var3.getFirst().getY());
+         int var5 = Math.max(var2.getMinBuildHeight() + 2, var3.getFirst().getY());
          var4 = carveSafeSpot(var2, new BlockPos(var3.getFirst().getX(), var5, var3.getFirst().getZ()));
       }
 
@@ -3253,8 +3242,8 @@ public final class HexEffects {
          return;
       }
 
-      ServerLevel var2 = var1.overworld();
-      Pair<BlockPos, Holder<Biome>> var3 = var2.findClosestBiome3d(var0x -> var0x.is(Biomes.PALE_GARDEN), var0.blockPosition(), 12800, 32, 96);
+      ServerLevel var2 = Levels.overworld(var1);
+      Pair<BlockPos, Holder<Biome>> var3 = var2.findClosestBiome3d(var0x -> var0x.is(Biomes.DARK_FOREST), var0.blockPosition(), 12800, 32, 96);
       if (var3 == null) {
          BlockPos var6 = createArtificialBiome(var2, var0, 500, "minecraft:pale_garden", "pale");
          if (var6 == null) {
@@ -3275,9 +3264,9 @@ public final class HexEffects {
    private static ItemStack paleGardenMap(ServerLevel var0, int var1, int var2) {
       var0.getChunk(var1 >> 4, var2 >> 4);
       ItemStack var3 = MapItem.create(var0, var1, var2, (byte)1, true, true);
-      var3.set(DataComponents.CUSTOM_NAME, Component.translatable("hexbingo.item.pale_garden_map"));
+      Stacks.setName(var3, Component.translatable("hexbingo.item.pale_garden_map"));
       int var4 = var0.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, var1, var2);
-      MapItemSavedData.addTargetDecoration(var3, new BlockPos(var1, var4, var2), "+", MapDecorationTypes.RED_X);
+      MapItemSavedData.addTargetDecoration(var3, new BlockPos(var1, var4, var2), "+", MapDecoration.Type.RED_X);
       return var3;
    }
 
@@ -3288,7 +3277,7 @@ public final class HexEffects {
          return;
       }
 
-      ServerLevel var2 = var1.overworld();
+      ServerLevel var2 = Levels.overworld(var1);
       Pair<BlockPos, Holder<Biome>> var3 = var2.findClosestBiome3d(var0x -> var0x.is(Biomes.MANGROVE_SWAMP), var0.blockPosition(), 12800, 32, 96);
       if (var3 == null) {
          BlockPos var6 = createArtificialBiome(var2, var0, 500, "minecraft:mangrove_swamp", "mangrove");
@@ -3310,9 +3299,9 @@ public final class HexEffects {
    private static ItemStack mangroveMap(ServerLevel var0, int var1, int var2) {
       var0.getChunk(var1 >> 4, var2 >> 4);
       ItemStack var3 = MapItem.create(var0, var1, var2, (byte)1, true, true);
-      var3.set(DataComponents.CUSTOM_NAME, Component.translatable("hexbingo.item.mangrove_map"));
+      Stacks.setName(var3, Component.translatable("hexbingo.item.mangrove_map"));
       int var4 = var0.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, var1, var2);
-      MapItemSavedData.addTargetDecoration(var3, new BlockPos(var1, var4, var2), "+", MapDecorationTypes.RED_X);
+      MapItemSavedData.addTargetDecoration(var3, new BlockPos(var1, var4, var2), "+", MapDecoration.Type.RED_X);
       return var3;
    }
 
@@ -3392,7 +3381,7 @@ public final class HexEffects {
          int var7 = var0.getBlockZ() + (int)Math.round(Math.sin(var4) * (double)var1);
          var2.getChunk(var6 >> 4, var7 >> 4);
          int var8 = var2.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, var6, var7);
-         if (var8 <= var2.getMinY() + 2 || var8 >= var2.getMaxY() - 2) {
+         if (var8 <= var2.getMinBuildHeight() + 2 || var8 >= var2.getMaxBuildHeight() - 2) {
             continue;
          }
 
@@ -3407,7 +3396,7 @@ public final class HexEffects {
 
          String var9 = var2.getBiome(new BlockPos(var6, var8, var7))
             .unwrapKey()
-            .map(var10 -> var10.identifier().getPath())
+            .map(var10 -> var10.location().getPath())
             .orElse("");
          if (var9.contains("ocean")
             || var9.contains("river")
@@ -3450,7 +3439,7 @@ public final class HexEffects {
 
       int var5 = var4.getX();
       int var6 = var4.getZ();
-      int var7 = Math.max(var2.getMinY() + 20, -44);
+      int var7 = Math.max(var2.getMinBuildHeight() + 20, -44);
       var2.getChunk(var5 >> 4, var6 >> 4);
       BlockPos var8 = new BlockPos(var5, var7, var6);
       // 挖出 17×7×17 的洞穴，并铺深板岩地板与天花板
@@ -3493,14 +3482,14 @@ public final class HexEffects {
    }
 
    private static void teleportSurface(ServerPlayer var0, ServerLevel var1, BlockPos var2, String var3) {
-      var0.teleportTo(var1, var2.getX() + 0.5, var2.getY(), var2.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+      Teleport.teleport(var0, var1, new Vec3(var2.getX() + 0.5, var2.getY(), var2.getZ() + 0.5), var0.getYRot(), var0.getXRot());
       var0.resetFallDistance();
       var0.sendSystemMessage(Component.translatable(var3).withStyle(ChatFormatting.GOLD));
    }
 
    private static void summonTravelFrog(ServerPlayer var0) {
       if (var0.level() instanceof ServerLevel var1) {
-         Frog var3 = (Frog)EntityTypes.FROG.create(var1, EntitySpawnReason.MOB_SUMMONED);
+         Frog var3 = (Frog)EntityType.FROG.create(var1);
          if (var3 != null) {
             var3.setPos(var0.getX() + 1.0, var0.getY(), var0.getZ());
             var3.setCustomName(Component.literal("旅行青蛙"));
@@ -3517,7 +3506,7 @@ public final class HexEffects {
 
    public static void tradeFrog(ServerPlayer var0, Frog var1) {
       ItemStack var2 = var0.getMainHandItem();
-      if (var2.getCount() >= 32 && var2.has(DataComponents.FOOD)) {
+      if (var2.getCount() >= 32 && Stacks.isFood(var2)) {
          ItemStack var3 = treasureMap(var0);
          if (var3 == null) {
             var0.sendSystemMessage(Component.translatable("hexbingo.msg.frog_none").withStyle(ChatFormatting.GRAY));
@@ -3539,7 +3528,7 @@ public final class HexEffects {
          return null;
       } else {
          boolean var2 = var0.level().dimension() == Level.NETHER;
-         ServerLevel var3 = var2 ? var1.getLevel(Level.NETHER) : var1.overworld();
+         ServerLevel var3 = var2 ? var1.getLevel(Level.NETHER) : Levels.overworld(var1);
          if (var3 == null) {
             return null;
          } else {
@@ -3556,7 +3545,7 @@ public final class HexEffects {
                boolean var8 = var0.level()
                   .getBiome(var0.blockPosition())
                   .unwrapKey()
-                  .map(var9 -> var9.identifier().getPath())
+                  .map(var9 -> var9.location().getPath())
                   .orElse("")
                   .contains("dark_forest");
                var4 = new TagKey[]{
@@ -3622,11 +3611,11 @@ public final class HexEffects {
 
    private static ItemStack structureMap(ServerLevel var0, int var1, int var2, String var3) {
       ItemStack var4 = MapItem.create(var0, var1, var2, (byte)1, true, true);
-      var4.set(DataComponents.CUSTOM_NAME, Component.literal(var3));
+      Stacks.setName(var4, Component.literal(var3));
       // 未加载区块的 getHeight 会返回世界最低点：先加载区块再取高度
       var0.getChunk(var1 >> 4, var2 >> 4);
       MapItemSavedData.addTargetDecoration(
-         var4, new BlockPos(var1, var0.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, var1, var2), var2), "+", MapDecorationTypes.RED_X
+         var4, new BlockPos(var1, var0.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, var1, var2), var2), "+", MapDecoration.Type.RED_X
       );
       return var4;
    }
@@ -3634,7 +3623,7 @@ public final class HexEffects {
    private static void amnesia(ServerPlayer var0) {
       MinecraftServer var1 = var0.level().getServer();
       if (var1 != null) {
-         Bingo var2 = Bingo.get(var1.overworld());
+         Bongo var2 = Bongo.get(Levels.overworld(var1));
          Team var3 = var2.getTeam(var0);
          // 只收集真正能被退回的格子：被任务护盾锁定的格子跳过，否则会静默失败却提示成功
          ArrayList<Team> var4 = new ArrayList<>();
@@ -3686,7 +3675,7 @@ public final class HexEffects {
       return var1.isEmpty() ? -1 : (Integer)var1.get(ThreadLocalRandom.current().nextInt(var1.size()));
    }
 
-   private static void uncompleteSlot(MinecraftServer var0, Bingo var1, Team var2, int var3) {
+   private static void uncompleteSlot(MinecraftServer var0, Bongo var1, Team var2, int var3) {
       if (var3 >= 0) {
          // 任务护盾：被锁定的卡牌不会被退回
          if (isTaskShielded(var2, var1, var3)) {
@@ -3712,13 +3701,13 @@ public final class HexEffects {
 
          // 占点/锁王模式：被退回的队伍在该格可能因其它队伍的占点而处于锁定状态，清除后才能重新完成
          releaseTeamSlotLock(var1, var2, var3);
-         var1.markDirty(true);
+         var1.setChanged(true);
          var1.checkWin();
       }
    }
 
-   private static void releaseTeamSlotLock(Bingo var0, Team var1, int var2) {
-      if (var2 < 0 || !(var0.getSettings().game().lockout() || var0.getSettings().game().winCondition() == WinCondition.LOCK)) {
+   private static void releaseTeamSlotLock(Bongo var0, Team var1, int var2) {
+      if (var2 < 0 || !(var0.getSettings().game().lockout())) {
          return;
       }
 
@@ -3740,28 +3729,28 @@ public final class HexEffects {
       }
    }
 
-   private static void clearTaskItems(MinecraftServer var0, Bingo var1, Team var2, int var3) {
+   private static void clearTaskItems(MinecraftServer var0, Bongo var1, Team var2, int var3) {
       Task var4 = var1.task(var3);
       if (var4 != null) {
          Object var5 = taskElement(var4);
          if (var5 instanceof ItemStack var6) {
             for (ServerPlayer var10 : onlineTeamPlayers(var0, var2)) {
-               removeMatchingItems(var10, var1x -> ItemStack.isSameItemSameComponents(var1x, var6));
+               removeMatchingItems(var10, var1x -> ItemStack.isSameItemSameTags(var1x, var6));
             }
          } else if (var5 instanceof TagWithCount var7) {
             for (ServerPlayer var22 : onlineTeamPlayers(var0, var2)) {
                removeMatchingItems(var22, var1x -> var7.contains(var1x.getItem()));
             }
-         } else if (var4.getType() == EnchantTaskType.INSTANCE && var5 instanceof Identifier var8) {
-            Registry var21 = var0.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-            Enchantment var23 = (Enchantment)var21.getValue(var8);
+         } else if (var4.getType() == EnchantTaskType.INSTANCE && var5 instanceof ResourceLocation var8) {
+            Registry var21 = var0.registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+            Enchantment var23 = (Enchantment)var21.get(var8);
             if (var23 != null) {
-               Holder var11 = var21.wrapAsHolder(var23);
+               Enchantment var11 = var23;
 
                for (ServerPlayer var13 : onlineTeamPlayers(var0, var2)) {
                   boolean var14 = false;
 
-                  for (ItemStack var16 : var13.getInventory().getNonEquipmentItems()) {
+                  for (ItemStack var16 : InventoryItems.nonEquipment(var13)) {
                      if (!var16.isEmpty() && EnchantmentHelper.getItemEnchantmentLevel(var11, var16) > 0) {
                         stripEnchantment(var16, var11);
                         var14 = true;
@@ -3785,12 +3774,12 @@ public final class HexEffects {
       }
    }
 
-   private static void stripEnchantment(ItemStack var0, Holder<Enchantment> var1) {
-      EnchantmentHelper.updateEnchantments(var0, var1x -> var1x.set(var1, 0));
+   private static void stripEnchantment(ItemStack var0, Enchantment var1) {
+      Stacks.removeEnchantment(var0, var1);
    }
 
    private static void removeMatchingItems(ServerPlayer var0, Predicate<ItemStack> var1) {
-      NonNullList var2 = var0.getInventory().getNonEquipmentItems();
+      NonNullList var2 = InventoryItems.nonEquipment(var0);
       boolean var3 = false;
 
       for (int var4 = 0; var4 < var2.size(); var4++) {
@@ -3815,9 +3804,9 @@ public final class HexEffects {
          var0.addItem(markHexGranted(new ItemStack(var6, 1 + var1.nextInt(5))));
       }
 
-      Registry<Enchantment> var3 = var0.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+      Registry<Enchantment> var3 = var0.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
       ItemStack var4 = new ItemStack(Items.IRON_BOOTS);
-      var4.enchant(var3.wrapAsHolder((Enchantment)var3.getValueOrThrow(Enchantments.FROST_WALKER)), 1);
+      var4.enchant(Enchantments.FROST_WALKER, 1);
       var0.addItem(markHexGranted(var4));
       var0.sendSystemMessage(Component.translatable("hexbingo.msg.ice_boots").withStyle(ChatFormatting.AQUA));
    }
@@ -3828,7 +3817,7 @@ public final class HexEffects {
          MinecraftServer var10 = var2.getServer();
          int var4 = 0;
 
-         for (Team var6 : Bingo.get(var10.overworld()).getTeams()) {
+         for (Team var6 : Bongo.get(Levels.overworld(var10)).getTeams()) {
             if (var6 != var1) {
                for (UUID var8 : var6.getPlayers()) {
                   ServerPlayer var9 = var10.getPlayerList().getPlayer(var8);
@@ -3852,8 +3841,8 @@ public final class HexEffects {
 
    private static ItemStack cursedPumpkin(ServerLevel var0) {
       ItemStack var1 = new ItemStack(Items.CARVED_PUMPKIN);
-      Registry<Enchantment> var2 = var0.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-      var1.enchant(var2.wrapAsHolder((Enchantment)var2.getValueOrThrow(Enchantments.BINDING_CURSE)), 1);
+      Registry<Enchantment> var2 = var0.registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+      var1.enchant(Enchantments.BINDING_CURSE, 1);
       return var1;
    }
 
@@ -3898,7 +3887,7 @@ public final class HexEffects {
                   }
                }
 
-               var0.sendOverlayMessage(Component.translatable("hexbingo.msg.pumpkin_locked").withStyle(ChatFormatting.GRAY));
+               var0.displayClientMessage(Component.translatable("hexbingo.msg.pumpkin_locked").withStyle(ChatFormatting.GRAY), true);
             } finally {
                PUMPKIN_GUARD.set(Boolean.FALSE);
             }
@@ -3923,7 +3912,7 @@ public final class HexEffects {
       }
 
       if (var3 > 1) {
-         var0.sendOverlayMessage(Component.translatable("hexbingo.msg.pumpkin_need_teammate").withStyle(ChatFormatting.GRAY));
+         var0.displayClientMessage(Component.translatable("hexbingo.msg.pumpkin_need_teammate").withStyle(ChatFormatting.GRAY), true);
          return false;
       }
 
@@ -3960,7 +3949,7 @@ public final class HexEffects {
    private static void ravenMouth(ServerPlayer var0) {
       Parrot var1 = null;
       if (var0.level() instanceof ServerLevel var2) {
-         var1 = (Parrot)EntityTypes.PARROT.create(var2, EntitySpawnReason.MOB_SUMMONED);
+         var1 = (Parrot)EntityType.PARROT.create(var2);
          if (var1 != null) {
             var1.setPos(var0.getX() + 1.0, var0.getY(), var0.getZ());
             var1.setCustomName(Component.literal("乌鸦嘴"));
@@ -3976,7 +3965,7 @@ public final class HexEffects {
 
       MinecraftServer var7 = var0.level().getServer();
       if (var7 != null) {
-         Bingo var8 = Bingo.get(var7.overworld());
+         Bongo var8 = Bongo.get(Levels.overworld(var7));
          Team var4 = var8.getTeam(var0);
          if (var4 != null) {
             ThreadLocalRandom var5 = ThreadLocalRandom.current();
@@ -4017,18 +4006,18 @@ public final class HexEffects {
          AttributeInstance var11 = var0.getAttribute(Attributes.MOVEMENT_SPEED);
          if (var11 != null) {
             if (var7 > 0) {
-               var11.addOrUpdateTransientModifier(new AttributeModifier(modifierId(var1, var2), 0.02 * Math.min(var7, 5), Operation.ADD_MULTIPLIED_BASE));
+               Attr.addOrUpdate(var11, new AttributeModifier(modifierId(var1, var2), "hexbingo", 0.02 * Math.min(var7, 5), Operation.MULTIPLY_BASE));
                // 与「临门一脚」叠加时取最高：已有更强的急迫就不要降级覆盖
-               MobEffectInstance var20 = var0.getEffect(MobEffects.HASTE);
+               MobEffectInstance var20 = var0.getEffect(MobEffects.DIG_SPEED);
                if (var20 == null || var20.getAmplifier() < 0 || var20.getAmplifier() == 0 && var20.getDuration() < 60) {
-                  var0.addEffect(new MobEffectInstance(MobEffects.HASTE, 60, 0, true, false, false));
+                  var0.addEffect(new MobEffectInstance(MobEffects.DIG_SPEED, 60, 0, true, false, false));
                }
             } else {
                var11.removeModifier(modifierId(var1, var2));
                // 只清理自己这份短时急迫 I，不要把「临门一脚」的急迫 II 一起移除
-               MobEffectInstance var20 = var0.getEffect(MobEffects.HASTE);
+               MobEffectInstance var20 = var0.getEffect(MobEffects.DIG_SPEED);
                if (var20 != null && var20.getAmplifier() == 0 && var20.getDuration() <= 60) {
-                  var0.removeEffect(MobEffects.HASTE);
+                  var0.removeEffect(MobEffects.DIG_SPEED);
                }
             }
          }
@@ -4040,7 +4029,7 @@ public final class HexEffects {
          BlockPos var5 = var0.blockPosition();
          BlockState var3 = var1.getBlockState(var5);
          if (var1.getBlockState(var5.below()).is(Blocks.GRASS_BLOCK)
-            && (var3.isAir() || var3.is(Blocks.SHORT_GRASS))
+            && (var3.isAir() || var3.is(Blocks.GRASS))
             && ThreadLocalRandom.current().nextDouble() < 0.5) {
             ItemLike[] var4 = new ItemLike[]{
                Blocks.DANDELION,
@@ -4163,7 +4152,7 @@ public final class HexEffects {
    private static int safeGroundY(ServerLevel var0, int var1, int var2, int var3) {
       var0.getChunk(var1 >> 4, var2 >> 4);
 
-      for (int var4 = Math.min(var3, var0.getMaxY() - 2); var4 > var0.getMinY() + 1; var4--) {
+      for (int var4 = Math.min(var3, var0.getMaxBuildHeight() - 2); var4 > var0.getMinBuildHeight() + 1; var4--) {
          BlockState var5 = var0.getBlockState(new BlockPos(var1, var4 - 1, var2));
          if (!var5.isAir()
             && var5.getFluidState().isEmpty()
@@ -4191,7 +4180,7 @@ public final class HexEffects {
             }
 
             buildNetherPlatform(var2, var3, var5, var4);
-            var0.teleportTo(var2, var3 + 0.5, var5, var4 + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+            Teleport.teleport(var0, var2, new Vec3(var3 + 0.5, var5, var4 + 0.5), var0.getYRot(), var0.getXRot());
             NETHER_SENT.add(var0.getUUID());
             NETHER_ESCAPED.remove(var0.getUUID());
             NETHER_DIED.remove(var0.getUUID());
@@ -4253,7 +4242,7 @@ public final class HexEffects {
       }
 
       buildNetherPlatform(var3, var4, var6, var5);
-      var0.teleportTo(var3, var4 + 0.5, var6, var5 + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+      Teleport.teleport(var0, var3, new Vec3(var4 + 0.5, var6, var5 + 0.5), var0.getYRot(), var0.getXRot());
       var0.resetFallDistance();
       var0.setRemainingFireTicks(0);
       var0.sendSystemMessage(Component.translatable("hexbingo.msg.nether_death_return").withStyle(ChatFormatting.RED));
@@ -4266,7 +4255,7 @@ public final class HexEffects {
    private static void randomBingo(ServerPlayer var0) {
       MinecraftServer var1 = var0.level().getServer();
       if (var1 != null) {
-         Bingo var2 = Bingo.get(var1.overworld());
+         Bongo var2 = Bongo.get(Levels.overworld(var1));
          Team var3 = var2.getTeam(var0);
          if (var3 != null) {
             int var4 = -1;
@@ -4322,7 +4311,7 @@ public final class HexEffects {
             var8 = var7 == null ? null : findSpotNear(var5, var7, 24, 8);
          }
          if (var8 != null) {
-            var0.teleportTo(var5, var8.getX() + 0.5, var8.getY(), var8.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+            Teleport.teleport(var0, var5, new Vec3(var8.getX() + 0.5, var8.getY(), var8.getZ() + 0.5), var0.getYRot(), var0.getXRot());
             var0.resetFallDistance();
             var0.sendSystemMessage(Component.translatable(var2).withStyle(ChatFormatting.GOLD));
          } else {
@@ -4332,13 +4321,13 @@ public final class HexEffects {
             boolean var10 = !var5.getBlockState(new BlockPos(var6.getX(), var9 - 1, var6.getZ())).getFluidState().isEmpty();
             if (var10) {
                // 水下结构（沉船/海底废弃门）找不到干燥落脚点：直接传送到水面上方
-               var0.teleportTo(var5, var6.getX() + 0.5, var9 + 1, var6.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+               Teleport.teleport(var0, var5, new Vec3(var6.getX() + 0.5, var9 + 1, var6.getZ() + 0.5), var0.getYRot(), var0.getXRot());
                var0.resetFallDistance();
                var0.sendSystemMessage(Component.translatable(var2).withStyle(ChatFormatting.GOLD));
             } else {
                BlockPos var11 = safeSurfaceSpot(var5, var6);
                if (var11 != null) {
-                  var0.teleportTo(var5, var11.getX() + 0.5, var11.getY(), var11.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+                  Teleport.teleport(var0, var5, new Vec3(var11.getX() + 0.5, var11.getY(), var11.getZ() + 0.5), var0.getYRot(), var0.getXRot());
                   var0.resetFallDistance();
                   var0.sendSystemMessage(Component.translatable(var2).withStyle(ChatFormatting.GOLD));
                } else if (!generateStructure(var0, var5, var4, var2)) {
@@ -4353,8 +4342,8 @@ public final class HexEffects {
    private static BlockPos structureCenter(ServerLevel var0, BlockPos var1, TagKey<Structure> var2) {
       BlockPos var3 = null;
       double var4 = Double.MAX_VALUE;
-      Registry<Structure> var5 = var0.registryAccess().lookupOrThrow(Registries.STRUCTURE);
-      net.minecraft.core.HolderSet<Structure> var6 = var5.get(var2).orElseThrow();
+      Registry<Structure> var5 = var0.registryAccess().registryOrThrow(Registries.STRUCTURE);
+      net.minecraft.core.HolderSet<Structure> var6 = var5.getTag(var2).orElseThrow();
 
       for (int var7 = -1; var7 <= 1; var7++) {
          for (int var8 = -1; var8 <= 1; var8++) {
@@ -4383,7 +4372,7 @@ public final class HexEffects {
          for (int var5 = 0; var5 < 2; var5++) {
             if (var4 != 0 || var5 != 1) {
                int var6 = var5 == 0 ? var1.getY() - var4 : var1.getY() + var4;
-               if (var6 >= var0.getMinY() + 2 && var6 <= var0.getMaxY() - 2) {
+               if (var6 >= var0.getMinBuildHeight() + 2 && var6 <= var0.getMaxBuildHeight() - 2) {
                   for (int var7 = -var3; var7 <= var3; var7 += 2) {
                      for (int var8 = -var3; var8 <= var3; var8 += 2) {
                         BlockPos var9 = new BlockPos(var1.getX() + var7, var6, var1.getZ() + var8);
@@ -4435,8 +4424,8 @@ public final class HexEffects {
          }
       }
 
-      int var5 = Math.max(var0.getMinY() + 1, var1.getY() - var3);
-      int var6 = Math.min(var0.getMaxY() - 2, var1.getY() + var3);
+      int var5 = Math.max(var0.getMinBuildHeight() + 1, var1.getY() - var3);
+      int var6 = Math.min(var0.getMaxBuildHeight() - 2, var1.getY() + var3);
       BlockPos var7 = null;
       double var8 = Double.MAX_VALUE;
 
@@ -4468,7 +4457,7 @@ public final class HexEffects {
             var5 = var4.getY() + 1;
          }
 
-         var0.teleportTo(var1, var4.getX() + 0.5, var5, var4.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+         Teleport.teleport(var0, var1, new Vec3(var4.getX() + 0.5, var5, var4.getZ() + 0.5), var0.getYRot(), var0.getXRot());
          var0.sendSystemMessage(Component.translatable(var3).withStyle(ChatFormatting.GOLD));
          return true;
       }
@@ -4547,7 +4536,7 @@ public final class HexEffects {
    // 考古刷：不可损坏刷子
    private static void giveBrush(ServerPlayer var0) {
       ItemStack var1 = new ItemStack(Items.BRUSH);
-      var1.set(DataComponents.UNBREAKABLE, Unit.INSTANCE);
+      Stacks.setUnbreakable(var1);
       var0.addItem(var1);
       var0.sendSystemMessage(Component.translatable("hexbingo.msg.brush_gift").withStyle(ChatFormatting.GOLD));
    }
@@ -4575,7 +4564,7 @@ public final class HexEffects {
    // 九九八十一难：定位或生成试炼大厅并安全传送
    private static void teleportTrialChambers(ServerPlayer var0) {
       MinecraftServer var6 = var0.level().getServer();
-      ServerLevel var1 = var6 == null ? null : var6.overworld();
+      ServerLevel var1 = var6 == null ? null : Levels.overworld(var6);
       if (var1 == null) {
          return;
       }
@@ -4617,13 +4606,13 @@ public final class HexEffects {
    }
 
    private static void teleportUnderground(ServerPlayer var0, ServerLevel var1, BlockPos var2) {
-      var0.teleportTo(var1, var2.getX() + 0.5, var2.getY(), var2.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+      Teleport.teleport(var0, var1, new Vec3(var2.getX() + 0.5, var2.getY(), var2.getZ() + 0.5), var0.getYRot(), var0.getXRot());
       var0.resetFallDistance();
       var0.setRemainingFireTicks(0);
    }
 
    private static BlockPos findUndergroundSpot(ServerLevel var0, BlockPos var1) {
-      int var2 = var0.getMinY() + 1;
+      int var2 = var0.getMinBuildHeight() + 1;
       int[] var4 = new int[]{16, 32};
 
       for (int var5 : var4) {
@@ -4736,7 +4725,7 @@ public final class HexEffects {
    }
 
    private static String structureForBiome(String var0, ServerLevel var1, BlockPos var2) {
-      String var3 = var1.getBiome(var2).unwrapKey().map(var4 -> var4.identifier().getPath()).orElse("");
+      String var3 = var1.getBiome(var2).unwrapKey().map(var4 -> var4.location().getPath()).orElse("");
       if (var0.endsWith("village")) {
          if (var3.contains("desert")) {
             return "minecraft:village_desert";
@@ -4795,9 +4784,7 @@ public final class HexEffects {
 
             Block var9 = var2.nextBoolean() ? Blocks.SUSPICIOUS_GRAVEL : Blocks.SUSPICIOUS_SAND;
             if (var1.setBlockAndUpdate(var7, var9.defaultBlockState()) && var1.getBlockEntity(var7) instanceof BrushableBlockEntity var10) {
-               ResourceKey<LootTable> var11 = ResourceKey.create(
-                  Registries.LOOT_TABLE, Identifier.fromNamespaceAndPath("minecraft", var3[var2.nextInt(var3.length)])
-               );
+               ResourceLocation var11 = new ResourceLocation("minecraft", var3[var2.nextInt(var3.length)]);
                var10.setLootTable(var11, var2.nextLong());
                var10.setChanged();
                var5++;
@@ -4813,8 +4800,8 @@ public final class HexEffects {
          double var9 = var0.getX();
          double var4 = var0.getZ();
          // 以玩家当前高度为基准向上 256 格；不超出世界最高建筑高度
-         double var8 = Math.min(var0.getY() + 256.0, var1.getMaxY() - 4.0);
-         var0.teleportTo(var1, var9, var8, var4, Set.of(), var0.getYRot(), var0.getXRot(), false);
+         double var8 = Math.min(var0.getY() + 256.0, var1.getMaxBuildHeight() - 4.0);
+         Teleport.teleport(var0, var1, new Vec3(var9, var8, var4), var0.getYRot(), var0.getXRot());
          BlockPos var6 = BlockPos.containing(var9, var8 - 1.0, var4);
 
          for (int var7 = -1; var7 <= 1; var7++) {
@@ -4842,7 +4829,7 @@ public final class HexEffects {
             VOYAGE_ACTIVE.remove(var0.getUUID());
             VOYAGE_START_Y.remove(var0.getUUID());
             if (!var0.isInWater() && var0.isAlive()) {
-               var0.hurtServer(var0.level(), var0.damageSources().genericKill(), Float.MAX_VALUE);
+               var0.hurt(var0.damageSources().genericKill(), Float.MAX_VALUE);
                var0.sendSystemMessage(Component.translatable("hexbingo.msg.voyage_fail").withStyle(ChatFormatting.RED));
             } else {
                int var2 = completeRandomTasks(var0, 1);
@@ -4886,8 +4873,8 @@ public final class HexEffects {
          return;
       }
 
-      Bingo var3 = Bingo.get(var2.overworld());
-      if (var3.getSettings().game().lockout() || var3.getSettings().game().winCondition() == WinCondition.LOCK) {
+      Bongo var3 = Bongo.get(Levels.overworld(var2));
+      if (var3.getSettings().game().lockout()) {
          return;
       }
 
@@ -4922,7 +4909,7 @@ public final class HexEffects {
          return;
       }
 
-      Bingo var3 = Bingo.get(var2.overworld());
+      Bongo var3 = Bongo.get(Levels.overworld(var2));
       Team var4 = var3.getTeam(var0);
       if (var4 == null) {
          return;
@@ -4987,14 +4974,14 @@ public final class HexEffects {
             }
 
             // 蜂生成在目标玩家所在维度，否则跨维度目标永远收不到蜜蜂
-            Bee var8 = (Bee)EntityTypes.BEE.create(var3, EntitySpawnReason.MOB_SUMMONED);
+            Bee var8 = (Bee)EntityType.BEE.create(var3);
             if (var8 != null) {
                var8.setPos(var7.getX() + var10.nextDouble() * 4.0 - 2.0, var7.getY() + 1.0, var7.getZ() + var10.nextDouble() * 4.0 - 2.0);
                var3.addFreshEntity(var8);
                var8.setLastHurtByMob(var7);
                var8.setTarget(var7);
-               var8.setPersistentAngerTarget(EntityReference.of(var7));
-               var8.setPersistentAngerEndTime(var3.getGameTime() + 1200L);
+               var8.setPersistentAngerTarget(var7.getUUID());
+               var8.setRemainingPersistentAngerTime(1200);
                var8.startPersistentAngerTimer();
                HEX_BEES.add(var8.getUUID());
                BEE_TARGETS.put(var8.getUUID(), var7.getUUID());
@@ -5008,7 +4995,7 @@ public final class HexEffects {
    }
 
    public static boolean isMeteorSkeleton(Entity var0) {
-      return var0 != null && var0.entityTags().contains(METEOR_SKELETON_TAG);
+      return var0 != null && var0.getTags().contains(METEOR_SKELETON_TAG);
    }
 
    private static void discardMeteorSkeletons(MinecraftServer var0) {
@@ -5028,7 +5015,7 @@ public final class HexEffects {
          return false;
       }
 
-      Bingo var2 = Bingo.get(var1.overworld());
+      Bongo var2 = Bongo.get(Levels.overworld(var1));
       if (!var2.running() || var2.getTeam(var0) == null) {
          return false;
       }
@@ -5070,8 +5057,8 @@ public final class HexEffects {
                var7.setTarget(var3);
             }
 
-            var7.setPersistentAngerTarget(EntityReference.of(var3));
-            var7.setPersistentAngerEndTime(var7.level().getGameTime() + 1200L);
+            var7.setPersistentAngerTarget(var3.getUUID());
+            var7.setRemainingPersistentAngerTime(1200);
          }
       }
    }
@@ -5192,7 +5179,7 @@ public final class HexEffects {
          }
 
          if (var1.amplifier > 0) {
-            var0.addEffect(new MobEffectInstance(MobEffects.SPEED, 10, var1.amplifier - 1, true, false, false));
+            var0.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 10, var1.amplifier - 1, true, false, false));
          }
       }
    }
@@ -5205,7 +5192,7 @@ public final class HexEffects {
       }
    }
 
-   public static void snowballDamage(LivingIncomingDamageEvent var0) {
+   public static void snowballDamage(LivingHurtEvent var0) {
       if (var0.getSource().getDirectEntity() instanceof Snowball var1 && var1.getOwner() instanceof ServerPlayer var2) {
          float var9 = 0.0F;
 
@@ -5263,12 +5250,9 @@ public final class HexEffects {
    }
 
    private static void enchantGear(ServerPlayer var0) {
-      Registry<Enchantment> var1 = var0.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+      Registry<Enchantment> var1 = var0.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
       // 排除诅咒类附魔（26.2 用 EnchantmentTags.CURSE 标签识别），避免给装备套上绑定/消失诅咒
-      List<Holder<Enchantment>> var2 = var1.entrySet().stream()
-         .map(var1x -> var1.wrapAsHolder((Enchantment)var1x.getValue()))
-         .filter(var1x -> !var1x.is(net.minecraft.tags.EnchantmentTags.CURSE))
-         .toList();
+      List<Enchantment> var2 = var1.stream().filter(var1x -> !var1x.isCurse()).toList();
       if (!var2.isEmpty()) {
          ThreadLocalRandom var3 = ThreadLocalRandom.current();
 
@@ -5278,8 +5262,8 @@ public final class HexEffects {
                int var6 = 1 + var3.nextInt(5);
 
                for (int var7 = 0; var7 < var6; var7++) {
-                  Holder<Enchantment> var8 = var2.get(var3.nextInt(var2.size()));
-                  if (var8.value().canEnchant(var5)) {
+                  Enchantment var8 = var2.get(var3.nextInt(var2.size()));
+                  if (var8.canEnchant(var5)) {
                      var5.enchant(var8, 1 + var3.nextInt(3));
                   }
                }
@@ -5303,12 +5287,12 @@ public final class HexEffects {
       if (var0.level() instanceof ServerLevel var1) {
          ThreadLocalRandom var4 = ThreadLocalRandom.current();
          TamableAnimal var3 = var4.nextBoolean()
-            ? (TamableAnimal)EntityTypes.CAT.create(var1, EntitySpawnReason.MOB_SUMMONED)
-            : (TamableAnimal)EntityTypes.WOLF.create(var1, EntitySpawnReason.MOB_SUMMONED);
+            ? (TamableAnimal)EntityType.CAT.create(var1)
+            : (TamableAnimal)EntityType.WOLF.create(var1);
          if (var3 != null) {
             var3.setPos(var0.getX() + var4.nextDouble() * 2.0 - 1.0, var0.getY(), var0.getZ() + var4.nextDouble() * 2.0 - 1.0);
-            var3.setTame(true, true);
-            var3.setOwner(var0);
+            var3.setTame(true);
+            var3.setOwnerUUID(var0.getUUID());
             var3.setInvulnerable(true);
             var3.setPersistenceRequired();
             var3.setCustomName(Component.literal("无敌小宠物"));
@@ -5339,8 +5323,8 @@ public final class HexEffects {
             for (Entity var3 : var2.getAllEntities()) {
                if (var3 instanceof TamableAnimal var4
                   && "无敌小宠物".equals(var4.getCustomName() != null ? var4.getCustomName().getString() : "")
-                  && var4.getOwnerReference() != null
-                  && var0.getUUID().equals(var4.getOwnerReference().getUUID())
+                  && var4.getOwnerUUID() != null
+                  && var0.getUUID().equals(var4.getOwnerUUID())
                   && !PETS.containsValue(var4)) {
                   var4.discard();
                }
@@ -5386,13 +5370,13 @@ public final class HexEffects {
       } else if (var2.level() != var0.level()) {
          // 26.2 跨维度传送会重建实体实例（NBT 往返），旧引用会被移除：必须拿返回值更新引用，
          // 否则下一 tick 会把宠物误判为死亡并永久不再补发
-         Entity var6 = var2.teleport(new TeleportTransition((ServerLevel)var0.level(), new Vec3(var0.getX(), var0.getY(), var0.getZ()), Vec3.ZERO, var0.getYRot(), var0.getXRot(), Set.of(), TeleportTransition.DO_NOTHING));
+         Entity var6 = Teleport.teleport(var2, (ServerLevel)var0.level(), new Vec3(var0.getX(), var0.getY(), var0.getZ()), var0.getYRot(), var0.getXRot());
          if (var6 instanceof TamableAnimal var7) {
             PETS.put(var0.getUUID(), var7);
          }
       } else if (var2.distanceToSqr(var0) > 1024.0) {
          // 同维度远距离传送：直接拉回（同维度不重建实例）
-         var2.teleportTo((ServerLevel)var0.level(), var0.getX(), var0.getY(), var0.getZ(), Set.of(), var0.getYRot(), var0.getXRot(), false);
+         Teleport.teleport(var2, (ServerLevel)var0.level(), new Vec3(var0.getX(), var0.getY(), var0.getZ()), var0.getYRot(), var0.getXRot());
       } else {
          // 兜底维持无敌状态，避免被绕过无敌的伤害击杀
          var2.setInvulnerable(true);
@@ -5482,7 +5466,7 @@ public final class HexEffects {
       MinecraftServer var2 = var0.level().getServer();
       if (var2 != null) {
          CompoundTag var3 = new CompoundTag();
-         var3.putString("dim", var1.level.dimension().identifier().toString());
+         var3.putString("dim", var1.level.dimension().location().toString());
          var3.putInt("x", var1.pos.getX());
          var3.putInt("y", var1.pos.getY());
          var3.putInt("z", var1.pos.getZ());
@@ -5499,18 +5483,18 @@ public final class HexEffects {
       if (var1 != null) {
          CompoundTag var2 = HexGameData.get(var1).beacon(var0.getUUID());
          if (var2 != null) {
-            String var3 = var2.getStringOr("dim", "");
+            String var3 = Nbt.getStringOr(var2, "dim", "");
             ServerLevel var4 = null;
 
             for (ServerLevel var5 : var1.getAllLevels()) {
-               if (var5.dimension().identifier().toString().equals(var3)) {
+               if (var5.dimension().location().toString().equals(var3)) {
                   var4 = var5;
                   break;
                }
             }
 
             if (var4 != null) {
-               BlockPos var6 = new BlockPos(var2.getIntOr("x", 0), var2.getIntOr("y", 0), var2.getIntOr("z", 0));
+               BlockPos var6 = new BlockPos(Nbt.getIntOr(var2, "x", 0), Nbt.getIntOr(var2, "y", 0), Nbt.getIntOr(var2, "z", 0));
                BEACONS.put(var0.getUUID(), new HexEffects.BeaconState(var4, var6, new HashMap<>()));
             }
          }
@@ -5546,13 +5530,13 @@ public final class HexEffects {
    }
 
    private static void giveBeaconGear(ServerPlayer var0) {
-      Registry<Enchantment> var1 = var0.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+      Registry<Enchantment> var1 = var0.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
       ItemStack var2 = new ItemStack(Items.DIAMOND_PICKAXE);
-      var2.enchant(var1.wrapAsHolder((Enchantment)var1.getValueOrThrow(Enchantments.EFFICIENCY)), 4);
+      var2.enchant(Enchantments.BLOCK_EFFICIENCY, 4);
       var0.addItem(markHexGranted(var2));
       ItemStack var3 = new ItemStack(Items.DIAMOND_SWORD);
-      var3.enchant(var1.wrapAsHolder((Enchantment)var1.getValueOrThrow(Enchantments.SHARPNESS)), 4);
-      var3.enchant(var1.wrapAsHolder((Enchantment)var1.getValueOrThrow(Enchantments.FIRE_ASPECT)), 1);
+      var3.enchant(Enchantments.SHARPNESS, 4);
+      var3.enchant(Enchantments.FIRE_ASPECT, 1);
       var0.addItem(markHexGranted(var3));
 
       for (Item var7 : new Item[]{Items.DIAMOND_HELMET, Items.DIAMOND_CHESTPLATE, Items.DIAMOND_LEGGINGS, Items.DIAMOND_BOOTS}) {
@@ -5640,7 +5624,7 @@ public final class HexEffects {
       }
 
       if (var0.level() instanceof ServerLevel var1) {
-         Bingo var15 = Bingo.get(var1);
+         Bongo var15 = Bongo.get(var1);
          Team var3 = var15.getTeam(var0);
          if (var3 == null) {
             return true;
@@ -5660,7 +5644,7 @@ public final class HexEffects {
          }
 
          int var16 = (Integer)var4.get(ThreadLocalRandom.current().nextInt(var4.size()));
-         if (taskElement(var15.task(var16)) instanceof Identifier var6) {
+         if (taskElement(var15.task(var16)) instanceof ResourceLocation var6) {
             ResourceKey var17 = ResourceKey.create(Registries.BIOME, var6);
             Predicate<Holder<Biome>> var8 = var1x -> var1x.unwrapKey().map(var1xx -> var1xx.equals(var17)).orElse(false);
             Pair var9 = var1.findClosestBiome3d(var8, var0.blockPosition(), 12800, 32, 96);
@@ -5678,7 +5662,7 @@ public final class HexEffects {
 
             Vec3 var11 = new Vec3(var10.getX() + 0.5 - var0.getX(), 0.0, var10.getZ() + 0.5 - var0.getZ()).normalize();
             ItemStack var12 = new ItemStack(Items.NAUTILUS_SHELL);
-            var12.set(DataComponents.CUSTOM_NAME, Component.literal("ok回力镖"));
+            Stacks.setName(var12, Component.literal("ok回力镖"));
             ItemEntity var13 = new ItemEntity(var1, var0.getX(), var0.getEyeY(), var0.getZ(), var12);
             var13.setNoGravity(true);
             var13.setNeverPickUp();
@@ -5803,7 +5787,7 @@ public final class HexEffects {
                      }
                   }
 
-                  var4.teleportTo(var5, var11, var3.y, var13, Set.of(), var4.getYRot(), var4.getXRot(), false);
+                  Teleport.teleport(var4, var5, new Vec3(var11, var3.y, var13), var4.getYRot(), var4.getXRot());
                   var4.setDeltaMovement(Vec3.ZERO);
                   var4.resetFallDistance();
                   var3.moved += 0.6;
@@ -5811,7 +5795,7 @@ public final class HexEffects {
 
                   for (LivingEntity var26 : var5.getEntitiesOfClass(LivingEntity.class, var24, var27 -> var27 != var4 && var27.isAlive() && !var27.isSpectator())) {
                      if (var3.hit.add(var26.getUUID())) {
-                        var26.hurtServer(var5, var4.damageSources().playerAttack(var4), 10.0F);
+                        var26.hurt(var4.damageSources().playerAttack(var4), 10.0F);
                         var3.mobs++;
                      }
                   }
@@ -5939,24 +5923,24 @@ public final class HexEffects {
          int var7 = 200;
          if (!var3.isEmpty()) {
             SingleRecipeInput var8 = new SingleRecipeInput(var3);
-            Optional<RecipeHolder<SmeltingRecipe>> var9 = var2.recipeAccess().getRecipeFor(RecipeType.SMELTING, var8, var2);
+            Optional<SmeltingRecipe> var9 = var2.getRecipeManager().getRecipeFor(RecipeType.SMELTING, var8, var2);
             if (var9.isPresent()) {
-               var6 = ((SmeltingRecipe)var9.get().value()).assemble(var8);
-               var7 = ((SmeltingRecipe)var9.get().value()).cookingTime();
+               var6 = var9.get().assemble(var8, var2.registryAccess());
+               var7 = var9.get().getCookingTime();
             }
          }
 
          boolean var10 = !var6.isEmpty()
-            && (var5.isEmpty() || ItemStack.isSameItemSameComponents(var5, var6) && var5.getCount() + var6.getCount() <= var5.getMaxStackSize());
+            && (var5.isEmpty() || ItemStack.isSameItemSameTags(var5, var6) && var5.getCount() + var6.getCount() <= var5.getMaxStackSize());
          if (var10 && var1.litTime <= 0 && !var4.isEmpty()) {
-            int var11 = var2.fuelValues().burnDuration(var4);
+            int var11 = net.minecraftforge.common.ForgeHooks.getBurnTime(var4, RecipeType.SMELTING);
             if (var11 > 0) {
-               ItemStackTemplate var12 = var4.getItem().getCraftingRemainder();
+               Item var12 = var4.getItem().getCraftingRemainingItem();
                var1.litTime = var11;
                var1.litTotal = var11;
                var4.shrink(1);
                if (var4.isEmpty() && var12 != null) {
-                  var1.items.setItem(1, var12.create());
+                  var1.items.setItem(1, new ItemStack(var12));
                }
             }
          }
@@ -5996,7 +5980,7 @@ public final class HexEffects {
       if (!var1) {
          BOOSTED_FURNACES.clear();
       } else {
-         if (var0.overworld().getGameTime() % 20L == 0L) {
+         if (Levels.overworld(var0).getGameTime() % 20L == 0L) {
             scanFurnaces(var0);
          }
 
@@ -6014,7 +5998,7 @@ public final class HexEffects {
                      continue;
                   }
 
-                  String var10 = var6.dimension().identifier() + "|" + var8.asLong();
+                  String var10 = var6.dimension().location() + "|" + var8.asLong();
                   if (var2.add(var10)) {
                      AbstractFurnaceBlockEntity.serverTick(var6, var8, var6.getBlockState(var8), var9);
                   }
@@ -6084,17 +6068,17 @@ public final class HexEffects {
       }
 
       private void load(CompoundTag var1) {
-         ListTag var2 = var1.getListOrEmpty("items");
+         ListTag var2 = var1.getList("items", 10);
 
          for (int var3 = 0; var3 < 3 && var3 < var2.size(); var3++) {
             int var4 = var3;
-            ItemStack.OPTIONAL_CODEC.parse(NbtOps.INSTANCE, var2.get(var4)).result().ifPresent(var2x -> this.items.setItem(var4, var2x));
+            ItemStack.CODEC.parse(NbtOps.INSTANCE, var2.get(var4)).result().ifPresent(var2x -> this.items.setItem(var4, var2x));
          }
 
-         this.litTime = var1.getIntOr("litTime", 0);
-         this.litTotal = var1.getIntOr("litTotal", 0);
-         this.cookProgress = var1.getIntOr("cookProgress", 0);
-         this.cookTotal = var1.getIntOr("cookTotal", 200);
+         this.litTime = Nbt.getIntOr(var1, "litTime", 0);
+         this.litTotal = Nbt.getIntOr(var1, "litTotal", 0);
+         this.cookProgress = Nbt.getIntOr(var1, "cookProgress", 0);
+         this.cookTotal = Nbt.getIntOr(var1, "cookTotal", 200);
       }
 
       private CompoundTag save() {
@@ -6102,7 +6086,7 @@ public final class HexEffects {
          ListTag var2 = new ListTag();
 
          for (int var3 = 0; var3 < 3; var3++) {
-            ItemStack.OPTIONAL_CODEC.encodeStart(NbtOps.INSTANCE, this.items.getItem(var3)).result().ifPresent(var2::add);
+            ItemStack.CODEC.encodeStart(NbtOps.INSTANCE, this.items.getItem(var3)).result().ifPresent(var2::add);
          }
 
          var1.put("items", var2);
@@ -6116,12 +6100,12 @@ public final class HexEffects {
 
    private static void startSoulOut(ServerPlayer var0) {
       if (!SOULS.containsKey(var0.getUUID())) {
-         GameType var1 = var0.gameMode();
+         GameType var1 = var0.gameMode.getGameModeForPlayer();
          if (var1 != GameType.SPECTATOR) {
             SOULS.put(
                var0.getUUID(),
                new HexEffects.SoulState(
-                  var0.level(),
+            (ServerLevel)var0.level(),
                   var0.getX(),
                   var0.getY(),
                   var0.getZ(),
@@ -6164,11 +6148,11 @@ public final class HexEffects {
    private static void endSoulOut(ServerPlayer var0) {
       HexEffects.SoulState var1 = SOULS.remove(var0.getUUID());
       if (var1 != null) {
-         if (var0.gameMode() == GameType.SPECTATOR) {
+         if (var0.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
             var0.setGameMode(var1.mode);
          }
 
-         var0.teleportTo(var1.level, var1.x, var1.y, var1.z, Set.of(), var1.yaw, var1.pitch, false);
+         Teleport.teleport(var0, var1.level, new Vec3(var1.x, var1.y, var1.z), var1.yaw, var1.pitch);
          var0.resetFallDistance();
          var0.setRemainingFireTicks(0);
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.soul_return").withStyle(ChatFormatting.AQUA));
@@ -6218,7 +6202,7 @@ public final class HexEffects {
          return;
       }
 
-      Bingo var2 = Bingo.get(var1.overworld());
+      Bongo var2 = Bongo.get(Levels.overworld(var1));
       Team var3 = var2.getTeam(var0);
       if (var3 != null && var2.running()) {
          boolean var4 = var2.getSettings().game().lockout();
@@ -6264,7 +6248,7 @@ public final class HexEffects {
    private static void giveFlightKit(ServerPlayer var0) {
       if (!hasNamedItem(var0, "中国人会飞·鞘翅")) {
          ItemStack var1 = questItem(Items.ELYTRA, "中国人会飞·鞘翅", "hexbingo.item.elytra.lore");
-         var1.set(DataComponents.UNBREAKABLE, Unit.INSTANCE);
+         Stacks.setUnbreakable(var1);
          var0.addItem(var1);
       }
 
@@ -6281,7 +6265,7 @@ public final class HexEffects {
    private static void locateEndPortal(ServerPlayer var0) {
       MinecraftServer var1 = var0.level().getServer();
       if (var1 != null) {
-         ServerLevel var2 = var1.overworld();
+         ServerLevel var2 = Levels.overworld(var1);
          BlockPos var3 = new BlockPos(var0.getBlockX(), var0.getBlockY(), var0.getBlockZ());
          BlockPos var4 = var2.findNearestMapStructure(StructureTags.EYE_OF_ENDER_LOCATED, var3, 100, false);
          if (var4 == null) {
@@ -6427,20 +6411,20 @@ public final class HexEffects {
 
    private static ItemStack questItem(Item var0, String var1, String var2) {
       ItemStack var3 = new ItemStack(var0);
-      var3.set(DataComponents.CUSTOM_NAME, Component.literal(var1));
-      var3.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
-      var3.set(DataComponents.LORE, new ItemLore(List.of(Component.translatable(var2).withStyle(ChatFormatting.GRAY))));
+      Stacks.setName(var3, Component.literal(var1));
+      Stacks.setGlint(var3);
+      Stacks.setLore(var3, List.of(Component.translatable(var2).withStyle(ChatFormatting.GRAY)));
       return markHexGranted(var3);
    }
 
    private static ItemStack markHexGranted(ItemStack var0) {
-      CustomData.update(DataComponents.CUSTOM_DATA, var0, var1 -> var1.putBoolean("hexbingo_granted", true));
+      Stacks.setBoolean(var0, "hexbingo_granted", true);
       return var0;
    }
 
    private static boolean isHexGranted(ItemStack var0) {
-      CustomData var1 = var0.get(DataComponents.CUSTOM_DATA);
-      return var1 != null && var1.copyTag().getBooleanOr("hexbingo_granted", false);
+      boolean var1 = Stacks.getBoolean(var0, "hexbingo_granted");
+      return var1;
    }
 
    /** 回收背包内所有由海克斯发放的技能物品（任务物品不受影响，因为没有该标记）。 */
@@ -6464,7 +6448,7 @@ public final class HexEffects {
    }
 
    private static void giveTrapItem(ServerPlayer var0) {
-      var0.addItem(questItem(Items.IRON_CHAIN, "和我一起困在这里", "hexbingo.item.trap.lore"));
+      var0.addItem(questItem(Items.CHAIN, "和我一起困在这里", "hexbingo.item.trap.lore"));
       var0.sendSystemMessage(Component.translatable("hexbingo.msg.trap_item"));
    }
 
@@ -6506,17 +6490,17 @@ public final class HexEffects {
 
             int var6 = (var0.getBlockX() + var12.getBlockX()) / 2;
             int var7 = (var0.getBlockZ() + var12.getBlockZ()) / 2;
-            int var8 = Math.min(Math.max(var0.getBlockY(), var12.getBlockY()) + 30, var4.getMaxY() - 10);
+            int var8 = Math.min(Math.max(var0.getBlockY(), var12.getBlockY()) + 30, var4.getMaxBuildHeight() - 10);
             HexEffects.TrapRoom var9 = new HexEffects.TrapRoom(var0, var12, var4, var6, var7, var8);
             TRAP = var9;
-            var9.pvpWasAllowed = var4.getGameRules().get(GameRules.PVP);
+
             if (!var9.pvpWasAllowed) {
-               var4.getGameRules().set(GameRules.PVP, true, var4.getServer());
+
             }
 
             buildTrapRoom(var9);
-            var0.teleportTo(var4, var6 + 0.5, var8 + 2.0, var7 - 1.5, Set.of(), 0.0F, 0.0F, false);
-            var12.teleportTo(var4, var6 + 0.5, var8 + 2.0, var7 + 1.5, Set.of(), 180.0F, 0.0F, false);
+            Teleport.teleport(var0, var4, new Vec3(var6 + 0.5, var8 + 2.0, var7 - 1.5), 0.0F, 0.0F);
+            Teleport.teleport(var12, var4, new Vec3(var6 + 0.5, var8 + 2.0, var7 + 1.5), 180.0F, 0.0F);
             var0.resetFallDistance();
             var12.resetFallDistance();
             var0.setRemainingFireTicks(0);
@@ -6583,7 +6567,7 @@ public final class HexEffects {
                var1.penaltyTicks++;
                if (var1.penaltyTicks % 20 == 0) {
                   int var5 = Math.max(0, (400 - var1.penaltyTicks + 19) / 20);
-                  var4.sendOverlayMessage(Component.translatable("hexbingo.msg.trap_penalty", new Object[]{var5}).withStyle(ChatFormatting.RED));
+                  var4.displayClientMessage(Component.translatable("hexbingo.msg.trap_penalty", new Object[]{var5}).withStyle(ChatFormatting.RED), true);
                }
 
                if (var1.penaltyTicks >= 400) {
@@ -6594,7 +6578,7 @@ public final class HexEffects {
             ServerPlayer var2 = var0.getPlayerList().getPlayer(var1.firstId);
             ServerPlayer var3 = var0.getPlayerList().getPlayer(var1.secondId);
             if (var2 != null && var3 != null) {
-               // 决斗期间双方都不允许自然回血：每 tick 压掉 Bingo 无敌模式补满的饥饿值
+               // 决斗期间双方都不允许自然回血：每 tick 压掉 Bongo 无敌模式补满的饥饿值
                suppressTrapRegen(var2);
                suppressTrapRegen(var3);
                var1.ticks++;
@@ -6609,7 +6593,7 @@ public final class HexEffects {
       }
    }
 
-   public static void trapIncomingDamage(LivingIncomingDamageEvent var0) {
+   public static void trapIncomingDamage(LivingHurtEvent var0) {
       HexEffects.TrapRoom var1 = TRAP;
       if (var1 != null && var0.getEntity() instanceof ServerPlayer var2 && var1.involves(var2.getUUID())) {
          Entity var3 = var0.getSource().getEntity();
@@ -6647,7 +6631,7 @@ public final class HexEffects {
       Vec3 var4 = var2 ? var1.firstHome : var1.secondHome;
       float var5 = var2 ? var1.firstYaw : var1.secondYaw;
       float var6 = var2 ? var1.firstPitch : var1.secondPitch;
-      var0.teleportTo(var3, var4.x, var4.y, var4.z, Set.of(), var5, var6, false);
+      Teleport.teleport(var0, var3, new Vec3(var4.x, var4.y, var4.z), var5, var6);
       var0.resetFallDistance();
       var0.setRemainingFireTicks(0);
    }
@@ -6687,19 +6671,19 @@ public final class HexEffects {
    public static void onTrapRespawn(ServerPlayer var0) {
       HexEffects.TrapRoom var1 = TRAP;
       if (var1 != null && var1.loserId != null && var1.loserId.equals(var0.getUUID())) {
-         var0.teleportTo(var1.roomLevel, var1.centerX + 0.5, var1.floorY + 1, var1.centerZ + 0.5, Set.of(), 0.0F, 0.0F, false);
+         Teleport.teleport(var0, var1.roomLevel, new Vec3(var1.centerX + 0.5, var1.floorY + 1, var1.centerZ + 0.5), 0.0F, 0.0F);
          var0.resetFallDistance();
          var0.setRemainingFireTicks(0);
          var1.penaltyTicks = 0;
          var1.penaltyStarted = true;
-         var0.sendOverlayMessage(Component.translatable("hexbingo.msg.trap_penalty", new Object[]{20}).withStyle(ChatFormatting.RED));
+         var0.displayClientMessage(Component.translatable("hexbingo.msg.trap_penalty", new Object[]{20}).withStyle(ChatFormatting.RED), true);
       }
    }
 
    private static void restoreTrapPvp(HexEffects.TrapRoom var0, MinecraftServer var1) {
       if (!var0.pvpRestored) {
          var0.pvpRestored = true;
-         var0.roomLevel.getGameRules().set(GameRules.PVP, var0.pvpWasAllowed, var1);
+         
       }
    }
 
@@ -6760,7 +6744,7 @@ public final class HexEffects {
          return true;
       }
 
-      Bingo var4 = Bingo.get(var3.overworld());
+      Bongo var4 = Bongo.get(Levels.overworld(var3));
       Team var5 = var4.getTeam(var0);
       Team var6 = var4.getTeam(var2);
       boolean var7 = var5 == null
@@ -6830,8 +6814,8 @@ public final class HexEffects {
 
       List<ItemStack> var34 = fillEmptySlots(var11, var31);
       List<ItemStack> var35 = fillEmptySlots(var10, var32);
-      ServerLevel var36 = var1.level();
-      ServerLevel var18 = var2.level();
+      ServerLevel var36 = (ServerLevel)var1.level();
+      ServerLevel var18 = (ServerLevel)var2.level();
       Vec3 var19 = var1.position();
       Vec3 var20 = var2.position();
       float var21 = var1.getYRot();
@@ -6840,8 +6824,8 @@ public final class HexEffects {
       float var24 = var2.getXRot();
       applyInventory(var1, var10);
       applyInventory(var2, var11);
-      var1.teleportTo(var18, var20.x, var20.y, var20.z, Set.of(), var23, var24, false);
-      var2.teleportTo(var36, var19.x, var19.y, var19.z, Set.of(), var21, var22, false);
+      Teleport.teleport(var1, var18, new Vec3(var20.x, var20.y, var20.z), var23, var24);
+      Teleport.teleport(var2, var36, new Vec3(var19.x, var19.y, var19.z), var21, var22);
       var1.resetFallDistance();
       var2.resetFallDistance();
       var1.setRemainingFireTicks(0);
@@ -6932,11 +6916,11 @@ public final class HexEffects {
    }
 
    public static void sendBoundNoDrop(ServerPlayer var0) {
-      var0.sendOverlayMessage(Component.translatable("hexbingo.msg.bound_no_drop"));
+      var0.displayClientMessage(Component.translatable("hexbingo.msg.bound_no_drop"), true);
    }
 
    public static void sendBoundNoStore(ServerPlayer var0) {
-      var0.sendOverlayMessage(Component.translatable("hexbingo.msg.bound_no_store"));
+      var0.displayClientMessage(Component.translatable("hexbingo.msg.bound_no_store"), true);
    }
 
    public static void onItemToss(ItemTossEvent var0) {
@@ -6953,11 +6937,10 @@ public final class HexEffects {
       if (var0.getPlayer() instanceof ServerPlayer var1) {
          Slot var2 = var0.getSlot();
          boolean var3 = isBoundItem(var0.getCarriedItem())
-            && (var2.container != var1.getInventory() || var2.getItem().has(DataComponents.BUNDLE_CONTENTS));
-         boolean var4 = isBoundItem(var0.getStackedOnItem()) && var0.getCarriedItem().has(DataComponents.BUNDLE_CONTENTS);
+            && (var2.container != var1.getInventory() || var2.getItem().is(Items.BUNDLE));
+         boolean var4 = isBoundItem(var0.getStackedOnItem()) && var0.getCarriedItem().getItem() == Items.BUNDLE;
          if (var3 || var4) {
             var0.setCanceled(true);
-            var0.setCancellationResult(true);
             sendBoundNoStore(var1);
          }
       }
@@ -7066,17 +7049,12 @@ public final class HexEffects {
       var0.setInvisible(true);
       AttributeInstance var4 = var0.getAttribute(Attributes.MAX_HEALTH);
       if (var4 != null) {
-         var4.addOrUpdateTransientModifier(new AttributeModifier(faeModifierId(var0, 0), -0.5, Operation.ADD_MULTIPLIED_BASE));
+         Attr.addOrUpdate(var4, new AttributeModifier(faeModifierId(var0, 0), "hexbingo", -0.5, Operation.MULTIPLY_BASE));
       }
 
       AttributeInstance var5 = var0.getAttribute(Attributes.MOVEMENT_SPEED);
       if (var5 != null) {
-         var5.addOrUpdateTransientModifier(new AttributeModifier(faeModifierId(var0, 1), 0.15, Operation.ADD_MULTIPLIED_BASE));
-      }
-
-      AttributeInstance var6 = var0.getAttribute(Attributes.SCALE);
-      if (var6 != null) {
-         var6.addOrUpdateTransientModifier(new AttributeModifier(faeModifierId(var0, 2), -0.3, Operation.ADD_MULTIPLIED_BASE));
+         Attr.addOrUpdate(var5, new AttributeModifier(faeModifierId(var0, 1), "hexbingo", 0.15, Operation.MULTIPLY_BASE));
       }
 
       if (var0.getHealth() > var0.getMaxHealth()) {
@@ -7096,7 +7074,7 @@ public final class HexEffects {
             // 已有伪装：跨维度时直接带过去，避免在旧维度遗留无 AI 生物
             if (var5.level() != var1) {
                // 26.2 跨维度传送会重建实体实例：拿返回值更新引用，并重设 noPhysics（不在 NBT 里）
-               Entity var6 = var5.teleport(new TeleportTransition(var1, new Vec3(var0.getX(), var0.getY(), var0.getZ()), Vec3.ZERO, var5.getYRot(), var5.getXRot(), Set.of(), TeleportTransition.DO_NOTHING));
+               Entity var6 = Teleport.teleport(var5, var1, new Vec3(var0.getX(), var0.getY(), var0.getZ()), var5.getYRot(), var5.getXRot());
                if (var6 instanceof Mob var7) {
                   var7.noPhysics = true;
                   FAE_DISGUISES.put(var0.getUUID(), var7);
@@ -7111,7 +7089,7 @@ public final class HexEffects {
          }
 
          EntityType var3 = FAE_TYPES.get(ThreadLocalRandom.current().nextInt(FAE_TYPES.size()));
-         Mob var4 = (Mob)var3.create(var1, EntitySpawnReason.MOB_SUMMONED);
+         Mob var4 = (Mob)var3.create(var1);
          if (var4 != null) {
             var4.setPos(var0.getX(), var0.getY(), var0.getZ());
             var4.setYRot(var0.getYRot());
@@ -7150,7 +7128,7 @@ public final class HexEffects {
                if (var7 != null && var7.isAlive()) {
                   if (var7.level() != var5.level()) {
                      // 跨维度时把伪装一起带过去，避免旧维度留下无 AI 生物；26.2 会重建实例，必须更新引用
-                     Entity var8 = var7.teleport(new TeleportTransition((ServerLevel)var5.level(), new Vec3(var5.getX(), var5.getY(), var5.getZ()), Vec3.ZERO, var7.getYRot(), var7.getXRot(), Set.of(), TeleportTransition.DO_NOTHING));
+                     Entity var8 = Teleport.teleport(var7, (ServerLevel)var5.level(), new Vec3(var5.getX(), var5.getY(), var5.getZ()), var7.getYRot(), var7.getXRot());
                      if (var8 instanceof Mob var9) {
                         var9.noPhysics = true;
                         FAE_DISGUISES.put(var4, var9);
@@ -7182,7 +7160,7 @@ public final class HexEffects {
 
             if (var5 != null && var6 != null && var1 < var6 && var0.getTickCount() % 20 == 0) {
                int var8 = Math.max(0, (int)((var6 - var1 + 999L) / 1000L));
-               var5.sendOverlayMessage(Component.translatable("hexbingo.msg.fae_timer", new Object[]{var8}).withStyle(ChatFormatting.LIGHT_PURPLE));
+               var5.displayClientMessage(Component.translatable("hexbingo.msg.fae_timer", new Object[]{var8}).withStyle(ChatFormatting.LIGHT_PURPLE), true);
             }
          }
       }
@@ -7225,18 +7203,17 @@ public final class HexEffects {
 
       removeFaeModifier(var0, Attributes.MAX_HEALTH, 0);
       removeFaeModifier(var0, Attributes.MOVEMENT_SPEED, 1);
-      removeFaeModifier(var0, Attributes.SCALE, 2);
       if (var0.getHealth() > var0.getMaxHealth()) {
          var0.setHealth(var0.getMaxHealth());
       }
    }
 
    /** 每个目标独立的精怪魔法修饰符 ID，避免不同施法者的诅咒在属性上互相覆盖。 */
-   private static Identifier faeModifierId(ServerPlayer var0, int var1) {
+   private static UUID faeModifierId(ServerPlayer var0, int var1) {
       return modifierId("fae_magic_" + Long.toHexString(var0.getUUID().getLeastSignificantBits()), var1);
    }
 
-   private static void removeFaeModifier(ServerPlayer var0, Holder<Attribute> var1, int var2) {
+   private static void removeFaeModifier(ServerPlayer var0, Attribute var1, int var2) {
       AttributeInstance var3 = var0.getAttribute(var1);
       if (var3 != null) {
          var3.removeModifier(faeModifierId(var0, var2));
@@ -7318,7 +7295,7 @@ public final class HexEffects {
 
    private static ItemStack lockMarker() {
       ItemStack var0 = new ItemStack(Items.BARRIER);
-      var0.set(DataComponents.CUSTOM_NAME, Component.literal("玻璃大炮锁定槽"));
+      Stacks.setName(var0, Component.literal("玻璃大炮锁定槽"));
       return var0;
    }
 
@@ -7396,23 +7373,23 @@ public final class HexEffects {
 
    private static void playSongBuff(ServerPlayer var0) {
       MinecraftServer var1 = var0.level().getServer();
-      SoundEvent var2 = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath("hexbingo", "guyongzhe"));
+      SoundEvent var2 = SoundEvent.createVariableRangeEvent(new ResourceLocation("hexbingo", "guyongzhe"));
       if (var1 != null) {
          for (ServerPlayer var4 : var1.getPlayerList().getPlayers()) {
             var4.level().playSound(null, var4.getX(), var4.getY(), var4.getZ(), var2, SoundSource.RECORDS, 1.0F, 1.0F);
          }
       }
 
-      Holder var5 = randomSongBuff(var0);
+      MobEffect var5 = randomSongBuff(var0);
       SONG_BUFFS.put(var0.getUUID(), var5);
       var0.addEffect(new MobEffectInstance(var5, -1, 0, true, false, false));
       var0.sendSystemMessage(
-         Component.translatable("hexbingo.msg.song_buff", new Object[]{((MobEffect)var5.value()).getDisplayName()}).withStyle(ChatFormatting.LIGHT_PURPLE)
+         Component.translatable("hexbingo.msg.song_buff", new Object[]{var5.getDisplayName()}).withStyle(ChatFormatting.LIGHT_PURPLE)
       );
    }
 
    private static void playDechiSong(ServerPlayer var0, int var1) {
-      SoundEvent var2 = SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath("hexbingo", "dechi_song"));
+      SoundEvent var2 = SoundEvent.createVariableRangeEvent(new ResourceLocation("hexbingo", "dechi_song"));
       var0.connection
          .send(
             new ClientboundSoundPacket(
@@ -7421,8 +7398,8 @@ public final class HexEffects {
          );
 
       var0.addEffect(new MobEffectInstance(MobEffects.LUCK, Math.max(1, var1) * 20, 2 + ThreadLocalRandom.current().nextInt(3), false, true, true));
-      Registry<Enchantment> var6 = var0.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-      Holder<Enchantment> var7 = var6.wrapAsHolder((Enchantment)var6.getValueOrThrow(Enchantments.FORTUNE));
+      Registry<Enchantment> var6 = var0.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+      Enchantment var7 = Enchantments.BLOCK_FORTUNE;
       int var8 = 0;
 
       for (int var9 = 0; var9 < var0.getInventory().getContainerSize(); var9++) {
@@ -7434,7 +7411,7 @@ public final class HexEffects {
          ItemStack var10 = var0.getInventory().getItem(var9);
          if (!var10.isEmpty() && var10.is(ItemTags.PICKAXES)) {
             int var11 = Math.max(2 + ThreadLocalRandom.current().nextInt(2), EnchantmentHelper.getItemEnchantmentLevel(var7, var10));
-            EnchantmentHelper.updateEnchantments(var10, var12 -> var12.set(var7, var11));
+            Stacks.setEnchantment(var10, var7, var11);
             var8++;
          }
       }
@@ -7442,7 +7419,7 @@ public final class HexEffects {
       ItemStack var13 = var0.getOffhandItem();
       if (!var13.isEmpty() && var13.is(ItemTags.PICKAXES)) {
          int var14 = Math.max(2 + ThreadLocalRandom.current().nextInt(2), EnchantmentHelper.getItemEnchantmentLevel(var7, var13));
-         EnchantmentHelper.updateEnchantments(var13, var15 -> var15.set(var7, var14));
+         Stacks.setEnchantment(var13, var7, var14);
          var8++;
       }
 
@@ -7451,7 +7428,7 @@ public final class HexEffects {
    }
 
    private static void ensureSongBuff(ServerPlayer var0) {
-      Holder var1 = SONG_BUFFS.get(var0.getUUID());
+      MobEffect var1 = SONG_BUFFS.get(var0.getUUID());
       if (var1 == null) {
          var1 = randomSongBuff(var0);
          SONG_BUFFS.put(var0.getUUID(), var1);
@@ -7462,22 +7439,22 @@ public final class HexEffects {
       }
    }
 
-   private static Holder<MobEffect> randomSongBuff(ServerPlayer var0) {
-      Holder<MobEffect>[] var1 = new Holder[]{
-         MobEffects.SPEED,
-         MobEffects.HASTE,
-         MobEffects.STRENGTH,
-         MobEffects.RESISTANCE,
+   private static MobEffect randomSongBuff(ServerPlayer var0) {
+      MobEffect[] var1 = new MobEffect[]{
+         MobEffects.MOVEMENT_SPEED,
+         MobEffects.DIG_SPEED,
+         MobEffects.DAMAGE_BOOST,
+         MobEffects.DAMAGE_RESISTANCE,
          MobEffects.REGENERATION,
          MobEffects.ABSORPTION,
          MobEffects.NIGHT_VISION,
          MobEffects.WATER_BREATHING,
          MobEffects.FIRE_RESISTANCE,
-         MobEffects.JUMP_BOOST
+         MobEffects.JUMP
       };
-      ArrayList<Holder<MobEffect>> var2 = new ArrayList<>();
+      ArrayList<MobEffect> var2 = new ArrayList<>();
 
-      for (Holder<MobEffect> var3 : var1) {
+      for (MobEffect var3 : var1) {
          MobEffectInstance var4 = var0.getEffect(var3);
          if (var4 == null || !var4.isInfiniteDuration()) {
             var2.add(var3);
@@ -7485,7 +7462,7 @@ public final class HexEffects {
       }
 
       if (var2.isEmpty()) {
-         for (Holder<MobEffect> var6 : var1) {
+         for (MobEffect var6 : var1) {
             var2.add(var6);
          }
       }
@@ -7498,35 +7475,35 @@ public final class HexEffects {
          var0.removeEffect(var2.getEffect());
       }
 
-      Holder<MobEffect>[] var3 = new Holder[]{
-         MobEffects.SPEED,
-         MobEffects.HASTE,
-         MobEffects.STRENGTH,
-         MobEffects.RESISTANCE,
+      MobEffect[] var3 = new MobEffect[]{
+         MobEffects.MOVEMENT_SPEED,
+         MobEffects.DIG_SPEED,
+         MobEffects.DAMAGE_BOOST,
+         MobEffects.DAMAGE_RESISTANCE,
          MobEffects.REGENERATION,
          MobEffects.ABSORPTION,
          MobEffects.NIGHT_VISION,
          MobEffects.WATER_BREATHING,
          MobEffects.FIRE_RESISTANCE,
-         MobEffects.JUMP_BOOST,
+         MobEffects.JUMP,
          MobEffects.LUCK,
          MobEffects.HEALTH_BOOST,
          MobEffects.SATURATION,
          MobEffects.DOLPHINS_GRACE,
          MobEffects.SLOW_FALLING,
-         MobEffects.SLOWNESS,
-         MobEffects.MINING_FATIGUE,
+         MobEffects.MOVEMENT_SLOWDOWN,
+         MobEffects.DIG_SLOWDOWN,
          MobEffects.WEAKNESS,
          MobEffects.POISON,
          MobEffects.HUNGER,
-         MobEffects.NAUSEA,
+         MobEffects.CONFUSION,
          MobEffects.BLINDNESS,
          MobEffects.DARKNESS,
          MobEffects.UNLUCK
       };
-      ArrayList<Holder<MobEffect>> var4 = new ArrayList<>();
+      ArrayList<MobEffect> var4 = new ArrayList<>();
 
-      for (Holder<MobEffect> var8 : var3) {
+      for (MobEffect var8 : var3) {
          var4.add(var8);
       }
 
@@ -7534,13 +7511,13 @@ public final class HexEffects {
       int var6 = Math.min(5, var4.size());
 
       for (int var7 = 0; var7 < var6; var7++) {
-         Holder<MobEffect> var9 = var4.remove(ThreadLocalRandom.current().nextInt(var4.size()));
+         MobEffect var9 = var4.remove(ThreadLocalRandom.current().nextInt(var4.size()));
          var0.addEffect(new MobEffectInstance(var9, -1, 0, true, false, false));
          if (var7 > 0) {
             var5.append(Component.literal("、"));
          }
 
-         var5.append(((MobEffect)var9.value()).getDisplayName());
+         var5.append(var9.getDisplayName());
       }
 
       var0.sendSystemMessage(Component.translatable("hexbingo.msg.utopia", new Object[]{var5}).withStyle(ChatFormatting.GOLD));
@@ -7581,7 +7558,7 @@ public final class HexEffects {
    private static void stackDragonVictory(ServerPlayer var0) {
       MinecraftServer var1 = var0.level().getServer();
       if (var1 != null) {
-         Bingo var2 = Bingo.get(var0.level());
+         Bongo var2 = Bongo.get(var0.level());
          if (var2.running()) {
             Team var3 = var2.getTeam(var0);
             if (var3 != null) {
@@ -7589,7 +7566,7 @@ public final class HexEffects {
                var1.getPlayerList().getPlayers().forEach(var1x -> var1x.sendSystemMessage(var4));
 
                try {
-                  Method var5 = Bingo.class.getDeclaredMethod("setWin", Team.class);
+                  Method var5 = Bongo.class.getDeclaredMethod("setWin", Team.class);
                   var5.setAccessible(true);
                   var5.invoke(var2, var3);
                } catch (Exception var6) {
@@ -7634,16 +7611,18 @@ public final class HexEffects {
 
    private static ItemStack stackBook(ServerPlayer var0, int var1) {
       ItemStack var2 = new ItemStack(Items.ENCHANTED_BOOK);
-      Registry<Enchantment> var3 = var0.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-      List<Holder<Enchantment>> var4 = new ArrayList<>(var3.listElements().toList());
+      Registry<Enchantment> var3 = var0.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+      List<Enchantment> var4 = new ArrayList<>();
+      for (Enchantment var5 : var3) {
+         var4.add(var5);
+      }
       Collections.shuffle(var4, ThreadLocalRandom.current());
-      ItemEnchantments.Mutable var5 = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
 
       for (int var6 = 0; var6 < Math.min(var1, var4.size()); var6++) {
-         var5.set(var4.get(var6), 1 + ThreadLocalRandom.current().nextInt(3));
+         net.minecraft.world.item.EnchantedBookItem.addEnchantment(
+            var2, new EnchantmentInstance(var4.get(var6), 1 + ThreadLocalRandom.current().nextInt(3)));
       }
 
-      var2.set(DataComponents.STORED_ENCHANTMENTS, var5.toImmutable());
       return var2;
    }
 
@@ -7706,7 +7685,8 @@ public final class HexEffects {
    }
 
    public static void blockDrops(BlockDropsEvent var0) {
-      if (var0.getBreaker() instanceof ServerPlayer var1) {
+      ServerPlayer var1 = var0.getBreaker();
+      if (var1 != null) {
          double var4 = dropMultiplier(var1, var0.getTool(), true);
          if (var4 > 1.0) {
             multiplyDrops(var0.getLevel(), var0.getDrops(), var4);
@@ -7770,7 +7750,7 @@ public final class HexEffects {
             Entity var7 = var0.getEntity();
 
             for (int var8 = 0; var8 < 2; var8++) {
-               Item var9 = Items.WOOL.pick(DyeColor.byId(ThreadLocalRandom.current().nextInt(16)));
+               Item var9 = Items.WHITE_WOOL;
                var0.getDrops().add(new ItemEntity(var2, var7.getX(), var7.getY() + 0.5, var7.getZ(), new ItemStack(var9)));
             }
          }
@@ -7793,18 +7773,19 @@ public final class HexEffects {
    private static void enderSlayerDrop(ServerPlayer var0, LivingDropsEvent var1, ServerLevel var2) {
       ThreadLocalRandom var3 = ThreadLocalRandom.current();
       if (var3.nextDouble() < 0.03) {
-         Registry<Enchantment> var4 = var0.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+         Registry<Enchantment> var4 = var0.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
          double var5 = var3.nextDouble();
-         Holder<Enchantment> var6;
+         Enchantment var6;
          if (var5 < 0.2) {
-            var6 = var4.wrapAsHolder((Enchantment)var4.getValueOrThrow(Enchantments.SILK_TOUCH));
+            var6 = Enchantments.SILK_TOUCH;
          } else if (var5 < 0.6) {
-            var6 = var4.wrapAsHolder((Enchantment)var4.getValueOrThrow(Enchantments.MENDING));
+            var6 = Enchantments.MENDING;
          } else {
-            var6 = var4.wrapAsHolder((Enchantment)var4.getValueOrThrow(Enchantments.INFINITY));
+            var6 = Enchantments.INFINITY_ARROWS;
          }
 
-         ItemStack var7 = EnchantmentHelper.createBook(new EnchantmentInstance(var6, 1));
+         ItemStack var7 = new ItemStack(Items.ENCHANTED_BOOK);
+      net.minecraft.world.item.EnchantedBookItem.addEnchantment(var7, new EnchantmentInstance(var6, 1));
          Entity var8 = var1.getEntity();
          var1.getDrops().add(new ItemEntity(var2, var8.getX(), var8.getY() + 0.5, var8.getZ(), var7));
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.ender_slayer", new Object[]{var7.getHoverName()}).withStyle(ChatFormatting.GOLD));
@@ -7829,8 +7810,8 @@ public final class HexEffects {
                if (var8.amount > 1.0) {
                   double var9 = var8.amount;
                   if (var2) {
-                     Registry var11 = var0.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-                     Holder var12 = var11.wrapAsHolder((Enchantment)var11.getValueOrThrow(Enchantments.FORTUNE));
+                     Registry var11 = var0.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+                     Enchantment var12 = Enchantments.BLOCK_FORTUNE;
                      int var13 = EnchantmentHelper.getItemEnchantmentLevel(var12, var1);
                      int var14 = (int)var0.getAttributeValue(Attributes.LUCK);
                      var9 *= 1.0 + 0.25 * var13 + 0.25 * var14;
@@ -7843,8 +7824,8 @@ public final class HexEffects {
                } else {
                   double var15 = var8.percent;
                   if (!var2) {
-                     Registry var16 = var0.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-                     Holder var17 = var16.wrapAsHolder((Enchantment)var16.getValueOrThrow(Enchantments.LOOTING));
+                     Registry var16 = var0.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+                     Enchantment var17 = Enchantments.MOB_LOOTING;
                      var15 += 0.25 * EnchantmentHelper.getItemEnchantmentLevel(var17, var0.getMainHandItem());
                   }
 
@@ -7916,18 +7897,18 @@ public final class HexEffects {
          || var0.is(ItemTags.PICKAXES)
          || var0.is(ItemTags.SHOVELS)
          || var0.is(ItemTags.HOES)
-         || var0.is(ItemTags.ARMOR_ENCHANTABLE);
+         || var0.getItem() instanceof net.minecraft.world.item.ArmorItem;
    }
 
    private static void enchantStack(ServerPlayer var0, ItemStack var1) {
-      Registry<Enchantment> var2 = var0.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-      List<Holder<Enchantment>> var3 = var2.entrySet().stream().map(var1x -> var2.wrapAsHolder((Enchantment)var1x.getValue())).toList();
+      Registry<Enchantment> var2 = var0.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+      List<Enchantment> var3 = var2.stream().toList();
       if (!var3.isEmpty()) {
          ThreadLocalRandom var4 = ThreadLocalRandom.current();
          int var5 = 1 + var4.nextInt(5);
 
          for (int var6 = 0; var6 < var5; var6++) {
-            var1.enchant((Holder)var3.get(var4.nextInt(var3.size())), 1 + var4.nextInt(3));
+            var1.enchant(var3.get(var4.nextInt(var3.size())), 1 + var4.nextInt(3));
          }
 
          var0.containerMenu.broadcastChanges();
@@ -7994,7 +7975,7 @@ public final class HexEffects {
          return 0;
       }
 
-      Bingo var2 = Bingo.get(var0.overworld());
+      Bongo var2 = Bongo.get(Levels.overworld(var0));
       int var3 = 0;
 
       for (ServerPlayer var5 : var0.getPlayerList().getPlayers()) {
@@ -8063,7 +8044,7 @@ public final class HexEffects {
    }
 
    private static Team team(ServerPlayer var0) {
-      return Bingo.get(var0.level()).getTeam(var0);
+      return Bongo.get(var0.level()).getTeam(var0);
    }
 
    private static List<ServerPlayer> onlineTeamPlayers(MinecraftServer var0, Team var1) {
@@ -8110,19 +8091,19 @@ public final class HexEffects {
       return var4;
    }
 
-   private static Identifier modifierId(String var0, int var1) {
-      return Identifier.fromNamespaceAndPath("hexbingo", "hex/" + var0 + "/" + var1);
+   private static UUID modifierId(String var0, int var1) {
+      return UUID.nameUUIDFromBytes(("hexbingo:hex/" + var0 + "/" + var1).getBytes(java.nio.charset.StandardCharsets.UTF_8));
    }
 
    private static Operation operation(String var0) {
       return switch (var0) {
-         case "add_multiplied_base" -> Operation.ADD_MULTIPLIED_BASE;
-         case "add_multiplied_total" -> Operation.ADD_MULTIPLIED_TOTAL;
-         default -> Operation.ADD_VALUE;
+         case "add_multiplied_base" -> Operation.MULTIPLY_BASE;
+         case "add_multiplied_total" -> Operation.MULTIPLY_TOTAL;
+         default -> Operation.ADDITION;
       };
    }
 
-   private static Holder<Attribute> attribute(String var0) {
+   private static Attribute attribute(String var0) {
       return switch (var0) {
          case "max_health" -> Attributes.MAX_HEALTH;
          case "armor" -> Attributes.ARMOR;
@@ -8132,26 +8113,26 @@ public final class HexEffects {
          case "movement_speed" -> Attributes.MOVEMENT_SPEED;
          case "knockback_resistance" -> Attributes.KNOCKBACK_RESISTANCE;
          case "luck" -> Attributes.LUCK;
-         case "block_break_speed" -> Attributes.BLOCK_BREAK_SPEED;
-         case "block_interaction_range" -> Attributes.BLOCK_INTERACTION_RANGE;
-         case "entity_interaction_range" -> Attributes.ENTITY_INTERACTION_RANGE;
-         case "scale" -> Attributes.SCALE;
+         case "block_break_speed" -> HexAttributes.BLOCK_BREAK_SPEED.get();
+         case "block_interaction_range" -> net.minecraftforge.common.ForgeMod.BLOCK_REACH.get();
+         case "entity_interaction_range" -> net.minecraftforge.common.ForgeMod.ENTITY_REACH.get();
+         case "scale" -> null;
          default -> null;
       };
    }
 
-   private static Holder<MobEffect> effect(String var0) {
+   private static MobEffect effect(String var0) {
       return switch (var0) {
-         case "speed" -> MobEffects.SPEED;
-         case "haste" -> MobEffects.HASTE;
-         case "strength" -> MobEffects.STRENGTH;
-         case "resistance" -> MobEffects.RESISTANCE;
+         case "speed" -> MobEffects.MOVEMENT_SPEED;
+         case "haste" -> MobEffects.DIG_SPEED;
+         case "strength" -> MobEffects.DAMAGE_BOOST;
+         case "resistance" -> MobEffects.DAMAGE_RESISTANCE;
          case "regeneration" -> MobEffects.REGENERATION;
          case "absorption" -> MobEffects.ABSORPTION;
          case "night_vision" -> MobEffects.NIGHT_VISION;
          case "water_breathing" -> MobEffects.WATER_BREATHING;
          case "fire_resistance" -> MobEffects.FIRE_RESISTANCE;
-         case "jump_boost" -> MobEffects.JUMP_BOOST;
+         case "jump_boost" -> MobEffects.JUMP;
          case "village_hero" -> MobEffects.HERO_OF_THE_VILLAGE;
          case "slow_falling" -> MobEffects.SLOW_FALLING;
          case "dolphins_grace" -> MobEffects.DOLPHINS_GRACE;
@@ -8180,15 +8161,12 @@ public final class HexEffects {
    private static void flipDayNight(ServerPlayer var0) {
       MinecraftServer var1 = var0.level().getServer();
       if (var1 != null) {
-         ServerClockManager var2 = var1.clockManager();
-         Registry<WorldClock> var3 = var1.registryAccess().lookupOrThrow(Registries.WORLD_CLOCK);
-         Holder<WorldClock> var4 = var3.getOrThrow(WorldClocks.OVERWORLD);
-         long var5 = var2.getTotalTicks(var4);
+         long var5 = Clock.totalTicks(var1);
          long var6 = var5 - var5 % 24000L;
          long var7 = var5 % 24000L;
          long var8 = var7 < 13000L ? var6 + 18000L : var6 + 1000L;
-         var2.setTotalTicks(var4, var8);
-         var2.setPaused(var4, true);
+         Clock.setTotalTicks(var1, var8);
+         Clock.setPaused(var1, true);
          DAY_NIGHT_UNTIL = System.currentTimeMillis() + 600000L;
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.day_night").withStyle(ChatFormatting.GOLD));
       }
@@ -8253,7 +8231,7 @@ public final class HexEffects {
    }
 
    private static void shuffleInventory(ServerPlayer var0) {
-      NonNullList<ItemStack> var1 = var0.getInventory().getNonEquipmentItems();
+      NonNullList<ItemStack> var1 = InventoryItems.nonEquipment(var0);
       // 主背包与装备分开打乱：混在一起按顺序填会先把背包填满、盔甲槽永远空着
       ArrayList<ItemStack> var2 = new ArrayList<>();
       ArrayList<Integer> var3 = new ArrayList<>();
@@ -8349,7 +8327,7 @@ public final class HexEffects {
       Team var6 = team(var0);
       ArrayList<ServerPlayer> var7 = new ArrayList<>();
 
-      for (Team var9 : Bingo.get(var1.overworld()).getTeams()) {
+      for (Team var9 : Bongo.get(Levels.overworld(var1)).getTeams()) {
          if (var9 != var6 && !var9.getPlayers().isEmpty()) {
             ArrayList<ServerPlayer> var10 = new ArrayList<>();
 
@@ -8402,7 +8380,7 @@ public final class HexEffects {
                var17.level().dimension(), var17.getX(), var17.getY(), var17.getZ(), var17.getYRot(), var17.getXRot(), var2 + 60000L
             )
          );
-         var17.teleportTo(var5, var18.getX() + 0.5, var18.getY(), var18.getZ() + 0.5, Set.of(), var17.getYRot(), var17.getXRot(), false);
+         Teleport.teleport(var17, var5, new Vec3(var18.getX() + 0.5, var18.getY(), var18.getZ() + 0.5), var17.getYRot(), var17.getXRot());
          var17.resetFallDistance();
          var17.setRemainingFireTicks(0);
          var17.sendSystemMessage(Component.translatable("hexbingo.msg.banished").withStyle(ChatFormatting.RED));
@@ -8439,7 +8417,7 @@ public final class HexEffects {
       if (var2 != null) {
          ServerLevel var3 = var2.getLevel(var1.dimension);
          if (var3 != null) {
-            var0.teleportTo(var3, var1.x, var1.y, var1.z, Set.of(), var1.yaw, var1.pitch, false);
+            Teleport.teleport(var0, var3, new Vec3(var1.x, var1.y, var1.z), var1.yaw, var1.pitch);
             var0.resetFallDistance();
             var0.setRemainingFireTicks(0);
          }
@@ -8479,7 +8457,7 @@ public final class HexEffects {
    private static void wildcard(ServerPlayer var0) {
       MinecraftServer var1 = var0.level().getServer();
       if (var1 != null) {
-         Bingo var2 = Bingo.get(var1.overworld());
+         Bongo var2 = Bongo.get(Levels.overworld(var1));
          Team var3 = var2.getTeam(var0);
          int var4 = var2.tasks().size();
          if (var3 != null && var4 > 0) {
@@ -8541,7 +8519,7 @@ public final class HexEffects {
          return;
       }
 
-      Bingo var3 = Bingo.get(var2.overworld());
+      Bongo var3 = Bongo.get(Levels.overworld(var2));
       Team var4 = var3.getTeam(var0);
       if (var4 == null) {
          return;
@@ -8578,7 +8556,7 @@ public final class HexEffects {
    public static void tickAdvances(MinecraftServer var0) {
       if (!ADVANCES.isEmpty()) {
          long var1 = System.currentTimeMillis();
-         Bingo var3 = Bingo.get(var0.overworld());
+         Bongo var3 = Bongo.get(Levels.overworld(var0));
          Iterator<HexEffects.AdvanceState> var4 = ADVANCES.iterator();
 
          while (var4.hasNext()) {
@@ -8601,7 +8579,7 @@ public final class HexEffects {
          return;
       }
 
-      Bingo var2 = Bingo.get(var1.overworld());
+      Bongo var2 = Bongo.get(Levels.overworld(var1));
       Team var3 = var2.getTeam(var0);
       if (var3 == null) {
          return;
@@ -8652,7 +8630,7 @@ public final class HexEffects {
       setTeamSlot(var3, var9, true);
       setTeamSlot(var7, var9, false);
       setTeamSlot(var7, var8, true);
-      var2.markDirty(true);
+      var2.setChanged(true);
       var2.checkWin();
       Component var10 = Component.translatable(
          "hexbingo.msg.cell_swap", var2.task(var8).contentName(var1), var2.task(var9).contentName(var1)
@@ -8693,12 +8671,12 @@ public final class HexEffects {
             var4 = findCaveNear(var1, var2, var3, 24);
 
             if (var4 == null) {
-               var4 = carveSafeSpot(var1, new BlockPos(var2, Math.max(var1.getMinY() + 2, -50), var3));
+               var4 = carveSafeSpot(var1, new BlockPos(var2, Math.max(var1.getMinBuildHeight() + 2, -50), var3));
             }
          } else {
             // 下界/末地没有 y=-50 的地层：原地向下找可站立的位置，避免卡进基岩或落进虚空
             int var5 = safeGroundY(var1, var2, var3, var0.getBlockY() + 32);
-            if (var5 > var1.getMinY() + 1) {
+            if (var5 > var1.getMinBuildHeight() + 1) {
                var4 = new BlockPos(var2, var5, var3);
             }
          }
@@ -8708,7 +8686,7 @@ public final class HexEffects {
             return;
          }
 
-         var0.teleportTo(var1, var4.getX() + 0.5, var4.getY(), var4.getZ() + 0.5, Set.of(), var0.getYRot(), var0.getXRot(), false);
+         Teleport.teleport(var0, var1, new Vec3(var4.getX() + 0.5, var4.getY(), var4.getZ() + 0.5), var0.getYRot(), var0.getXRot());
          var0.resetFallDistance();
          var0.setRemainingFireTicks(0);
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.journey_core").withStyle(ChatFormatting.GOLD));
@@ -8722,7 +8700,7 @@ public final class HexEffects {
             int var7 = var2 + var5;
             var0.getChunk(var6 >> 4, var7 >> 4);
             int var8 = safeGroundY(var0, var6, var7, -40);
-            if (var8 > var0.getMinY() + 1
+            if (var8 > var0.getMinBuildHeight() + 1
                && var8 <= -40
                && var0.getBlockState(new BlockPos(var6, var8, var7)).getFluidState().isEmpty()) {
                return new BlockPos(var6, var8, var7);
@@ -8740,11 +8718,11 @@ public final class HexEffects {
          return;
       }
 
-      Bingo var3 = Bingo.get(var2.overworld());
+      Bongo var3 = Bongo.get(Levels.overworld(var2));
       Team var4 = var3.getTeam(var0);
       if (var4 != null) {
          var4.resetCompleted();
-         var3.markDirty(true);
+         var3.setChanged(true);
 
          for (int var5 = 0; var5 < var1; var5++) {
             grantRandomHex(var0, "prismatic", "ascetic");
@@ -8762,13 +8740,13 @@ public final class HexEffects {
          return;
       }
 
-      if (Bingo.get(var1.overworld()).getTeam(var0) == null) {
+      if (Bongo.get(Levels.overworld(var1)).getTeam(var0) == null) {
          return;
       }
 
       int var4 = ThreadLocalRandom.current().nextInt(4) + 1;
       DICE_PENDING.put(var0.getUUID(), new HexEffects.DicePending(var4, true, 60));
-      PacketDistributor.sendToPlayer(var0, new HexDiceRollPayload(60), new CustomPacketPayload[0]);
+      HexNetwork.sendToPlayer(var0, new HexDiceRollPayload(60));
    }
 
    private static void destinyDiceApply(ServerPlayer var0, int var4) {
@@ -8777,7 +8755,7 @@ public final class HexEffects {
          return;
       }
 
-      Bingo var2 = Bingo.get(var1.overworld());
+      Bongo var2 = Bongo.get(Levels.overworld(var1));
       Team var3 = var2.getTeam(var0);
       if (var3 == null) {
          return;
@@ -8826,7 +8804,7 @@ public final class HexEffects {
       }
    }
 
-   private static Team randomEnemyTeam(Bingo var0, Team var1) {
+   private static Team randomEnemyTeam(Bongo var0, Team var1) {
       ArrayList<Team> var2 = new ArrayList<>();
 
       for (Team var4 : var0.getTeams()) {
@@ -8845,7 +8823,7 @@ public final class HexEffects {
          return;
       }
 
-      ServerLevel var3 = var2.overworld();
+      ServerLevel var3 = Levels.overworld(var2);
       ThreadLocalRandom var4 = ThreadLocalRandom.current();
       double var5 = var0.getX();
       double var6 = var0.getZ();
@@ -8859,10 +8837,10 @@ public final class HexEffects {
             BlockPos var15 = safeSurfaceSpot(var3, new BlockPos(var13, 0, var14));
             if (var15 == null) {
                int var16 = var3.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, var13, var14);
-               var15 = carveSafeSpot(var3, new BlockPos(var13, Math.max(var3.getMinY() + 2, var16), var14));
+               var15 = carveSafeSpot(var3, new BlockPos(var13, Math.max(var3.getMinBuildHeight() + 2, var16), var14));
             }
 
-            var8.teleportTo(var3, var15.getX() + 0.5, var15.getY(), var15.getZ() + 0.5, Set.of(), var8.getYRot(), var8.getXRot(), false);
+            Teleport.teleport(var8, var3, new Vec3(var15.getX() + 0.5, var15.getY(), var15.getZ() + 0.5), var8.getYRot(), var8.getXRot());
             var8.resetFallDistance();
          }
       }
@@ -8903,7 +8881,7 @@ public final class HexEffects {
    }
 
    private static Display.TextDisplay createIncubationDisplay(ServerLevel var0, BlockPos var1, long var2) {
-      Display.TextDisplay var4 = (Display.TextDisplay)EntityTypes.TEXT_DISPLAY.create(var0, EntitySpawnReason.MOB_SUMMONED);
+      Display.TextDisplay var4 = (Display.TextDisplay)EntityType.TEXT_DISPLAY.create(var0);
       if (var4 == null) {
          return null;
       }
@@ -8914,15 +8892,19 @@ public final class HexEffects {
       var4.setSilent(true);
       // 用 NBT 初始化朝向/穿透/背景，避免反射设置 billboard 不生效
       CompoundTag var5 = new CompoundTag();
-      var5.put("text", (Tag)ComponentSerialization.CODEC.encodeStart(NbtOps.INSTANCE, incubationName(var2)).getOrThrow());
-      var5.put("Pos", (Tag)Vec3.CODEC.encodeStart(NbtOps.INSTANCE, var4.position()).getOrThrow());
+      var5.put("text", StringTag.valueOf(Component.Serializer.toJson(incubationName(var2))));
+      net.minecraft.nbt.ListTag varPos = new net.minecraft.nbt.ListTag();
+      varPos.add(net.minecraft.nbt.DoubleTag.valueOf(var4.getX()));
+      varPos.add(net.minecraft.nbt.DoubleTag.valueOf(var4.getY()));
+      varPos.add(net.minecraft.nbt.DoubleTag.valueOf(var4.getZ()));
+      var5.put("Pos", varPos);
       var5.putString("billboard", "center");
       var5.putString("alignment", "center");
       var5.putInt("background", 0x66000000);
       var5.putByte("shadow", (byte)1);
       var5.putByte("see_through", (byte)1);
       var5.putFloat("view_range", 2.0F);
-      var4.load(TagValueInput.create(ProblemReporter.DISCARDING, var0.registryAccess(), var5));
+      var4.load(var5);
       var0.addFreshEntity(var4);
       return var4;
    }
@@ -9037,7 +9019,7 @@ public final class HexEffects {
 
    /** 在旧位置附近寻找被活塞、原版瞬移或自然掉落带走的龙蛋；先扫正下方（掉落），再扫周边（瞬移）。 */
    private static BlockPos findMovedEgg(HexEffects.EggIncubation var0) {
-      for (int var1 = var0.pos.getY() - 1; var1 >= var0.level.getMinY(); var1--) {
+      for (int var1 = var0.pos.getY() - 1; var1 >= var0.level.getMinBuildHeight(); var1--) {
          BlockPos var2 = new BlockPos(var0.pos.getX(), var1, var0.pos.getZ());
          if (var0.level.getBlockState(var2).is(Blocks.DRAGON_EGG) && !isIncubatingAt(var0.level, var2)) {
             return var2.immutable();
@@ -9101,7 +9083,7 @@ public final class HexEffects {
 
    /** 生成一只幼龙幻翼；返回 null 表示创建失败。 */
    private static Phantom spawnBabyDragon(ServerLevel var0, Vec3 var1) {
-      Phantom var2 = (Phantom)EntityTypes.PHANTOM.create(var0, EntitySpawnReason.MOB_SUMMONED);
+      Phantom var2 = (Phantom)EntityType.PHANTOM.create(var0);
       if (var2 == null) {
          return null;
       }
@@ -9110,7 +9092,7 @@ public final class HexEffects {
       var2.setPhantomSize(0);
       // 开启幻翼 AI 以获得原版的飞行、转向和俯仰控制；同时清空全部 AI 目标，禁止它攻击玩家
       var2.setNoAi(false);
-      var2.getGoalSelector().removeAllGoals(goal -> true);
+      var2.goalSelector.removeAllGoals(goal -> true);
       stripPhantomTargetGoals(var2);
       var2.setSilent(true);
       var2.setInvulnerable(true);
@@ -9121,11 +9103,6 @@ public final class HexEffects {
       var2.setCustomNameVisible(true);
       var2.addTag(DRAGON_TAG);
       // 幻翼支持缩放；末影龙会被原版强制保持 1.0 大小
-      AttributeInstance var3 = var2.getAttribute(Attributes.SCALE);
-      if (var3 != null) {
-         var3.setBaseValue(0.5);
-      }
-
       setPhantomMoveTarget(var2, var1);
       var0.addFreshEntity(var2);
       return var2;
@@ -9208,7 +9185,7 @@ public final class HexEffects {
             restoreDragonState(var2.getKey(), var3, var4);
          } else if (var3.level() != var5) {
             // 26.2 的跨维度传送会创建新实体实例（NBT 往返），旧实例会被移除，必须换掉地图里的引用
-            Entity var6 = var3.teleport(new TeleportTransition(var5, new Vec3(var4.getX(), var4.getY() + 1.5, var4.getZ()), Vec3.ZERO, var3.getYRot(), var3.getXRot(), Set.of(), TeleportTransition.DO_NOTHING));
+            Entity var6 = Teleport.teleport(var3, var5, new Vec3(var4.getX(), var4.getY() + 1.5, var4.getZ()), var3.getYRot(), var3.getXRot());
             if (var6 instanceof Phantom var7) {
                var7.noPhysics = true;
                var7.addTag(DRAGON_TAG);
@@ -9256,7 +9233,7 @@ public final class HexEffects {
          double var11 = var4.getZ() + Math.sin(var7) * 4.0;
          double var13 = var4.getY() + 1.6 + Math.sin(var7 * 2.0) * 0.35;
          if (var3.distanceToSqr(var4) > 1024.0) {
-            var3.teleportTo(var5, var9, var13, var11, Set.of(), var3.getYRot(), var3.getXRot(), false);
+            Teleport.teleport(var3, var5, new Vec3(var9, var13, var11), var3.getYRot(), var3.getXRot());
          }
 
          // 只更新目标点，位置和朝向交给幻翼自己的 AI 平滑推进
@@ -9299,8 +9276,8 @@ public final class HexEffects {
                   && (!(var21 instanceof ServerPlayer var28) || !hasHex(var28, "dragon_rider"))
             )) {
                DamageSource var25 = var5.damageSources().mobAttack(var3);
-               var24.hurtServer(var5, var25, 4.0F);
-               var24.knockback(0.8, var3.getX() - var24.getX(), var3.getZ() - var24.getZ(), var25, 4.0F);
+               var24.hurt(var25, 4.0F);
+               var24.knockback(0.8, var3.getX() - var24.getX(), var3.getZ() - var24.getZ());
             }
          }
       }
@@ -9309,11 +9286,6 @@ public final class HexEffects {
    /** 按成长进度调整幼龙体型（0.5 → 2.0）与飞行速度上限。 */
    private static void applyDragonScale(Phantom var0, int var1) {
       float var2 = Mth.clamp((float)var1 / (float)DRAGON_GROWTH_TICKS, 0.0F, 1.0F);
-      AttributeInstance var3 = var0.getAttribute(Attributes.SCALE);
-      if (var3 != null) {
-         var3.setBaseValue(0.5F + var2 * 1.5F);
-      }
-
       clampPhantomSpeed(var0, 0.8F + var2 * 1.0F);
    }
 
@@ -9361,12 +9333,12 @@ public final class HexEffects {
    /** 把成长进度同步给客户端 HUD；长成后 adult=true，客户端隐藏成长条。 */
    private static void syncDragonGrowth(ServerPlayer var0, int var1) {
       float var2 = Mth.clamp((float)var1 / (float)DRAGON_GROWTH_TICKS, 0.0F, 1.0F);
-      PacketDistributor.sendToPlayer(var0, new HexDragonGrowthPayload(var2, var1 >= DRAGON_GROWTH_TICKS), new CustomPacketPayload[0]);
+      HexNetwork.sendToPlayer(var0, new HexDragonGrowthPayload(var2, var1 >= DRAGON_GROWTH_TICKS));
    }
 
    /** 海克斯被移除时清掉客户端残留的成长条。 */
    private static void clearDragonGrowth(ServerPlayer var0) {
-      PacketDistributor.sendToPlayer(var0, new HexDragonGrowthPayload(-1.0F, false), new CustomPacketPayload[0]);
+      HexNetwork.sendToPlayer(var0, new HexDragonGrowthPayload(-1.0F, false));
    }
 
    /** 成长条是否已走满（成年龙）。 */
@@ -9381,7 +9353,7 @@ public final class HexEffects {
 
    /** 投喂食物加速成长；返回 true 表示成功吃掉一件食物。 */
    public static boolean feedDragon(ServerPlayer var0, Phantom var1, ItemStack var2) {
-      if (var2.isEmpty() || !var2.has(DataComponents.FOOD) || dragonAdult(var0.getUUID())) {
+      if (var2.isEmpty() || !Stacks.isFood(var2) || dragonAdult(var0.getUUID())) {
          return false;
       }
 
@@ -9559,14 +9531,14 @@ public final class HexEffects {
 
    /** 26.2 的 BlockItemTags 同时提供方块标签与物品标签，这里用方块标签判断是否为矿物。 */
    private static boolean isDragonOre(BlockState var0) {
-      return var0.is(BlockItemTags.COAL_ORES.block())
-         || var0.is(BlockItemTags.IRON_ORES.block())
-         || var0.is(BlockItemTags.COPPER_ORES.block())
-         || var0.is(BlockItemTags.GOLD_ORES.block())
-         || var0.is(BlockItemTags.REDSTONE_ORES.block())
-         || var0.is(BlockItemTags.LAPIS_ORES.block())
-         || var0.is(BlockItemTags.DIAMOND_ORES.block())
-         || var0.is(BlockItemTags.EMERALD_ORES.block())
+      return var0.is(BlockTags.COAL_ORES)
+         || var0.is(BlockTags.IRON_ORES)
+         || var0.is(BlockTags.COPPER_ORES)
+         || var0.is(BlockTags.GOLD_ORES)
+         || var0.is(BlockTags.REDSTONE_ORES)
+         || var0.is(BlockTags.LAPIS_ORES)
+         || var0.is(BlockTags.DIAMOND_ORES)
+         || var0.is(BlockTags.EMERALD_ORES)
          || var0.is(Blocks.NETHER_QUARTZ_ORE)
          || var0.is(Blocks.NETHER_GOLD_ORE)
          || var0.is(Blocks.ANCIENT_DEBRIS);
@@ -9599,7 +9571,7 @@ public final class HexEffects {
          if (!DRAGON_PETS.containsValue(var1) && var1.getCustomName() != null && isDragonName(var1.getCustomName().getString())) {
             var1.setTarget(null);
             var1.setNoAi(true);
-            var1.getGoalSelector().removeAllGoals(goal -> true);
+            var1.goalSelector.removeAllGoals(goal -> true);
             stripPhantomTargetGoals(var1);
             var1.discard();
          }
@@ -9608,7 +9580,7 @@ public final class HexEffects {
 
    /** 幼龙是否属于本模组的宠物（按实体标签判定，普通幻翼改名冒充不了）。 */
    public static boolean isDragonPet(Phantom var0) {
-      return DRAGON_PETS.containsValue(var0) || var0.entityTags().contains(DRAGON_TAG);
+      return DRAGON_PETS.containsValue(var0) || var0.getTags().contains(DRAGON_TAG);
    }
 
    /** 幼龙改名为成年龙后名字会变，两种名字都要认。 */
@@ -9617,7 +9589,7 @@ public final class HexEffects {
    }
 
    /** 幼龙完全无敌：取消一切来源的伤害（含创造模式攻击、虚空等穿透性伤害）。 */
-   public static void dragonPetDamage(LivingIncomingDamageEvent var0) {
+   public static void dragonPetDamage(LivingHurtEvent var0) {
       if (var0.getEntity() instanceof Phantom var1 && isDragonPet(var1)) {
          var0.setCanceled(true);
       }
@@ -9666,7 +9638,7 @@ public final class HexEffects {
          return;
       }
 
-      Bingo var3 = Bingo.get(var2.overworld());
+      Bongo var3 = Bongo.get(Levels.overworld(var2));
       Team var4 = var3.getTeam(var0);
       if (!hasHex(var0, "blank_cell") || BLANK_USED.contains(var0.getUUID()) || var4 == null || var1 < 0 || var1 >= var3.tasks().size()) {
          return;
@@ -9680,7 +9652,7 @@ public final class HexEffects {
 
       // 只为本队点亮该格，保留原任务图标，不替换成万能牌
       var4.complete(var1);
-      var3.markDirty(true);
+      var3.setChanged(true);
       var3.checkWin();
       BLANK_USED.add(var0.getUUID());
       consumeNamedItem(var0, "空白格");
@@ -9754,7 +9726,7 @@ public final class HexEffects {
             }
          }
 
-         Holder<Attribute>[] var6 = new Holder[]{Attributes.MOVEMENT_SPEED, Attributes.FLYING_SPEED};
+         Attribute[] var6 = new Attribute[]{Attributes.MOVEMENT_SPEED, Attributes.FLYING_SPEED};
          double[] var7 = new double[]{-1.0, -1.0};
 
          for (ServerPlayer var8 : var1.getPlayerList().getPlayers()) {
@@ -9766,7 +9738,7 @@ public final class HexEffects {
                for (int var9 = 0; var9 < var6.length; var9++) {
                   AttributeInstance var10 = var8.getAttribute(var6[var9]);
                   if (var10 != null) {
-                     var10.addTransientModifier(new AttributeModifier(modifierId("the_world", var9), var7[var9], Operation.ADD_MULTIPLIED_BASE));
+                     var10.addTransientModifier(new AttributeModifier(modifierId("the_world", var9), "hexbingo", var7[var9], Operation.MULTIPLY_BASE));
                   }
                }
 
@@ -9785,7 +9757,7 @@ public final class HexEffects {
          if (System.currentTimeMillis() >= THE_WORLD_UNTIL) {
             THE_WORLD_UNTIL = 0L;
             THE_WORLD_MOBS.clear();
-            Holder<Attribute>[] var1 = new Holder[]{Attributes.MOVEMENT_SPEED, Attributes.FLYING_SPEED};
+            Attribute[] var1 = new Attribute[]{Attributes.MOVEMENT_SPEED, Attributes.FLYING_SPEED};
 
             for (ServerPlayer var3 : var0.getPlayerList().getPlayers()) {
                for (int var4 = 0; var4 < var1.length; var4++) {
@@ -9817,7 +9789,7 @@ public final class HexEffects {
          ThreadLocalRandom var3 = ThreadLocalRandom.current();
          int var4 = 0;
 
-         for (Team var6 : Bingo.get(var1.overworld()).getTeams()) {
+         for (Team var6 : Bongo.get(Levels.overworld(var1)).getTeams()) {
             if (var6 != var2 && !var6.getPlayers().isEmpty()) {
                ArrayList<ServerPlayer> var7 = new ArrayList<>();
 
@@ -9833,7 +9805,7 @@ public final class HexEffects {
                }
 
                ServerPlayer var10 = var7.get(var3.nextInt(var7.size()));
-               NonNullList<ItemStack> var11 = var10.getInventory().getNonEquipmentItems();
+               NonNullList<ItemStack> var11 = InventoryItems.nonEquipment(var10);
                ArrayList<Integer> var12 = new ArrayList<>();
 
                for (int var13 = 0; var13 < var11.size(); var13++) {
@@ -9875,7 +9847,7 @@ public final class HexEffects {
          return false;
       }
 
-      if (var0.entityTags().contains(BLACK_MARKET_USED_TAG)) {
+      if (var0.getTags().contains(BLACK_MARKET_USED_TAG)) {
          return false;
       }
 
@@ -9884,7 +9856,7 @@ public final class HexEffects {
          var2.setAccessible(true);
          ServerLevel var3 = (ServerLevel)var0.level();
 
-         while (var1.getVillagerData().level() < VillagerData.MAX_VILLAGER_LEVEL) {
+         while (var1.getVillagerData().getLevel() < VillagerData.MAX_VILLAGER_LEVEL) {
             var2.invoke(var1, var3);
          }
       } catch (Exception var4) {
@@ -9899,7 +9871,7 @@ public final class HexEffects {
       return true;
    }
 
-   // 恶魔契约：扣生命上限、允许受伤、完成 1 个 Bingo 任务
+   // 恶魔契约：扣生命上限、允许受伤、完成 1 个 Bongo 任务
    private static void applyDemonPact(ServerPlayer var0, String var1, int var2) {
       applyDemonPactAttribute(var0, var1, var2);
       if (var0.getHealth() > var0.getMaxHealth()) {
@@ -9909,7 +9881,7 @@ public final class HexEffects {
       giveDemonPactArmor(var0);
       MinecraftServer var3 = var0.level().getServer();
       if (var3 != null) {
-         Bingo var4 = Bingo.get(var3.overworld());
+         Bongo var4 = Bongo.get(Levels.overworld(var3));
          Team var5 = var4.getTeam(var0);
          int var6 = var4.tasks().size();
          if (var5 != null && var6 > 0) {
@@ -9921,8 +9893,8 @@ public final class HexEffects {
                   && !var5.locked(var9)
                   && !isSealed(var3, var9)
                   && var4.task(var9).getType() != TaskTypeEmpty.INSTANCE
-                  && var4.task(var9).weight() > var8) {
-                  var8 = var4.task(var9).weight();
+                  && false) {
+                  var8 = 0;
                   var7 = var9;
                }
             }
@@ -9946,12 +9918,12 @@ public final class HexEffects {
    private static void applyDemonPactAttribute(ServerPlayer var0, String var1, int var2) {
       AttributeInstance var3 = var0.getAttribute(Attributes.MAX_HEALTH);
       if (var3 != null) {
-         Identifier var4 = modifierId(var1, var2);
+         UUID var4 = modifierId(var1, var2);
          double var5 = 0.0;
 
          for (AttributeModifier var6 : var3.getModifiers()) {
-            if (var6.id().equals(var4)) {
-               var5 = var6.amount();
+            if (var6.getId().equals(var4)) {
+               var5 = var6.getAmount();
                break;
             }
          }
@@ -9960,7 +9932,7 @@ public final class HexEffects {
          // 避免与蝙蝠形态等减上限效果叠加成负值导致直接死亡
          double var7 = var3.getValue() - var5;
          double var8 = Math.max(0.0, Math.min(10.0, var7 - 2.0));
-         var3.addOrUpdateTransientModifier(new AttributeModifier(var4, -var8, Operation.ADD_VALUE));
+         Attr.addOrUpdate(var3, new AttributeModifier(var4, "hexbingo", -var8, Operation.ADDITION));
       }
    }
 
@@ -9976,23 +9948,23 @@ public final class HexEffects {
 
    private static ItemStack randomlyEnchantedArmor(ServerPlayer var0, Item var1) {
       ItemStack var2 = new ItemStack(var1);
-      Registry<Enchantment> var3 = var0.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-      ArrayList<Holder<Enchantment>> var4 = new ArrayList<>();
+      Registry<Enchantment> var3 = var0.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+      ArrayList<Enchantment> var4 = new ArrayList<>();
 
-      for (Holder<Enchantment> var6 : var3.listElements().toList()) {
-         if (var6.value().canEnchant(var2)) {
+      for (Enchantment var6 : var3.stream().toList()) {
+         if (var6.canEnchant(var2)) {
             var4.add(var6);
          }
       }
 
       Collections.shuffle(var4, ThreadLocalRandom.current());
-      ArrayList<Holder<Enchantment>> var15 = new ArrayList<>();
+      ArrayList<Enchantment> var15 = new ArrayList<>();
 
-      for (Holder<Enchantment> var7 : var4) {
+      for (Enchantment var7 : var4) {
          boolean var8 = true;
 
-         for (Holder<Enchantment> var10 : var15) {
-            if (!Enchantment.areCompatible(var10, var7)) {
+         for (Enchantment var10 : var15) {
+            if (var10 != var7) {
                var8 = false;
                break;
             }
@@ -10007,13 +9979,13 @@ public final class HexEffects {
          }
       }
 
-      ItemEnchantments.Mutable var16 = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+      java.util.Map<Enchantment, Integer> var16 = new java.util.LinkedHashMap<>();
 
-      for (Holder<Enchantment> var18 : var15) {
-         var16.set(var18, 1 + ThreadLocalRandom.current().nextInt(Math.max(1, Math.min(3, var18.value().getMaxLevel()))));
+      for (Enchantment var18 : var15) {
+         var16.put(var18, 1 + ThreadLocalRandom.current().nextInt(Math.max(1, Math.min(3, var18.getMaxLevel()))));
       }
 
-      EnchantmentHelper.setEnchantments(var2, var16.toImmutable());
+      EnchantmentHelper.setEnchantments(var16, var2);
       return var2;
    }
 
@@ -10046,8 +10018,7 @@ public final class HexEffects {
             if (!var5.equals(var3) && canPlaceChest(var1, var5)) {
                var1.setBlockAndUpdate(var5, Blocks.CHEST.defaultBlockState());
                if (var1.getBlockEntity(var5) instanceof ChestBlockEntity var6) {
-                  var6.setLootTable(randomVanillaLootTable(var2));
-                  var6.setLootTableSeed(var2.nextLong());
+                  var6.setLootTable(randomVanillaLootTable(var2), var2.nextLong());
                   var6.setChanged();
                   return;
                }
@@ -10102,14 +10073,13 @@ public final class HexEffects {
          return;
       }
 
-      Input var2 = var0.getLastClientInput();
       // 潜行时不吸附，允许正常下坠脱离墙面（否则会被 y=0 卡在半空）
-      if (var2 != null && var2.shift()) {
+      if (var0.isShiftKeyDown()) {
          return;
       }
 
       Vec3 var3 = var0.getDeltaMovement();
-      if (var2 != null && var2.forward()) {
+      if (!var0.isShiftKeyDown()) {
          var0.setDeltaMovement(var3.x, Math.max(var3.y, 0.2), var3.z);
          var0.hurtMarked = true;
       } else if (var3.y < 0.0) {
@@ -10134,7 +10104,7 @@ public final class HexEffects {
          var1 = false;
       }
 
-      var0.sendOverlayMessage(Component.translatable(var1 ? "hexbingo.msg.spider_climb_on" : "hexbingo.msg.spider_climb_off"));
+      var0.displayClientMessage(Component.translatable(var1 ? "hexbingo.msg.spider_climb_on" : "hexbingo.msg.spider_climb_off"), true);
    }
 
    // 吸铁石：每 tick 把 16 格内掉落物拉向玩家（T 键开关）
@@ -10170,7 +10140,7 @@ public final class HexEffects {
          var1 = false;
       }
 
-      var0.sendOverlayMessage(Component.translatable(var1 ? "hexbingo.msg.magnet_on" : "hexbingo.msg.magnet_off"));
+      var0.displayClientMessage(Component.translatable(var1 ? "hexbingo.msg.magnet_on" : "hexbingo.msg.magnet_off"), true);
    }
 
    // ============ 踏剑飞行 ============
@@ -10263,7 +10233,7 @@ public final class HexEffects {
       }
 
       // 自己物品栏（36 格）
-      NonNullList<ItemStack> var10 = var0.getInventory().getNonEquipmentItems();
+      NonNullList<ItemStack> var10 = InventoryItems.nonEquipment(var0);
       for (int var11 = 0; var11 < var10.size(); var11++) {
          ItemStack var12 = var10.get(var11);
          if (swordFlyCandidate(var12) && swordFlyTier(var12.getItem()) < var3) {
@@ -10308,13 +10278,13 @@ public final class HexEffects {
 
       if (SWORD_FLY_ON.contains(var0.getUUID())) {
          endSwordFly(var0, true);
-         var0.sendOverlayMessage(Component.translatable("hexbingo.msg.sword_fly_off"));
+         var0.displayClientMessage(Component.translatable("hexbingo.msg.sword_fly_off"), true);
       } else {
          SWORD_FLY_ON.add(var0.getUUID());
          if (!SWORD_FLY_SAVED_SPEED.containsKey(var0.getUUID())) {
             SWORD_FLY_SAVED_SPEED.put(var0.getUUID(), var0.getAbilities().getFlyingSpeed());
          }
-         var0.sendOverlayMessage(Component.translatable("hexbingo.msg.sword_fly_on"));
+         var0.displayClientMessage(Component.translatable("hexbingo.msg.sword_fly_on"), true);
       }
    }
 
@@ -10336,10 +10306,10 @@ public final class HexEffects {
          return;
       }
 
-      Team var3 = Bingo.get(var0.level()).getTeam(var0);
+      Team var3 = Bongo.get(var0.level()).getTeam(var0);
       HexEffects.SwordFlyPick var4 = pickSwordFlySword(var0, var3);
       if (var4.stack.isEmpty()) {
-         var0.sendOverlayMessage(Component.translatable("hexbingo.msg.sword_fly_no_sword"));
+         var0.displayClientMessage(Component.translatable("hexbingo.msg.sword_fly_no_sword"), true);
          endSwordFly(var0, true);
          return;
       }
@@ -10439,7 +10409,7 @@ public final class HexEffects {
       }
 
       if (var3 == null && var0.level() instanceof ServerLevel var5) {
-         Display.ItemDisplay var6 = EntityTypes.ITEM_DISPLAY.create(var5, EntitySpawnReason.MOB_SUMMONED);
+         Display.ItemDisplay var6 = EntityType.ITEM_DISPLAY.create(var5);
          if (var6 != null) {
             var6.setPos(var0.getX(), var0.getY() + 0.08, var0.getZ());
             var6.setNoGravity(true);
@@ -10503,24 +10473,24 @@ public final class HexEffects {
       DICE_NEXT.put(var1, var2 + DICE_INTERVAL_MS);
       int var5 = ThreadLocalRandom.current().nextInt(1, 7);
       DICE_PENDING.put(var1, new HexEffects.DicePending(var5, false, 60));
-      PacketDistributor.sendToPlayer(var0, new HexDiceRollPayload(60), new CustomPacketPayload[0]);
+      HexNetwork.sendToPlayer(var0, new HexDiceRollPayload(60));
    }
 
    private static void applyDiceOutcome(ServerPlayer var0, int var5) {
       if (var5 > 3) {
-         var0.addEffect(new MobEffectInstance(MobEffects.SPEED, 4800, 1, false, true, true));
+         var0.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 4800, 1, false, true, true));
          var0.sendSystemMessage(
             Component.translatable("hexbingo.msg.dice_speed", new Object[]{Component.literal(Integer.toString(var5))})
                .withStyle(ChatFormatting.AQUA)
          );
       } else if (var5 < 3) {
-         var0.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 4800, 0, false, true, true));
+         var0.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 4800, 0, false, true, true));
          var0.sendSystemMessage(
             Component.translatable("hexbingo.msg.dice_slow", new Object[]{Component.literal(Integer.toString(var5))})
                .withStyle(ChatFormatting.GRAY)
          );
       } else {
-         var0.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 120, 255, false, true, true));
+         var0.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 120, 255, false, true, true));
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.dice_lock").withStyle(ChatFormatting.RED));
       }
    }
@@ -10542,24 +10512,24 @@ public final class HexEffects {
 
    // 生物类型 → 头颅物品映射
    private static Item headFor(EntityType<?> var0) {
-      if (var0 == EntityTypes.ZOMBIE) {
+      if (var0 == EntityType.ZOMBIE) {
          return Items.ZOMBIE_HEAD;
-      } else if (var0 == EntityTypes.HUSK) {
+      } else if (var0 == EntityType.HUSK) {
          return Items.ZOMBIE_HEAD;
-      } else if (var0 == EntityTypes.SKELETON) {
+      } else if (var0 == EntityType.SKELETON) {
          return Items.SKELETON_SKULL;
-      } else if (var0 == EntityTypes.STRAY) {
+      } else if (var0 == EntityType.STRAY) {
          return Items.SKELETON_SKULL;
-      } else if (var0 == EntityTypes.WITHER_SKELETON) {
+      } else if (var0 == EntityType.WITHER_SKELETON) {
          return Items.WITHER_SKELETON_SKULL;
-      } else if (var0 == EntityTypes.CREEPER) {
+      } else if (var0 == EntityType.CREEPER) {
          return Items.CREEPER_HEAD;
-      } else if (var0 == EntityTypes.ENDER_DRAGON) {
+      } else if (var0 == EntityType.ENDER_DRAGON) {
          return Items.DRAGON_HEAD;
-      } else if (var0 == EntityTypes.PIGLIN) {
+      } else if (var0 == EntityType.PIGLIN) {
          return Items.PIGLIN_HEAD;
       } else {
-         return var0 == EntityTypes.PLAYER ? Items.PLAYER_HEAD : null;
+         return var0 == EntityType.PLAYER ? Items.PLAYER_HEAD : null;
       }
    }
 
@@ -10584,22 +10554,19 @@ public final class HexEffects {
       "chests/woodland_mansion"
    };
 
-   private static ResourceKey<LootTable> randomVanillaLootTable(ThreadLocalRandom var0) {
-      return ResourceKey.create(
-         Registries.LOOT_TABLE, Identifier.fromNamespaceAndPath("minecraft", VANILLA_LOOT_TABLES[var0.nextInt(VANILLA_LOOT_TABLES.length)])
-      );
+   private static ResourceLocation randomVanillaLootTable(ThreadLocalRandom var0) {
+      return new ResourceLocation("minecraft", VANILLA_LOOT_TABLES[var0.nextInt(VANILLA_LOOT_TABLES.length)]);
    }
 
    // 快递到了：头顶生成装有随机原版战利品箱的箱子
    private static void airdrop(ServerPlayer var0) {
       if (var0.level() instanceof ServerLevel var1) {
          ThreadLocalRandom var3 = ThreadLocalRandom.current();
-         ResourceKey<LootTable> var4 = randomVanillaLootTable(var3);
+         ResourceLocation var4 = randomVanillaLootTable(var3);
          BlockPos var5 = var0.blockPosition().above(5);
          var1.setBlockAndUpdate(var5, Blocks.CHEST.defaultBlockState());
          if (var1.getBlockEntity(var5) instanceof ChestBlockEntity var6) {
-            var6.setLootTable(var4);
-            var6.setLootTableSeed(var3.nextLong());
+            var6.setLootTable(var4, var3.nextLong());
             var6.setChanged();
          }
 
@@ -10609,11 +10576,11 @@ public final class HexEffects {
 
    // 海神：附魔三叉戟（忠诚/引雷/经验修补）。不带激流，保证陆地可正常掷出
    private static void giveSeaGod(ServerPlayer var0) {
-      Registry<Enchantment> var1 = var0.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+      Registry<Enchantment> var1 = var0.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
       ItemStack var2 = questItem(Items.TRIDENT, "海神", "hexbingo.item.sea_god.lore");
-      var2.enchant(var1.wrapAsHolder((Enchantment)var1.getValueOrThrow(Enchantments.LOYALTY)), 3);
-      var2.enchant(var1.wrapAsHolder((Enchantment)var1.getValueOrThrow(Enchantments.CHANNELING)), 1);
-      var2.enchant(var1.wrapAsHolder((Enchantment)var1.getValueOrThrow(Enchantments.MENDING)), 1);
+      var2.enchant(Enchantments.LOYALTY, 3);
+      var2.enchant(Enchantments.CHANNELING, 1);
+      var2.enchant(Enchantments.MENDING, 1);
       var0.addItem(var2);
       var0.sendSystemMessage(Component.translatable("hexbingo.msg.sea_god").withStyle(ChatFormatting.AQUA));
    }
@@ -10666,7 +10633,7 @@ public final class HexEffects {
          ThreadLocalRandom var12 = ThreadLocalRandom.current();
          int var13 = var10 + var12.nextInt(var11 - var10 + 1);
          ItemStack var14 = MapItem.create(var3, Mth.floor(var5), Mth.floor(var7), (byte)1, true, true);
-         var14.set(DataComponents.CUSTOM_NAME, Component.translatable("hexbingo.item.meteor_map"));
+         Stacks.setName(var14, Component.translatable("hexbingo.item.meteor_map"));
 
          for (int var15 = 0; var15 < var13; var15++) {
             double var16 = var12.nextDouble() * Math.PI * 2.0;
@@ -10676,7 +10643,7 @@ public final class HexEffects {
             int var22 = meteorSurfaceY(var3, var20, var21);
             int var23 = 2 + var12.nextInt(4);
             METEORS.add(new HexEffects.MeteorState(var3, var20 + 0.5, var22 + 72.0, var21 + 0.5, var22, var23, var0.getUUID()));
-            MapItemSavedData.addTargetDecoration(var14, new BlockPos(var20, var22, var21), "meteor" + var15, MapDecorationTypes.RED_X);
+            MapItemSavedData.addTargetDecoration(var14, new BlockPos(var20, var22, var21), "meteor" + var15, MapDecoration.Type.RED_X);
          }
 
          var0.addItem(var14);
@@ -10689,11 +10656,11 @@ public final class HexEffects {
    private static int meteorSurfaceY(ServerLevel var0, int var1, int var2) {
       var0.getChunk(var1 >> 4, var2 >> 4);
       int var3 = var0.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, var1, var2);
-      if (var3 > var0.getMinY() + 1) {
+      if (var3 > var0.getMinBuildHeight() + 1) {
          return var3;
       }
 
-      for (int var4 = var0.getMaxY() - 1; var4 > var0.getMinY(); var4--) {
+      for (int var4 = var0.getMaxBuildHeight() - 1; var4 > var0.getMinBuildHeight(); var4--) {
          if (!var0.getBlockState(new BlockPos(var1, var4, var2)).isAir()) {
             return var4 + 1;
          }
@@ -10707,11 +10674,11 @@ public final class HexEffects {
 
       for (ServerPlayer var3 : var1) {
          if (!var3.isSpectator() && var3 != var0 && (var2 == null || !var2.hasPlayer(var3))) {
-            var3.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 200, 2, false, true, true));
+            var3.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200, 2, false, true, true));
             quakeBreak(var3);
             if (var3.level() instanceof ServerLevel var4) {
                var4.sendParticles(ParticleTypes.EXPLOSION, var3.getX(), var3.getY(), var3.getZ(), 8, 3.0, 1.0, 3.0, 0.0);
-               var4.playSound(null, var3.getX(), var3.getY(), var3.getZ(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.6F, 0.6F);
+               var4.playSound(null, var3.getX(), var3.getY(), var3.getZ(), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.6F, 0.6F);
                var3.sendSystemMessage(Component.translatable("hexbingo.msg.meteor_quake").withStyle(ChatFormatting.DARK_PURPLE));
             }
          }
@@ -10825,7 +10792,7 @@ public final class HexEffects {
       int var17 = 1 + var3.nextInt(3);
 
       for (int var18 = 0; var18 < var17; var18++) {
-         Skeleton var19 = (Skeleton)EntityTypes.SKELETON.create(var2, EntitySpawnReason.MOB_SUMMONED);
+         Skeleton var19 = (Skeleton)EntityType.SKELETON.create(var2);
          if (var19 != null) {
             var19.setPos(var5.getX() + var3.nextDouble() * 8.0 - 4.0 + 0.5, var5.getY() + 1.0, var5.getZ() + var3.nextDouble() * 8.0 - 4.0 + 0.5);
             Item[] var20 = new Item[]{Items.IRON_HELMET, Items.CHAINMAIL_HELMET, Items.GOLDEN_HELMET, Items.DIAMOND_HELMET};
@@ -10845,7 +10812,7 @@ public final class HexEffects {
       }
 
       var2.sendParticles(ParticleTypes.EXPLOSION_EMITTER, var1.x, var1.targetY + 0.5, var1.z, 2, 1.0, 1.0, 1.0, 0.0);
-      var2.playSound(null, var1.x, var1.targetY, var1.z, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.WEATHER, 1.2F, 0.7F);
+      var2.playSound(null, var1.x, var1.targetY, var1.z, SoundEvents.GENERIC_EXPLODE, SoundSource.WEATHER, 1.2F, 0.7F);
    }
 
    private static ItemStack meteorArmor(ServerPlayer var0, Item var1) {
@@ -10933,7 +10900,7 @@ public final class HexEffects {
       EXILE_BYPASS.set(Boolean.TRUE);
 
       try {
-         var0.teleportTo(var1, var2, var4, var6, Set.of(), var8, var9, false);
+         Teleport.teleport(var0, var1, new Vec3(var2, var4, var6), var8, var9);
       } finally {
          EXILE_BYPASS.set(Boolean.FALSE);
       }
@@ -10997,12 +10964,12 @@ public final class HexEffects {
          // 末地外岛区块默认未加载，getHeight 对未加载区块会返回最低点，必须先加载区块
          var3.getChunk(var9 >> 4, var10 >> 4);
          var11 = var3.getHeight(Types.MOTION_BLOCKING_NO_LEAVES, var9, var10);
-         if (var11 > var3.getMinY()) {
+         if (var11 > var3.getMinBuildHeight()) {
             break;
          }
       }
 
-      if (var11 <= var3.getMinY()) {
+      if (var11 <= var3.getMinBuildHeight()) {
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.end_exile_no_spot").withStyle(ChatFormatting.GRAY));
          return;
       }
@@ -11124,7 +11091,7 @@ public final class HexEffects {
 
    // 任务护盾：锁定权重最高的 3 个任务，其他海克斯无法将其退回
    private static void applyTaskShield(ServerPlayer var0, int var1) {
-      Bingo var2 = Bingo.get(var0.level());
+      Bongo var2 = Bongo.get(var0.level());
       Team var3 = var2.getTeam(var0);
       if (var3 != null) {
          ArrayList<Integer> var4 = new ArrayList<>();
@@ -11135,7 +11102,7 @@ public final class HexEffects {
             }
          }
 
-         var4.sort((var5x, var6x) -> Integer.compare(var2.task(var6x).weight(), var2.task(var5x).weight()));
+         var4.sort((var5x, var6x) -> 0);
          Set<Task> var7 = TASK_SHIELDS.computeIfAbsent(var3.color.getName(), var0x -> new HashSet<>());
          MutableComponent var8 = Component.empty();
          int var9 = 0;
@@ -11160,7 +11127,7 @@ public final class HexEffects {
       }
    }
 
-   public static boolean isTaskShielded(Team var0, Bingo var1, int var2) {
+   public static boolean isTaskShielded(Team var0, Bongo var1, int var2) {
       Set<Task> var3 = TASK_SHIELDS.get(var0.color.getName());
       return var3 != null && var3.contains(var1.task(var2));
    }
@@ -11170,7 +11137,7 @@ public final class HexEffects {
    }
 
    // 任务护盾：该卡牌是否被任意队伍保护（全局任务类海克斯据此跳过受保护任务）
-   public static boolean taskShieldedByAnyTeam(Bingo var0, Task var1) {
+   public static boolean taskShieldedByAnyTeam(Bongo var0, Task var1) {
       if (var1 == null || var1 == Task.EMPTY) {
          return false;
       }
@@ -11196,7 +11163,7 @@ public final class HexEffects {
             ItemStack var6 = var0.getOffhandItem();
             if (var6.isEmpty()) {
                var0.sendSystemMessage(Component.translatable("hexbingo.msg.midas_empty").withStyle(ChatFormatting.GRAY));
-            } else if (!var6.has(DataComponents.CUSTOM_NAME) && !VALUABLE_ITEMS.contains(var6.getItem()) && !var6.isEnchanted()) {
+            } else if (!Stacks.hasCustomName(var6) && !VALUABLE_ITEMS.contains(var6.getItem()) && !var6.isEnchanted()) {
                int var7 = var6.getCount();
                var0.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.GOLD_INGOT, var7));
                MIDAS_COOLDOWN.put(var0.getUUID(), var1 + skillCooldown(var0, 60000L));
@@ -11236,15 +11203,15 @@ public final class HexEffects {
 
       BAT_UNTIL.put(var0.getUUID(), var1 + 60000L);
       BAT_COOLDOWN.put(var0.getUUID(), var1 + skillCooldown(var0, 420000L));
-      AttributeInstance var6 = var0.getAttribute(Attributes.SCALE);
+      AttributeInstance var6 = var0.getAttribute(HexAttributes.SCALE.get());
       if (var6 != null) {
          // 约为 0.5 格高（玩家默认 1.8 格）
-         var6.addOrUpdateTransientModifier(new AttributeModifier(modifierId("bat_form", 0), -0.7222, Operation.ADD_MULTIPLIED_BASE));
+         Attr.addOrUpdate(var6, new AttributeModifier(modifierId("bat_form", 0), "hexbingo", -0.7222, Operation.MULTIPLY_BASE));
       }
 
       AttributeInstance var7 = var0.getAttribute(Attributes.MAX_HEALTH);
       if (var7 != null) {
-         var7.addOrUpdateTransientModifier(new AttributeModifier(modifierId("bat_form", 1), -14.0, Operation.ADD_VALUE));
+         Attr.addOrUpdate(var7, new AttributeModifier(modifierId("bat_form", 1), "hexbingo", -14.0, Operation.ADDITION));
       }
 
       // 玩家飞行速度来自 Abilities，不能用 Attributes.FLYING_SPEED
@@ -11267,7 +11234,7 @@ public final class HexEffects {
          Bat var2 = BAT_DISGUISES.get(var0.getUUID());
          if (var2 != null && var2.isAlive()) {
             if (var2.level() != var1) {
-               var2.teleportTo(var1, var0.getX(), batFootY(var0), var0.getZ(), Set.of(), var0.getYRot(), 0.0F, false);
+               Teleport.teleport(var2, var1, new Vec3(var0.getX(), batFootY(var0), var0.getZ()), var0.getYRot(), 0.0F);
             }
 
             return;
@@ -11277,7 +11244,7 @@ public final class HexEffects {
             var2.discard();
          }
 
-         Bat var3 = EntityTypes.BAT.create(var1, EntitySpawnReason.MOB_SUMMONED);
+         Bat var3 = EntityType.BAT.create(var1);
          if (var3 != null) {
             var3.setPos(var0.getX(), batFootY(var0), var0.getZ());
             var3.setYRot(var0.getYRot());
@@ -11288,9 +11255,9 @@ public final class HexEffects {
             var3.setPersistenceRequired();
             var3.noPhysics = true;
             // 缩到约 0.4 格，贴在玩家脚边，避免第一人称时糊在镜头上
-            AttributeInstance var4 = var3.getAttribute(Attributes.SCALE);
+            AttributeInstance var4 = var3.getAttribute(HexAttributes.SCALE.get());
             if (var4 != null) {
-               var4.addOrUpdateTransientModifier(new AttributeModifier(modifierId("bat_form", 0), -0.55, Operation.ADD_MULTIPLIED_BASE));
+               Attr.addOrUpdate(var4, new AttributeModifier(modifierId("bat_form", 0), "hexbingo", -0.55, Operation.MULTIPLY_BASE));
             }
             var3.setCustomName(Component.literal("蝙蝠形态"));
             var3.setCustomNameVisible(false);
@@ -11328,7 +11295,7 @@ public final class HexEffects {
                   double var8 = batFootY(var5);
                   if (var7.level() != var5.level()) {
                      // 26.2 跨维度传送会重建实例：更新引用并重设 noPhysics（不在 NBT 里）
-                     Entity var9 = var7.teleport(new TeleportTransition((ServerLevel)var5.level(), new Vec3(var5.getX(), var8, var5.getZ()), Vec3.ZERO, var5.getYRot(), 0.0F, Set.of(), TeleportTransition.DO_NOTHING));
+                     Entity var9 = Teleport.teleport(var7, (ServerLevel)var5.level(), new Vec3(var5.getX(), var8, var5.getZ()), var5.getYRot(), 0.0F);
                      if (var9 instanceof Bat var10) {
                         var10.noPhysics = true;
                         BAT_DISGUISES.put(var4, var10);
@@ -11364,7 +11331,7 @@ public final class HexEffects {
          }
 
          var0.setInvisible(false);
-         AttributeInstance var2 = var0.getAttribute(Attributes.SCALE);
+         AttributeInstance var2 = var0.getAttribute(HexAttributes.SCALE.get());
          if (var2 != null) {
             var2.removeModifier(modifierId("bat_form", 0));
          }
@@ -11510,7 +11477,7 @@ public final class HexEffects {
             var0.hurtMarked = true;
          } else {
             // 目标：按施放者的 WASD 输入与朝向移动
-            Input var10 = var8.getLastClientInput();
+            boolean[] var10 = DRAGON_INPUT.getOrDefault(var8.getUUID(), new boolean[]{false, false});
             Vec3 var11 = var8.getLookAngle();
             double var12 = var11.x;
             double var13 = var11.z;
@@ -11523,8 +11490,8 @@ public final class HexEffects {
                var13 = 1.0;
             }
 
-            double var15 = (var10 != null && var10.forward() ? 1.0 : 0.0) - (var10 != null && var10.backward() ? 1.0 : 0.0);
-            double var16 = (var10 != null && var10.right() ? 1.0 : 0.0) - (var10 != null && var10.left() ? 1.0 : 0.0);
+            double var15 = var10[0] ? 1.0 : 0.0;
+            double var16 = 0.0;
             // 右向量 = up × forward = (fz, 0, -fx)
             double var17 = var12 * var15 + var13 * var16;
             double var18 = var13 * var15 - var12 * var16;
@@ -11567,7 +11534,7 @@ public final class HexEffects {
    public static void applyObjectiveDeny(ServerPlayer var0, int var1) {
       MinecraftServer var2 = var0.level().getServer();
       if (var2 != null && hasHex(var0, "objective_deny") && denyReady(var0)) {
-         Bingo var3 = Bingo.get(var2.overworld());
+         Bongo var3 = Bongo.get(Levels.overworld(var2));
          if (var1 >= 0 && var1 < var3.tasks().size()) {
             if (taskShieldedByAnyTeam(var3, var3.task(var1))) {
                var0.sendSystemMessage(Component.translatable("hexbingo.msg.task_shield_block").withStyle(ChatFormatting.RED));
@@ -11586,8 +11553,8 @@ public final class HexEffects {
       }
    }
 
-   /** 由 BingoTaskEvent 调用；命中被封锁任务时立即退回并返回 true。 */
-   public static boolean handleObjectiveDeny(BingoTaskEvent var0) {
+   /** 由 BongoTaskEvent 调用；命中被封锁任务时立即退回并返回 true。 */
+   public static boolean handleObjectiveDeny(BongoTaskEvent var0) {
       if (OBJECTIVE_DENY == null) {
          return false;
       }
@@ -11598,7 +11565,7 @@ public final class HexEffects {
          return false;
       }
 
-      Bingo var3 = var0.getBingo();
+      Bongo var3 = var0.getBongo();
       int var4 = -1;
 
       for (int var5 = 0; var5 < var3.tasks().size(); var5++) {
@@ -11626,8 +11593,8 @@ public final class HexEffects {
       return true;
    }
 
-   // 海克斯发放的道具（鞘翅、龙蛋等）触发的成就不计入 Bingo 成就任务，但成就本身照常显示
-   public static boolean handleHexItemAdvancement(BingoTaskEvent var0) {
+   // 海克斯发放的道具（鞘翅、龙蛋等）触发的成就不计入 Bongo 成就任务，但成就本身照常显示
+   public static boolean handleHexItemAdvancement(BongoTaskEvent var0) {
       if (var0.getTask().getType() != TaskTypeAdvancement.INSTANCE) {
          return false;
       }
@@ -11638,27 +11605,27 @@ public final class HexEffects {
       }
 
       Object var2 = taskElement(var0.getTask());
-      if (!(var2 instanceof Identifier var3)) {
+      if (!(var2 instanceof ResourceLocation var3)) {
          return false;
       }
 
-      AdvancementHolder var4 = var1.getAdvancements().get(var3);
+      Advancement var4 = var1.getAdvancements().getAdvancement(var3);
       if (var4 == null) {
          return false;
       }
 
-      Optional<DisplayInfo> var5 = var4.value().display();
-      if (var5.isEmpty()) {
+      DisplayInfo var5 = var4.getDisplay();
+      if (var5 == null) {
          return false;
       }
 
-      ItemStack var6 = var5.get().getIcon().create();
+      ItemStack var6 = var5.getIcon();
       ServerPlayer var7 = var0.getPlayer();
       if (var6.isEmpty() || !hasHexGrantedItem(var7, var6.getItem())) {
          return false;
       }
 
-      Bingo var8 = var0.getBingo();
+      Bongo var8 = var0.getBongo();
       Team var9 = var8.getTeam(var7);
       int var10 = var8.tasks().indexOf(var0.getTask());
       if (var9 == null || var10 < 0 || !var9.completed(var10) || isTaskShielded(var9, var8, var10)) {
@@ -11677,7 +11644,7 @@ public final class HexEffects {
    }
 
    /** 退回完成时同时解除其它队伍因占点/锁王模式被连带锁定的该格。 */
-   private static void releaseSlotLocks(Bingo var0, int var1) {
+   private static void releaseSlotLocks(Bongo var0, int var1) {
       for (DyeColor var2 : DyeColor.values()) {
          Team var3 = var0.getTeam(var2);
          if (var3 == null || var3.isEmpty() || !var3.locked(var1)) {
@@ -11769,7 +11736,7 @@ public final class HexEffects {
                      if (isOreBlock(var11)) {
                         // 不会开口的发光隐身潜影贝：矿石位置只显示发光轮廓，不再用漂浮掉落物
                         // 缩小到 0.5 倍，让碰撞箱藏进方块内部，玩家可以正常挖掘矿石
-                        Shulker var13 = (Shulker)EntityTypes.SHULKER.create(var4, EntitySpawnReason.MOB_SUMMONED);
+                        Shulker var13 = (Shulker)EntityType.SHULKER.create(var4);
                         if (var13 != null) {
                            var13.setPos(var10.getX() + 0.5, var10.getY() + 0.5, var10.getZ() + 0.5);
                            var13.setNoAi(true);
@@ -11780,9 +11747,9 @@ public final class HexEffects {
                            var13.noPhysics = true;
                            var13.setCustomNameVisible(false);
                            var13.addTag(XRAY_TAG);
-                           var13.getAttribute(Attributes.SCALE).setBaseValue(0.5);
+                           var13.getAttribute(HexAttributes.SCALE.get()).setBaseValue(0.5);
                            // 按矿石类型给发光轮廓上色（红石红、青金石蓝、钻石青…），用计分板队伍实现
-                           TeamColor var14 = oreGlowColor(var11.getBlock());
+                           ChatFormatting var14 = oreGlowColor(var11.getBlock());
                            if (var14 != null) {
                               String var15 = "hexbingo_xray_" + var14.name();
                               var13.addTag(var15);
@@ -11790,7 +11757,7 @@ public final class HexEffects {
                               PlayerTeam var17 = var16.getPlayerTeam(var15);
                               if (var17 == null) {
                                  var17 = var16.addPlayerTeam(var15);
-                                 var17.setColor(Optional.of(var14));
+                                 var17.setColor(var14);
                               }
 
                               var16.addPlayerToTeam(var13.getStringUUID(), var17);
@@ -11815,7 +11782,7 @@ public final class HexEffects {
    }
 
    /** 矿石类型对应的发光轮廓颜色（返回 null 表示用默认白色）。 */
-   private static TeamColor oreGlowColor(Block var0) {
+   private static ChatFormatting oreGlowColor(Block var0) {
       String var1 = BuiltInRegistries.BLOCK.getKey(var0).getPath();
       if (var1.startsWith("deepslate_")) {
          var1 = var1.substring("deepslate_".length());
@@ -11823,27 +11790,27 @@ public final class HexEffects {
 
       switch (var1) {
          case "redstone_ore":
-            return TeamColor.RED;
+            return ChatFormatting.RED;
          case "coal_ore":
-            return TeamColor.DARK_GRAY;
+            return ChatFormatting.DARK_GRAY;
          case "iron_ore":
-            return TeamColor.WHITE;
+            return ChatFormatting.WHITE;
          case "gold_ore":
          case "nether_gold_ore":
          case "gilded_blackstone":
-            return TeamColor.YELLOW;
+            return ChatFormatting.YELLOW;
          case "diamond_ore":
-            return TeamColor.AQUA;
+            return ChatFormatting.AQUA;
          case "emerald_ore":
-            return TeamColor.GREEN;
+            return ChatFormatting.GREEN;
          case "lapis_ore":
-            return TeamColor.BLUE;
+            return ChatFormatting.BLUE;
          case "copper_ore":
-            return TeamColor.GOLD;
+            return ChatFormatting.GOLD;
          case "ancient_debris":
-            return TeamColor.DARK_RED;
+            return ChatFormatting.DARK_RED;
          case "nether_quartz_ore":
-            return TeamColor.WHITE;
+            return ChatFormatting.WHITE;
          default:
             return null;
       }
@@ -11856,7 +11823,7 @@ public final class HexEffects {
 
          for (Shulker var3 : var1) {
             // 离队清理：从着色队伍移除后丢弃，避免计分板队伍残留
-            for (String var5 : var3.entityTags()) {
+            for (String var5 : var3.getTags()) {
                if (var5.startsWith("hexbingo_xray_")) {
                   PlayerTeam var6 = var2.getPlayerTeam(var5);
                   if (var6 != null) {
@@ -11876,7 +11843,7 @@ public final class HexEffects {
          for (Shulker var2 : var1) {
             Scoreboard var3 = var2.level().getScoreboard();
 
-            for (String var5 : var2.entityTags()) {
+            for (String var5 : var2.getTags()) {
                if (var5.startsWith("hexbingo_xray_")) {
                   PlayerTeam var6 = var3.getPlayerTeam(var5);
                   if (var6 != null) {
@@ -11987,28 +11954,28 @@ public final class HexEffects {
    }
 
    private static void applyShrinkModifiers(ServerPlayer var0, boolean var1) {
-      AttributeInstance var2 = var0.getAttribute(Attributes.SCALE);
+      AttributeInstance var2 = var0.getAttribute(HexAttributes.SCALE.get());
       if (var2 != null) {
          if (var1) {
-            var2.addOrUpdateTransientModifier(new AttributeModifier(modifierId("shrink", 0), -0.75, Operation.ADD_MULTIPLIED_BASE));
+            Attr.addOrUpdate(var2, new AttributeModifier(modifierId("shrink", 0), "hexbingo", -0.75, Operation.MULTIPLY_BASE));
          } else {
             var2.removeModifier(modifierId("shrink", 0));
          }
       }
 
-      AttributeInstance var3 = var0.getAttribute(Attributes.BLOCK_INTERACTION_RANGE);
+      AttributeInstance var3 = var0.getAttribute(net.minecraftforge.common.ForgeMod.BLOCK_REACH.get());
       if (var3 != null) {
          if (var1) {
-            var3.addOrUpdateTransientModifier(new AttributeModifier(modifierId("shrink", 1), -0.75, Operation.ADD_MULTIPLIED_BASE));
+            Attr.addOrUpdate(var3, new AttributeModifier(modifierId("shrink", 1), "hexbingo", -0.75, Operation.MULTIPLY_BASE));
          } else {
             var3.removeModifier(modifierId("shrink", 1));
          }
       }
 
-      AttributeInstance var4 = var0.getAttribute(Attributes.ENTITY_INTERACTION_RANGE);
+      AttributeInstance var4 = var0.getAttribute(net.minecraftforge.common.ForgeMod.ENTITY_REACH.get());
       if (var4 != null) {
          if (var1) {
-            var4.addOrUpdateTransientModifier(new AttributeModifier(modifierId("shrink", 2), -0.75, Operation.ADD_MULTIPLIED_BASE));
+            Attr.addOrUpdate(var4, new AttributeModifier(modifierId("shrink", 2), "hexbingo", -0.75, Operation.MULTIPLY_BASE));
          } else {
             var4.removeModifier(modifierId("shrink", 2));
          }
@@ -12018,7 +11985,7 @@ public final class HexEffects {
       AttributeInstance var5 = var0.getAttribute(Attributes.JUMP_STRENGTH);
       if (var5 != null) {
          if (var1) {
-            var5.addOrUpdateTransientModifier(new AttributeModifier(modifierId("shrink", 3), -0.75, Operation.ADD_MULTIPLIED_BASE));
+            Attr.addOrUpdate(var5, new AttributeModifier(modifierId("shrink", 3), "hexbingo", -0.75, Operation.MULTIPLY_BASE));
          } else {
             var5.removeModifier(modifierId("shrink", 3));
          }
@@ -12096,7 +12063,7 @@ public final class HexEffects {
       }
 
       ArrayList<Integer> var7 = new ArrayList<>();
-      NonNullList<ItemStack> var8 = var6.getInventory().getNonEquipmentItems();
+      NonNullList<ItemStack> var8 = InventoryItems.nonEquipment(var6);
 
       for (int var9 = 0; var9 < var8.size(); var9++) {
          ItemStack var10 = var8.get(var9);
@@ -12187,8 +12154,7 @@ public final class HexEffects {
             && !var2.getBlockState(var7.below()).isAir()) {
             var2.setBlockAndUpdate(var7, Blocks.CHEST.defaultBlockState());
             if (var2.getBlockEntity(var7) instanceof ChestBlockEntity var8) {
-               var8.setLootTable(randomVanillaLootTable(var3));
-               var8.setLootTableSeed(var3.nextLong());
+               var8.setLootTable(randomVanillaLootTable(var3), var3.nextLong());
                var8.setChanged();
                var5 = true;
             }
@@ -12253,7 +12219,7 @@ public final class HexEffects {
          return;
       }
 
-      Bingo var2 = Bingo.get(var1.overworld());
+      Bongo var2 = Bongo.get(Levels.overworld(var1));
       Team var3 = var2.getTeam(var0);
       if (var3 == null || !var2.running()) {
          return;
@@ -12302,7 +12268,7 @@ public final class HexEffects {
 
       if (var13 > 0) {
          var2.setTasks(var4);
-         var2.markDirty(true);
+         var2.setChanged(true);
          var2.checkWin();
          var0.sendSystemMessage(
             Component.translatable("hexbingo.msg.card_recast", new Object[]{Component.literal(Integer.toString(var13))})
@@ -12330,7 +12296,7 @@ public final class HexEffects {
    public static void applySeal(ServerPlayer var0, int var1) {
       MinecraftServer var2 = var0.level().getServer();
       if (var2 != null && hasHex(var0, "seal") && sealReady(var0)) {
-         Bingo var3 = Bingo.get(var2.overworld());
+         Bongo var3 = Bongo.get(Levels.overworld(var2));
          HexGameData var6 = HexGameData.get(var2);
          if (var1 >= 0 && var1 < var3.tasks().size() && !var6.sealedSlots().contains(var1)) {
             if (taskShieldedByAnyTeam(var3, var3.task(var1))) {
@@ -12361,7 +12327,7 @@ public final class HexEffects {
          var1[var2++] = var3;
       }
 
-      PacketDistributor.sendToAllPlayers(new HexSealPayload(var1), new CustomPacketPayload[0]);
+      HexNetwork.sendToAll(new HexSealPayload(var1));
    }
 
    public static void syncSealsTo(MinecraftServer var0, ServerPlayer var1) {
@@ -12373,11 +12339,11 @@ public final class HexEffects {
          var2[var3++] = var4;
       }
 
-      PacketDistributor.sendToPlayer(var1, new HexSealPayload(var2), new CustomPacketPayload[0]);
+      HexNetwork.sendToPlayer(var1, new HexSealPayload(var2));
    }
 
-   /** 由 BingoTaskEvent 调用；命中被封印任务时立即退回并返回 true。 */
-   public static boolean handleSeal(BingoTaskEvent var0) {
+   /** 由 BongoTaskEvent 调用；命中被封印任务时立即退回并返回 true。 */
+   public static boolean handleSeal(BongoTaskEvent var0) {
       MinecraftServer var5 = var0.getLevel().getServer();
       if (var5 == null) {
          return false;
@@ -12388,7 +12354,7 @@ public final class HexEffects {
          return false;
       }
 
-      Bingo var1 = var0.getBingo();
+      Bongo var1 = var0.getBongo();
       int var2 = -1;
 
       for (int var3 = 0; var3 < var1.tasks().size(); var3++) {
@@ -12447,7 +12413,7 @@ public final class HexEffects {
          return;
       }
 
-      Bingo var3 = Bingo.get(var2.overworld());
+      Bongo var3 = Bongo.get(Levels.overworld(var2));
       Team var4 = var3.getTeam(var0);
       if (var4 == null || var1 < 0 || var1 >= var3.tasks().size() || var3.task(var1) == Task.EMPTY) {
          return;
@@ -12501,7 +12467,7 @@ public final class HexEffects {
          var1[var2++] = var3;
       }
 
-      PacketDistributor.sendToAllPlayers(new HexAllMineLockPayload(var1), new CustomPacketPayload[0]);
+      HexNetwork.sendToAll(new HexAllMineLockPayload(var1));
    }
 
    public static void syncAllMineLocksTo(MinecraftServer var0, ServerPlayer var1) {
@@ -12513,16 +12479,16 @@ public final class HexEffects {
          var2[var3++] = var4;
       }
 
-      PacketDistributor.sendToPlayer(var1, new HexAllMineLockPayload(var2), new CustomPacketPayload[0]);
+      HexNetwork.sendToPlayer(var1, new HexAllMineLockPayload(var2));
    }
 
    // 钓鱼佬：发放海之眷顾 X 且不可破坏的鱼竿；钓鱼掉落改为随机物品（仆从大师同款池，除鱼外）
    private static void giveFishermanRod(ServerPlayer var0) {
       if (!hasNamedItem(var0, "钓鱼佬")) {
          ItemStack var1 = questItem(Items.FISHING_ROD, "钓鱼佬", "hexbingo.item.fisherman.lore");
-         Registry<Enchantment> var2 = var0.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-         var1.enchant(var2.wrapAsHolder(var2.getValueOrThrow(Enchantments.LUCK_OF_THE_SEA)), 10);
-         var1.set(DataComponents.UNBREAKABLE, Unit.INSTANCE);
+         Registry<Enchantment> var2 = var0.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+         var1.enchant(Enchantments.FISHING_LUCK, 10);
+         Stacks.setUnbreakable(var1);
          var0.addItem(var1);
          var0.sendSystemMessage(Component.translatable("hexbingo.msg.fisherman").withStyle(ChatFormatting.GOLD));
       }
@@ -12607,7 +12573,7 @@ public final class HexEffects {
          return;
       }
 
-      Bingo var2 = Bingo.get(var1.overworld());
+      Bongo var2 = Bongo.get(Levels.overworld(var1));
       if (!var2.running()) {
          return;
       }
@@ -12618,7 +12584,7 @@ public final class HexEffects {
       }
 
       try {
-         Method var4 = Bingo.class.getDeclaredMethod("setWin", Team.class);
+         Method var4 = Bongo.class.getDeclaredMethod("setWin", Team.class);
          var4.setAccessible(true);
          var4.invoke(var2, var3);
       } catch (Exception var5) {
@@ -12640,7 +12606,7 @@ public final class HexEffects {
                .add(
                   new ItemEntity(
                      var1.getLevel(),
-                     var1.getPos().getX() + 0.5,
+            var1.getPos().getX() + 0.5,
                      var1.getPos().getY() + 0.5,
                      var1.getPos().getZ() + 0.5,
                      new ItemStack(var2)
@@ -12654,7 +12620,7 @@ public final class HexEffects {
    private static void cardShuffle(ServerPlayer var0) {
       MinecraftServer var1 = var0.level().getServer();
       if (var1 != null) {
-         Bingo var2 = Bingo.get(var1.overworld());
+         Bongo var2 = Bongo.get(Levels.overworld(var1));
          int var3 = var2.tasks().size();
          if (var3 > 1) {
             ArrayList<Task> var4 = new ArrayList<>(var2.tasks());
@@ -12755,7 +12721,7 @@ public final class HexEffects {
 
             sendSealSync(var1);
             sendAllMineLockSync(var1);
-            var2.markDirty(true);
+            var2.setChanged(true);
             var2.checkWin();
             Component var20 = Component.translatable("hexbingo.msg.card_shuffle").withStyle(ChatFormatting.LIGHT_PURPLE);
 
@@ -13115,8 +13081,8 @@ public final class HexEffects {
       private TrapRoom(ServerPlayer var1, ServerPlayer var2, ServerLevel var3, int var4, int var5, int var6) {
          this.firstId = var1.getUUID();
          this.secondId = var2.getUUID();
-         this.firstLevel = var1.level();
-         this.secondLevel = var2.level();
+         this.firstLevel = (ServerLevel)var1.level();
+         this.secondLevel = (ServerLevel)var2.level();
          this.firstHome = var1.position();
          this.secondHome = var2.position();
          this.firstYaw = var1.getYRot();

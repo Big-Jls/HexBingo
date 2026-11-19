@@ -5,16 +5,20 @@
  */
 package com.castbingo.hexbingo;
 
+import com.castbingo.hexbingo.network.HexNetwork;
+
+import com.castbingo.hexbingo.compat.Levels;
+
 import com.castbingo.hexbingo.network.HexListPayload;
 import com.castbingo.hexbingo.network.HexMirrorPayload;
 import com.castbingo.hexbingo.network.HexOfferPayload;
 import com.castbingo.hexbingo.network.HexRosterPayload;
 import com.castbingo.hexbingo.network.HexTaskListPayload;
-import io.github.noeppi_noeppi.mods.bongo.Bingo;
+import io.github.noeppi_noeppi.mods.bongo.Bongo;
 import io.github.noeppi_noeppi.mods.bongo.data.Team;
 import io.github.noeppi_noeppi.mods.bongo.data.TeamCompletion;
 import io.github.noeppi_noeppi.mods.bongo.data.WinCondition;
-import io.github.noeppi_noeppi.mods.bongo.event.BingoTaskEvent;
+import io.github.noeppi_noeppi.mods.bongo.event.BongoTaskEvent;
 import io.github.noeppi_noeppi.mods.bongo.task.Task;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,16 +36,15 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.CommandEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerRespawnEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent.Post;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.CommandEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent;
+import net.minecraftforge.event.TickEvent.ServerTickEvent;
+import net.minecraftforge.network.PacketDistributor;
 
 public final class HexManager {
    private static final Set<UUID> FREE_PICK = new HashSet<>();
@@ -64,7 +67,7 @@ public final class HexManager {
          long var3 = HexEffects.breakLockRemainingMs(var2);
          if (var3 > 0L) {
             int var5 = (int)((var3 + 999L) / 1000L);
-            var2.sendOverlayMessage(Component.translatable("hexbingo.msg.break_locked_tick", new Object[]{var5}).withStyle(ChatFormatting.RED));
+            var2.displayClientMessage(Component.translatable("hexbingo.msg.break_locked_tick", new Object[]{var5}).withStyle(ChatFormatting.RED), true);
             BREAK_LOCK_SEEN.add(var2.getUUID());
          } else if (BREAK_LOCK_SEEN.remove(var2.getUUID())) {
             var2.sendSystemMessage(Component.translatable("hexbingo.msg.break_unlocked").withStyle(ChatFormatting.GRAY));
@@ -191,7 +194,7 @@ public final class HexManager {
                   return;
                }
 
-               Bingo var16 = Bingo.get(var13.overworld());
+               Bongo var16 = Bongo.get(Levels.overworld(var13));
                if (var16.running()) {
                   return;
                }
@@ -285,7 +288,7 @@ public final class HexManager {
    }
 
    @SubscribeEvent
-   public static void onServerTick(Post var0) {
+   public static void onServerTick(ServerTickEvent var0) {
       MinecraftServer var1 = var0.getServer();
       // The World！需要逐 tick 冻结生物，不能等 20 tick 采样
       HexEffects.tickTheWorld(var1);
@@ -297,7 +300,7 @@ public final class HexManager {
          updateBreakLock(var1);
          if (var2.mayhem()) {
             HexEffects.tick(var1);
-            Bingo var3 = Bingo.get(var1.overworld());
+            Bongo var3 = Bongo.get(Levels.overworld(var1));
             if (!var3.running()) {
                if (var2.gameStart() != 0L) {
                   var2.setGameStart(0L);
@@ -340,7 +343,7 @@ public final class HexManager {
             }
          }
 
-         Bingo var9 = Bingo.get(var1.overworld());
+         Bongo var9 = Bongo.get(Levels.overworld(var1));
          if (var9.running()) {
             for (ServerPlayer var5 : var1.getPlayerList().getPlayers()) {
                var9.checkCompleted(EnchantTaskType.INSTANCE, var5, EnchantTaskType.DUMMY);
@@ -349,13 +352,13 @@ public final class HexManager {
       }
    }
 
-   public static void onTask(BingoTaskEvent var0) {
+   public static void onTask(BongoTaskEvent var0) {
       ServerPlayer var1 = var0.getPlayer();
       MinecraftServer var2 = var1.level().getServer();
       if (var2 != null) {
          HexGameData var3 = HexGameData.get(var2);
          if (var3.mayhem()) {
-            Team var4 = var0.getBingo().getTeam(var1);
+            Team var4 = var0.getBongo().getTeam(var1);
             if (var4 != null) {
                int[] var5 = var3.flags(var4.color.getName());
                if (var5[0] == 0 && (!(Boolean)HexConfig.FIRST_REWARD_ON_LINE.get() || lineComplete(var4))) {
@@ -451,11 +454,11 @@ public final class HexManager {
 
       MinecraftServer var7 = var0.level().getServer();
       if (var7 != null) {
-         Bingo var8 = Bingo.get(var7.overworld());
+         Bongo var8 = Bongo.get(Levels.overworld(var7));
 
          // 全是我的：仅第三个海克斯、非占点模式（default/海克斯模式）、30% 概率替换一个选项
          if (var2 == 2 && !var3.contains(HexRegistry.ALL_MINE)) {
-            boolean var13 = !var8.getSettings().game().lockout() && var8.getSettings().game().winCondition() != WinCondition.LOCK;
+            boolean var13 = !var8.getSettings().game().lockout();
             if (var13 && ThreadLocalRandom.current().nextDouble() < 0.3) {
                Hex var14 = HexRegistry.byId(HexRegistry.ALL_MINE);
                if (var14 != null && !var4.isEmpty()) {
@@ -489,7 +492,7 @@ public final class HexManager {
                }
 
                var1.setOffer(var2, var4, var7);
-               PacketDistributor.sendToPlayer(var0, new HexOfferPayload(var4, var7, var1.refreshCharges(var2) > 0), new CustomPacketPayload[0]);
+               HexNetwork.sendToPlayer(var0, new HexOfferPayload(var4, var7, var1.refreshCharges(var2) > 0));
                return;
             }
 
@@ -562,7 +565,7 @@ public final class HexManager {
             }
 
             var2.setOffer(var3, var4.rewardIndex(), var7);
-            PacketDistributor.sendToPlayer(var0, new HexOfferPayload(var4.rewardIndex(), var7, var2.refreshCharges(var3) > 0), new CustomPacketPayload[0]);
+            HexNetwork.sendToPlayer(var0, new HexOfferPayload(var4.rewardIndex(), var7, var2.refreshCharges(var3) > 0));
          }
       }
    }
@@ -601,7 +604,7 @@ public final class HexManager {
                         .withStyle(ChatFormatting.LIGHT_PURPLE)
                   );
                   if ((Boolean)HexConfig.ANNOUNCE.get()) {
-                     Team var7 = Bingo.get(var0.level()).getTeam(var0);
+                     Team var7 = Bongo.get(var0.level()).getTeam(var0);
                      if (var7 != null) {
                         MutableComponent var8 = Component.translatable(
                               "hexbingo.msg.team_selected", new Object[]{var0.getDisplayName(), Component.translatable("hexbingo.hex." + var1 + ".name")}
@@ -658,7 +661,7 @@ public final class HexManager {
       }
 
       FREE_PICK.add(var0.getUUID());
-      PacketDistributor.sendToPlayer(var0, new HexListPayload(List.copyOf(var3)), new CustomPacketPayload[0]);
+      HexNetwork.sendToPlayer(var0, new HexListPayload(List.copyOf(var3)));
       HexBingo.LOGGER.info("Sent self hex pick list ({} entries) to {}", var3.size(), var0.getScoreboardName());
       return var3.size();
    }
@@ -693,7 +696,7 @@ public final class HexManager {
 
    public static HexRosterPayload roster(MinecraftServer var0) {
       HexGameData var1 = HexGameData.get(var0);
-      Bingo var2 = Bingo.get(var0.overworld());
+      Bongo var2 = Bongo.get(Levels.overworld(var0));
       ArrayList var3 = new ArrayList();
       HashSet var4 = new HashSet();
 
@@ -714,7 +717,7 @@ public final class HexManager {
             }
 
             if (!var7.isEmpty()) {
-               var3.add(new HexRosterPayload.TeamEntry(var6.getName(), var6.color.getTextureDiffuseColor(), List.copyOf(var7)));
+               var3.add(new HexRosterPayload.TeamEntry(var6.getName(), var6.color.getTextColor(), List.copyOf(var7)));
             }
          }
       }
@@ -742,7 +745,7 @@ public final class HexManager {
       MinecraftServer var1 = var0.level().getServer();
       if (var1 != null) {
          HexRosterPayload var2 = roster(var1);
-         PacketDistributor.sendToPlayer(var0, var2, new CustomPacketPayload[0]);
+         HexNetwork.sendToPlayer(var0, var2);
          HexBingo.LOGGER.info("Sent hex roster ({} entries) to {}", var2.teams().size(), var0.getScoreboardName());
       }
    }
@@ -764,7 +767,7 @@ public final class HexManager {
          return false;
       }
 
-      Bingo var3 = Bingo.get(var0.level());
+      Bongo var3 = Bongo.get(var0.level());
       Team var4 = var3.getTeam(var0);
       ArrayList<Team> var5 = new ArrayList<>();
 
@@ -803,7 +806,7 @@ public final class HexManager {
       }
 
       MIRROR_OPEN.add(var0.getUUID());
-      PacketDistributor.sendToPlayer(var0, new HexMirrorPayload(List.copyOf(var12)), new CustomPacketPayload[0]);
+      HexNetwork.sendToPlayer(var0, new HexMirrorPayload(List.copyOf(var12)));
       return true;
    }
 
@@ -861,7 +864,7 @@ public final class HexManager {
 
    private static boolean ownedByOtherTeam(MinecraftServer var0, ServerPlayer var1, String var2) {
       HexGameData var3 = HexGameData.get(var0);
-      Team var4 = Bingo.get(var1.level()).getTeam(var1);
+      Team var4 = Bongo.get(var1.level()).getTeam(var1);
 
       for (ServerPlayer var6 : var0.getPlayerList().getPlayers()) {
          if (var6 != var1 && (var4 == null || !var4.hasPlayer(var6)) && var3.hexes(var6.getUUID()).contains(var2)) {
@@ -884,7 +887,7 @@ public final class HexManager {
          return;
       }
 
-      Bingo var4 = Bingo.get(var2.overworld());
+      Bongo var4 = Bongo.get(Levels.overworld(var2));
       Team var5 = var4.getTeam(var0);
       if ("deny".equals(var1)) {
          if (!HexEffects.denyReady(var0)) {
@@ -935,7 +938,7 @@ public final class HexManager {
       }
 
       TASK_PICK_MODE.put(var0.getUUID(), var1);
-      PacketDistributor.sendToPlayer(var0, new HexTaskListPayload(var1, List.copyOf(var6)), new CustomPacketPayload[0]);
+      HexNetwork.sendToPlayer(var0, new HexTaskListPayload(var1, List.copyOf(var6)));
    }
 
    public static void denyTaskPick(ServerPlayer var0, int var1) {
@@ -967,11 +970,7 @@ public final class HexManager {
          } else {
             HexGameData.Offer var3 = var2.offer(var0.getUUID());
             if (var3 != null) {
-               PacketDistributor.sendToPlayer(
-                  var0,
-                  new HexOfferPayload(var3.rewardIndex(), var3.ids(), var2.refreshCharges(var0.getUUID()) > 0),
-                  new CustomPacketPayload[0]
-               );
+               HexNetwork.sendToPlayer(var0, new HexOfferPayload(var3.rewardIndex(), var3.ids(), var2.refreshCharges(var0.getUUID()) > 0));
                return true;
             } else if (!var2.pending(var0.getUUID()).isEmpty()) {
                presentNext(var0, var2);
@@ -1044,11 +1043,7 @@ public final class HexManager {
          if (var2.mayhem()) {
             HexGameData.Offer var3 = var2.offer(var0.getUUID());
             if (var3 != null) {
-               PacketDistributor.sendToPlayer(
-                  var0,
-                  new HexOfferPayload(var3.rewardIndex(), var3.ids(), var2.refreshCharges(var0.getUUID()) > 0),
-                  new CustomPacketPayload[0]
-               );
+               HexNetwork.sendToPlayer(var0, new HexOfferPayload(var3.rewardIndex(), var3.ids(), var2.refreshCharges(var0.getUUID()) > 0));
             } else if (!var2.pending(var0.getUUID()).isEmpty()) {
                presentNext(var0, var2);
             }

@@ -1,0 +1,45 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "Apache-2.0"
+issueTrackerURL = "https://github.com/Big-Jls/bingohex/issues"
+
+[[mods]]
+modId = "hexbingo"
+version = "1.20.1-1.0.0"
+displayName = "Bingo: Hex Mayhem (Unofficial Addon)"
+displayURL = "https://github.com/Big-Jls/bingohex"
+authors = "Big_Jls, DeepSeek-v4.1-Flash-1017"
+description = '''
+An unofficial hex augment addon for Bongo on Minecraft 1.20.1 Forge.
+Requires Bongo 1.20.1-4.0.5+ and LibX 1.20.1-5.0.14+.
+Not affiliated with or endorsed by the Bongo, BingoLobby or LibX authors.
+Source: https://github.com/Big-Jls/bingohex
+'''
+
+[[dependencies.hexbingo]]
+    modId = "forge"
+    mandatory = true
+    versionRange = "[47,)"
+    ordering = "NONE"
+    side = "BOTH"
+
+[[dependencies.hexbingo]]
+    modId = "minecraft"
+    mandatory = true
+    versionRange = "[1.20.1,1.20.2)"
+    ordering = "NONE"
+    side = "BOTH"
+
+[[dependencies.hexbingo]]
+    modId = "bongo"
+    mandatory = true
+    versionRange = "[1.20.1-4.0.5,)"
+    ordering = "NONE"
+    side = "BOTH"
+
+[[dependencies.hexbingo]]
+    modId = "libx"
+    mandatory = true
+    versionRange = "[1.20.1-5.0.14,)"
+    ordering = "NONE"
+    side = "BOTH"

@@ -5,34 +5,7 @@
  */
 package com.castbingo.hexbingo.network;
 
-import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload.Type;
-import net.minecraft.resources.Identifier;
 
-public record HexListPayload(List<String> ids) implements CustomPacketPayload {
-   public static final Type<HexListPayload> TYPE = new Type(Identifier.fromNamespaceAndPath("hexbingo", "hex_list"));
-   public static final StreamCodec<RegistryFriendlyByteBuf, HexListPayload> STREAM_CODEC = StreamCodec.of((var0, var1) -> {
-      var0.writeVarInt(var1.ids().size());
-
-      for (String var3 : var1.ids()) {
-         var0.writeUtf(var3);
-      }
-   }, var0 -> {
-      int var1 = var0.readVarInt();
-      ArrayList var2 = new ArrayList(var1);
-
-      for (int var3 = 0; var3 < var1; var3++) {
-         var2.add(var0.readUtf());
-      }
-
-      return new HexListPayload(List.copyOf(var2));
-   });
-
-   public Type<? extends CustomPacketPayload> type() {
-      return TYPE;
-   }
+public record HexListPayload(List<String> ids) {
 }

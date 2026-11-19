@@ -5,19 +5,5 @@
  */
 package com.castbingo.hexbingo.network;
 
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload.Type;
-import net.minecraft.resources.Identifier;
-
-public record HexMagnetTogglePayload() implements CustomPacketPayload {
-   public static final Type<HexMagnetTogglePayload> TYPE = new Type(Identifier.fromNamespaceAndPath("hexbingo", "hex_magnet_toggle"));
-   public static final StreamCodec<RegistryFriendlyByteBuf, HexMagnetTogglePayload> STREAM_CODEC = StreamCodec.of(
-      (var0, var1) -> {}, var0 -> new HexMagnetTogglePayload()
-   );
-
-   public Type<? extends CustomPacketPayload> type() {
-      return TYPE;
-   }
+public record HexMagnetTogglePayload() {
 }

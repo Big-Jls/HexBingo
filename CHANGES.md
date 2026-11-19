@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.20.1-1.0.0 — 2026-11-19
+
+### Added
+
+- Minecraft 1.20.1 Forge port based on official Bongo `1.20.1-4.0.5` and
+  LibX `1.20.1-5.0.14`, compiled for Java 17.
+- `build-1.20.1.ps1`: builds against official-mapped development jars and
+  reobfuscates the output back to SRG with ForgeAutoRenamingTool.
+- `HexNetwork` SimpleChannel layer and `com.castbingo.hexbingo.compat`
+  helpers for NBT, item data, teleport, level and attribute utilities.
+- Custom `hexbingo:scale` and `hexbingo:block_break_speed` attributes to carry
+  values that do not exist in 1.20.1.
+
+### Changed / known deviations
+
+- 1.20.1 has no PVP gamerule and official Bongo has no `WinCondition.LOCK`;
+  the related branches were removed.
+- Wolf/cat variants, pale garden, trial spawner and vault do not exist in
+  1.20.1; substitutes are used where possible and those hexes are skipped
+  otherwise.
+- Block-drop hexes hook `BlockEvent.BreakEvent` and only spawn additional
+  drops; vanilla drops are not replaced.
+- `SCALE` is a data-only custom attribute (no visual scaling).
+
 ## 26.2-1.49.27 — 2026-11-18
 
 ### Fixed

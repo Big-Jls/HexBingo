@@ -5,19 +5,5 @@
  */
 package com.castbingo.hexbingo.network;
 
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload.Type;
-import net.minecraft.resources.Identifier;
-
-public record HexPickPayload(String id) implements CustomPacketPayload {
-   public static final Type<HexPickPayload> TYPE = new Type(Identifier.fromNamespaceAndPath("hexbingo", "hex_pick"));
-   public static final StreamCodec<RegistryFriendlyByteBuf, HexPickPayload> STREAM_CODEC = StreamCodec.of(
-      (var0, var1) -> var0.writeUtf(var1.id(), 128), var0 -> new HexPickPayload(var0.readUtf(128))
-   );
-
-   public Type<? extends CustomPacketPayload> type() {
-      return TYPE;
-   }
+public record HexPickPayload(String id) {
 }

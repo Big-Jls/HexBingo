@@ -10,7 +10,7 @@ import com.castbingo.hexbingo.HexRegistry;
 import com.castbingo.hexbingo.network.HexRosterPayload;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -47,7 +47,7 @@ public class HexRosterScreen extends Screen {
                         .append(var18);
                      int var19 = var5.counts().getOrDefault(var7, 0);
                      if (var19 > 0) {
-                        var9.append(Component.translatable("hexbingo.roster.stacks", var19).withColor(0xAAAAAA));
+                        var9.append(Component.translatable("hexbingo.roster.stacks", var19).withStyle(net.minecraft.ChatFormatting.GRAY));
                      }
 
                      this.lines.add(new HexRosterScreen.Line(var9, var8, -2039584, 28, var17));
@@ -66,10 +66,10 @@ public class HexRosterScreen extends Screen {
       return false;
    }
 
-   public void extractRenderState(GuiGraphicsExtractor var1, int var2, int var3, float var4) {
+   public void render(GuiGraphics var1, int var2, int var3, float var4) {
       var1.fill(0, 0, this.width, this.height, -535818216);
-      var1.centeredText(this.font, this.title, this.width / 2, 12, -10496);
-      byte var5 = 24;
+      var1.drawCenteredString(this.font, this.title, this.width / 2, 12, -10496);
+      int var5 = 24;
       int var6 = this.width - 48;
       int var7 = this.height - 24;
       int var8 = var7 - 38;
@@ -88,7 +88,7 @@ public class HexRosterScreen extends Screen {
                var1.fill(var5, var13 - 2, var5 + var6, var13 + 13 - 2, -14935012);
             }
 
-            var1.text(this.font, var12.text(), var5 + var12.indent(), var13, var12.color(), false);
+            var1.drawString(this.font, var12.text(), var5 + var12.indent(), var13, var12.color(), false);
          }
       }
 
@@ -101,7 +101,7 @@ public class HexRosterScreen extends Screen {
          var1.fill(var15, var17, var15 + 4, var17 + var16, -8355712);
       }
 
-      var1.centeredText(this.font, Component.translatable("hexbingo.roster.hint"), this.width / 2, this.height - 13, -8355712);
+      var1.drawCenteredString(this.font, Component.translatable("hexbingo.roster.hint"), this.width / 2, this.height - 13, -8355712);
       if (this.hovered >= 0 && this.lines.get(this.hovered).hex() != null) {
          HexRosterScreen.Line var18 = this.lines.get(this.hovered);
          HexRender.drawTooltip(var1, this.font, this.width, this.height, var2, var3, var18.hex(), false, var18.prefix());
@@ -117,8 +117,8 @@ public class HexRosterScreen extends Screen {
       }
    }
 
-   public boolean mouseScrolled(double var1, double var3, double var5, double var7) {
-      this.scroll = Math.max(0, this.scroll - (int)(var7 * 13.0 * 3.0));
+   public boolean mouseScrolled(double var1, double var3, double var5) {
+      this.scroll = Math.max(0, this.scroll - (int)(var5 * 13.0 * 3.0));
       return true;
    }
 

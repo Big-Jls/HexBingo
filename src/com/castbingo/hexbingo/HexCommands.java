@@ -8,15 +8,14 @@ package com.castbingo.hexbingo;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import io.github.noeppi_noeppi.mods.bongo.Bingo;
+import io.github.noeppi_noeppi.mods.bongo.Bongo;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.permissions.Permissions;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.RegisterCommandsEvent;
 
 public final class HexCommands {
    public static void register(RegisterCommandsEvent var0) {
@@ -38,7 +37,7 @@ public final class HexCommands {
                                           }
                                        )
                                  ))
-                              .then(Commands.literal("hexes").requires(var0x -> var0x.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)).executes(var0x -> {
+                              .then(Commands.literal("hexes").requires(var0x -> var0x.hasPermission(2)).executes(var0x -> {
                                  requireRunning(var0x.getSource());
                                  ServerPlayer var1 = ((CommandSourceStack)var0x.getSource()).getPlayerOrException();
                                  if (HexManager.openSelfPick(var1) <= 0) {
@@ -87,8 +86,8 @@ public final class HexCommands {
 
    private static void requireRunning(CommandSourceStack var0) throws CommandSyntaxException {
       MinecraftServer var1 = var0.getServer();
-      if (!Bingo.get(var1.overworld()).running()) {
-         throw new SimpleCommandExceptionType(Component.translatable("hexbingo.msg.not_started")).create();
+      // overworld() 即 1.20.1 的 MinecraftServer#overworld()
+      if (!Bongo.get(var1.overworld()).running()) {         throw new SimpleCommandExceptionType(Component.translatable("hexbingo.msg.not_started")).create();
       }
    }
 

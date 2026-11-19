@@ -6,7 +6,7 @@
 package com.castbingo.hexbingo.client;
 
 import com.castbingo.hexbingo.HexDragonMenu;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,18 +15,19 @@ import net.minecraft.world.inventory.Slot;
 /** 成年龙鞍具界面：1 格鞍槽 + 玩家背包，纯填充绘制背景。 */
 public class HexDragonScreen extends AbstractContainerScreen<HexDragonMenu> {
    public HexDragonScreen(HexDragonMenu var1, Inventory var2, Component var3) {
-      super(var1, var2, var3, HexDragonMenu.IMAGE_WIDTH, HexDragonMenu.IMAGE_HEIGHT);
+      super(var1, var2, var3);
+      this.imageWidth = HexDragonMenu.IMAGE_WIDTH;
+      this.imageHeight = HexDragonMenu.IMAGE_HEIGHT;
       this.inventoryLabelX = 8;
       this.inventoryLabelY = 72;
    }
 
    @Override
-   public void extractRenderState(GuiGraphicsExtractor var1, int var2, int var3, float var4) {
+   protected void renderBg(GuiGraphics var1, float var2, int var3, int var4) {
       this.drawBackground(var1);
-      super.extractRenderState(var1, var2, var3, var4);
    }
 
-   private void drawBackground(GuiGraphicsExtractor var1) {
+   private void drawBackground(GuiGraphics var1) {
       int var2 = this.leftPos;
       int var3 = this.topPos;
       int var4 = HexDragonMenu.IMAGE_WIDTH;

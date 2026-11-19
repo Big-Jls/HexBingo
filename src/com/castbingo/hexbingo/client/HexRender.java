@@ -9,7 +9,7 @@ import com.castbingo.hexbingo.Hex;
 import com.castbingo.hexbingo.HexColor;
 import java.util.List;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.FormattedCharSequence;
@@ -19,7 +19,7 @@ public final class HexRender {
    private static final int TOOLTIP_W = 270;
    private static final int PAD = 8;
 
-   public static void drawBorder(GuiGraphicsExtractor var0, int var1, int var2, int var3, int var4, HexColor var5) {
+   public static void drawBorder(GuiGraphics var0, int var1, int var2, int var3, int var4, HexColor var5) {
       if (var5 == HexColor.PRISMATIC) {
          int var6 = Math.max(1, var3 / PRISMATIC_COLORS.length);
 
@@ -40,12 +40,12 @@ public final class HexRender {
       }
    }
 
-   public static void drawTooltip(GuiGraphicsExtractor var0, Font var1, int var2, int var3, int var4, int var5, Hex var6, boolean var7) {
+   public static void drawTooltip(GuiGraphics var0, Font var1, int var2, int var3, int var4, int var5, Hex var6, boolean var7) {
       drawTooltip(var0, var1, var2, var3, var4, var5, var6, var7, null);
    }
 
    public static void drawTooltip(
-      GuiGraphicsExtractor var0, Font var1, int var2, int var3, int var4, int var5, Hex var6, boolean var7, String prefix
+      GuiGraphics var0, Font var1, int var2, int var3, int var4, int var5, Hex var6, boolean var7, String prefix
    ) {
       MutableComponent var8 = prefix != null
          ? Component.translatable("hexbingo.hex.prefix." + prefix, Component.translatable("hexbingo.hex." + var6.id() + ".name"))
@@ -68,19 +68,19 @@ public final class HexRender {
       var0.fill(var12, var13, var12 + 270, var13 + var11, -267382768);
       drawBorder(var0, var12, var13, 270, var11, var6.color());
       int var14 = var13 + 8;
-      var0.text(var1, var8, var12 + 8, var14, -1, true);
+      var0.drawString(var1, var8, var12 + 8, var14, -1, true);
       var14 += 13;
-      var0.text(var1, Component.translatable("hexbingo.color." + var6.color().id), var12 + 8, var14, var6.color().rgb, false);
+      var0.drawString(var1, Component.translatable("hexbingo.color." + var6.color().id), var12 + 8, var14, var6.color().rgb, false);
       var14 += 15;
 
       for (FormattedCharSequence var16 : var10) {
-         var0.text(var1, var16, var12 + 8, var14, -2039584, false);
+         var0.drawString(var1, var16, var12 + 8, var14, -2039584, false);
          var14 += 9;
       }
 
       if (var7) {
          var14 += 8;
-         var0.text(var1, Component.translatable("hexbingo.select.confirm_hint"), var12 + 8, var14, -10496, true);
+         var0.drawString(var1, Component.translatable("hexbingo.select.confirm_hint"), var12 + 8, var14, -10496, true);
       }
    }
 

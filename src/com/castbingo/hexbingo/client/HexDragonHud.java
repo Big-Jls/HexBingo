@@ -5,11 +5,12 @@
  */
 package com.castbingo.hexbingo.client;
 
-import net.minecraft.client.DeltaTracker;
+import com.castbingo.hexbingo.compat.GuiLayer;
+
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.client.gui.GuiLayer;
+import net.minecraftforge.client.gui.overlay.ForgeGui;
 
 /** 驯龙高手：屏幕下方的幼龙成长进度条。 */
 public final class HexDragonHud implements GuiLayer {
@@ -21,28 +22,26 @@ public final class HexDragonHud implements GuiLayer {
    }
 
    @Override
-   public void render(GuiGraphicsExtractor var0, DeltaTracker var1) {
-      float var2 = HexClient.dragonGrowth();
-      if (var2 < 0.0F) {
+   public void render(ForgeGui var0, GuiGraphics var1, float var2, int var3, int var4) {
+      float var5 = HexClient.dragonGrowth();
+      if (var5 < 0.0F) {
          return;
       }
 
-      Minecraft var3 = Minecraft.getInstance();
-      if (var3.player == null) {
+      Minecraft var6 = Minecraft.getInstance();
+      if (var6.player == null) {
          return;
       }
 
-      int var4 = var0.guiWidth();
-      int var5 = var0.guiHeight();
-      int var6 = var4 / 2 - BAR_WIDTH / 2;
-      int var7 = var5 - 66;
-      int var8 = (int)((float)BAR_WIDTH * clamp01(var2));
-      var0.fill(var6 - 1, var7 - 1, var6 + BAR_WIDTH + 1, var7 + BAR_HEIGHT + 1, 0xFF373737);
-      var0.fill(var6, var7, var6 + BAR_WIDTH, var7 + BAR_HEIGHT, 0xFF202020);
-      var0.fill(var6, var7, var6 + var8, var7 + BAR_HEIGHT, 0xFF3CB371);
-      Component var9 = Component.translatable("hexbingo.hud.dragon_growth", (int)(var2 * 100.0F));
-      int var10 = var6 + BAR_WIDTH / 2 - var3.font.width(var9) / 2;
-      var0.text(var3.font, var9, var10, var7 - 11, 0xFFFFFFFF, true);
+      int var7 = var3 / 2 - BAR_WIDTH / 2;
+      int var8 = var4 - 66;
+      int var9 = (int)((float)BAR_WIDTH * clamp01(var5));
+      var1.fill(var7 - 1, var8 - 1, var7 + BAR_WIDTH + 1, var8 + BAR_HEIGHT + 1, 0xFF373737);
+      var1.fill(var7, var8, var7 + BAR_WIDTH, var8 + BAR_HEIGHT, 0xFF202020);
+      var1.fill(var7, var8, var7 + var9, var8 + BAR_HEIGHT, 0xFF3CB371);
+      Component var10 = Component.translatable("hexbingo.hud.dragon_growth", (int)(var5 * 100.0F));
+      int var11 = var7 + BAR_WIDTH / 2 - var6.font.width(var10) / 2;
+      var1.drawString(var6.font, var10, var11, var8 - 11, 0xFFFFFFFF, true);
    }
 
    private static float clamp01(float var0) {

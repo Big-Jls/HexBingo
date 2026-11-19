@@ -2,6 +2,8 @@
 
 > English: [README.en.md](README.en.md)
 
+> **分支说明（1.20.1-forge）**：当前分支面向 **Minecraft 1.20.1 + Forge 47.x + 官方 Bongo 1.20.1-4.0.5 + LibX 1.20.1-5.0.14**，版本号 `1.20.1-x.y.z`。构建使用 `build-1.20.1.ps1`；本分支不依赖 ReBongo / NeoForge。26.2 版本请切换到 `main` 分支。
+
 > **原项目（上游）**
 > - Bongo — <https://github.com/noeppi-noeppi/Bongo>
 > - BingoLobby — <https://github.com/noeppi-noeppi/BingoLobby>

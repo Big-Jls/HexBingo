@@ -5,13 +5,13 @@
  */
 package com.castbingo.hexbingo;
 
-import net.neoforged.neoforge.common.ModConfigSpec;
-import net.neoforged.neoforge.common.ModConfigSpec.BooleanValue;
-import net.neoforged.neoforge.common.ModConfigSpec.Builder;
-import net.neoforged.neoforge.common.ModConfigSpec.IntValue;
+import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.common.ForgeConfigSpec.BooleanValue;
+import net.minecraftforge.common.ForgeConfigSpec.Builder;
+import net.minecraftforge.common.ForgeConfigSpec.IntValue;
 
 public final class HexConfig {
-   public static final ModConfigSpec SPEC;
+   public static final ForgeConfigSpec SPEC;
    public static final BooleanValue FIRST_REWARD_ON_LINE;
    public static final IntValue SECOND_MINUTES;
    public static final IntValue THIRD_MINUTES;
@@ -23,7 +23,7 @@ public final class HexConfig {
 
    static {
       Builder var0 = new Builder();
-      var0.comment("Bingo: Hex Mayhem settings");
+      var0.comment("Bongo: Hex Mayhem settings");
       var0.push("mayhem");
       FIRST_REWARD_ON_LINE = var0.comment(
             "If true the first hex is granted when a team completes their first bingo line. If false it is granted on their first completed task."

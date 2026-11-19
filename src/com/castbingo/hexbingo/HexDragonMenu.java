@@ -6,7 +6,7 @@
 package com.castbingo.hexbingo;
 
 import java.util.UUID;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.Container;
 import net.minecraft.world.MenuProvider;
@@ -61,7 +61,7 @@ public class HexDragonMenu extends AbstractContainerMenu {
       }
    }
 
-   public static HexDragonMenu createFromNetwork(int var0, Inventory var1, RegistryFriendlyByteBuf var2) {
+   public static HexDragonMenu createFromNetwork(int var0, Inventory var1, FriendlyByteBuf var2) {
       return new HexDragonMenu(var0, var1, null, ItemStack.EMPTY);
    }
 
