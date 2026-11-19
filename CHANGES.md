@@ -24,6 +24,11 @@
 - `gluttonous_feast` now states that the body cannot grow in 1.20.1.
 - `task_shield` now protects three random tasks instead of the
   highest-weight tasks (official Bongo has no task weight).
+- `black_market` now calls the 1.20.1 no-argument
+  `Villager#increaseMerchantCareer`; `demon_pact` task selection no longer
+  contains a leftover disabled condition.
+- `goliath` keeps its health/damage bonus, but the scale and
+  block-break-speed parts are data-only on 1.20.1.
 - Wolf/cat variants, pale garden, trial spawner and vault do not exist in
   1.20.1; substitutes are used where possible and those hexes are skipped
   otherwise.

@@ -9717,12 +9717,11 @@ public final class HexEffects {
       }
 
       try {
-         Method var2 = Villager.class.getDeclaredMethod("increaseMerchantCareer", ServerLevel.class);
+         Method var2 = Villager.class.getDeclaredMethod("increaseMerchantCareer");
          var2.setAccessible(true);
-         ServerLevel var3 = (ServerLevel)var0.level();
 
          while (var1.getVillagerData().getLevel() < VillagerData.MAX_VILLAGER_LEVEL) {
-            var2.invoke(var1, var3);
+            var2.invoke(var1);
          }
       } catch (Exception var4) {
          // 反射失败时不要动村民原有交易，避免清空后无法恢复
@@ -9757,8 +9756,7 @@ public final class HexEffects {
                if (!var5.completed(var9)
                   && !var5.locked(var9)
                   && !isSealed(var3, var9)
-                  && var4.task(var9).getType() != TaskTypeEmpty.INSTANCE
-                  && false) {
+                  && var4.task(var9).getType() != TaskTypeEmpty.INSTANCE) {
                   var8 = 0;
                   var7 = var9;
                }
