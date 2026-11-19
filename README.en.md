@@ -70,7 +70,7 @@ ReBongo: https://github.com/Big-Jls/rebongo
 
 ## Hex list
 
-### Silver (55)
+### Silver (54)
 
 | Name | id | Effect |
 |---|---|---|
@@ -129,7 +129,7 @@ ReBongo: https://github.com/Big-Jls/rebongo
 | Omen Compatible | `bad_omen` | Gain one level of Bad Omen every 30 seconds, up to level III. |
 | Brother, You Smell Great | `sniffer_egg` | Gain a sniffer egg; place it on moss to hatch it. |
 
-### Gold (55)
+### Gold (53)
 
 | Name | id | Effect |
 |---|---|---|
@@ -231,6 +231,36 @@ ReBongo: https://github.com/Big-Jls/rebongo
 | Card Recast | `card_recast` | Immediately reroll the contents of your team's completed tasks (replaced with new tasks from the pool), keeping them completed. |
 | Seal | `seal` | Gain 'Seal': right-click to open the Bingo card and pick a task; no player can complete it and a barrier icon appears on its cell. One-time item: it disappears after use. |
 | All Mine | `all_mine` | Gain 'All Mine': right-click to open the task UI and pick a task; every other team can never complete it (your own team is unaffected). |
+
+## 1.20.1 compatibility notes
+
+This branch targets Minecraft 1.20.1 + Forge 47.x. Because 1.20.1 lacks some 26.2 content, all 147 hexes (54 silver / 53 gold / 40 prismatic) received the following compatibility adjustments:
+
+### Removed (content missing in 1.20.1)
+
+| Hex | Tier | Reason |
+|---|---|---|
+| Red Light, Green Light (`pale_garden_map`) | Silver | Pale Garden biome does not exist |
+| Trial Chambers (`eighty_one_trials`) | Gold | Trial Chambers structure does not exist |
+| Shrink (`shrink`) | Gold | No `SCALE` attribute, cannot change body size |
+
+### Degraded but usable (differs slightly from 26.2)
+
+| Hex | Tier | Behaviour on 1.20.1 |
+|---|---|---|
+| Dog Squad (`dog_squad`) | Silver | No wolf variants; the 9 wolves look identical, the effect still works |
+| Gold Rush (`sand_gold`) | Silver | 3% chance for an extra gold nugget from sand (vanilla drops are not replaced) |
+| Gluttonous Feast (`gluttonous_feast`) | Gold | Body no longer grows (noted in the text); random buffs unchanged |
+| Bat Form (`bat_form`) | Gold | Body does not shrink to 0.5 blocks (no `SCALE`); everything else unchanged |
+| Task Shield (`task_shield`) | Gold | Official Bongo tasks have no weight; protects 3 random tasks instead |
+| Goliath (`goliath`) | Prismatic | Max health / attack damage unchanged; body size and mining speed are data-only attributes |
+
+### Fixed and verified
+
+- **Block drop replacement**: Auto Smelt, Glass Cannon and Back to Basics cancel the vanilla block break and spawn the processed drops themselves (containers and double blocks keep vanilla drops).
+- **Forced wins**: Destiny Dice, It's Over! and Stack Dragon now complete all 25 slots and call `checkWin()` (official Bongo has no `setWin`).
+- **Black Market**: villager level-up uses the no-arg 1.20.1 reflection call.
+- **Demon Pact**: removed a leftover disabled condition; it now completes one task as intended.
 
 ## Asset status
 
