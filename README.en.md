@@ -2,7 +2,9 @@
 
 > 中文: [README.md](README.md)
 
-> **Branch note (1.20.1-forge)**: this branch targets **Minecraft 1.20.1 + Forge 47.x + official Bongo 1.20.1-4.0.5 + LibX 1.20.1-5.0.14**, versions `1.20.1-x.y.z`. Build with `build-1.20.1.ps1`; it does not depend on ReBongo / NeoForge. The 26.2 version lives on `main`.
+> **Branch note (1.20.1-forge)**: this branch targets **Minecraft 1.20.1 + Forge 47.x + official Bongo 1.20.1-4.0.5 + LibX 1.20.1-5.0.14**, versions `1.20.1-x.y.z` (currently `1.20.1-1.0.0-beta`). Build with `build-1.20.1.ps1`; it does not depend on ReBongo / NeoForge. The 26.2 version lives on `main`.
+>
+> **Beta maintenance policy**: the 1.20.1 version is only fixed for serious bugs; new features and regular fixes go to the 26.2 main line first.
 
 > **Upstream projects**
 > - Bongo — <https://github.com/noeppi-noeppi/Bongo>

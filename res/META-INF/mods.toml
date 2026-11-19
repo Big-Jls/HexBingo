@@ -5,7 +5,7 @@ issueTrackerURL = "https://github.com/Big-Jls/bingohex/issues"
 
 [[mods]]
 modId = "hexbingo"
-version = "1.20.1-1.0.0"
+version = "1.20.1-1.0.0-beta"
 displayName = "Bingo: Hex Mayhem (Unofficial Addon)"
 displayURL = "https://github.com/Big-Jls/bingohex"
 authors = "Big_Jls, DeepSeek-v4.1-Flash-1017"
