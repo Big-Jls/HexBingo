@@ -62,8 +62,8 @@ public final class HexBingo {
 
    @OnlyIn(Dist.CLIENT)
    private void registerGuiLayers(RegisterGuiOverlaysEvent var1) {
-      // 注册在 bongo 卡面之上：封印格子的屏障图标盖在任务图标上
-      var1.registerAbove(new ResourceLocation("bongo", "bongo"), "hex_seal", HexSealOverlay.INSTANCE);
+      // Bongo 4.0.5 的卡面不是 Forge overlay，不能作为 registerAbove 的参照；直接画在所有 overlay 之上
+      var1.registerAboveAll("hex_seal", HexSealOverlay.INSTANCE);
       // 幼龙成长条画在所有界面之上，避免被 boss 血条或聊天挡住
       var1.registerAboveAll("hex_dragon_growth", HexDragonHud.INSTANCE);
    }
