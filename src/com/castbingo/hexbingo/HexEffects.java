@@ -394,9 +394,6 @@ public final class HexEffects {
    private static final TagKey<Structure> JUNGLE_PYRAMID = TagKey.create(
       Registries.STRUCTURE, new ResourceLocation("hexbingo", "jungle_pyramid")
    );
-   private static final TagKey<Structure> TRIAL_CHAMBERS = TagKey.create(
-      Registries.STRUCTURE, new ResourceLocation("hexbingo", "trial_chambers")
-   );
    private static final TagKey<Structure> BASTION_REMNANT = TagKey.create(
       Registries.STRUCTURE, new ResourceLocation("hexbingo", "bastion_remnant")
    );
@@ -974,10 +971,6 @@ public final class HexEffects {
          // 免疫护盾
          case "immunity_shield":
             var0.sendSystemMessage(Component.translatable("hexbingo.msg.immunity_shield").withStyle(ChatFormatting.AQUA));
-            break;
-         // 九九八十一难
-         case "trial_chambers":
-            teleportTrialChambers(var0);
             break;
          // 昼夜颠倒
          case "day_night_flip":
@@ -4512,49 +4505,6 @@ public final class HexEffects {
       return true;
    }
 
-   // 九九八十一难：定位或生成试炼大厅并安全传送
-   private static void teleportTrialChambers(ServerPlayer var0) {
-      MinecraftServer var6 = var0.level().getServer();
-      ServerLevel var1 = var6 == null ? null : Levels.overworld(var6);
-      if (var1 == null) {
-         return;
-      }
-
-      BlockPos var2 = var1.findNearestMapStructure(TRIAL_CHAMBERS, var0.blockPosition(), 100, false);
-      if (var2 != null) {
-         // 先按涂蜡铜块/凝灰岩等特征方块锁定试炼大厅内部，再找安全落脚点
-         BlockPos var7 = structureCenter(var1, var2, TRIAL_CHAMBERS);
-         BlockPos var8 = findNearbyBlock(
-            var1,
-            var7 == null ? new BlockPos(var2.getX(), 0, var2.getZ()) : var7,
-            var7 == null ? 48 : 24,
-            var7 == null ? 128 : 32,
-            HexEffects::isTrialChamberBlock
-         );
-         BlockPos var3 = var8 == null ? null : findSpotNear(var1, var8, 8, 6);
-         if (var3 == null) {
-            var3 = findUndergroundSpot(var1, var2);
-         }
-         if (var3 != null) {
-            teleportUnderground(var0, var1, var3);
-            var0.sendSystemMessage(Component.translatable("hexbingo.msg.trial_chambers").withStyle(ChatFormatting.GOLD));
-            return;
-         }
-      }
-
-      BlockPos var4 = generateTrialChambers(var1, var0, 200);
-      if (var4 == null) {
-         var0.sendSystemMessage(Component.translatable("hexbingo.msg.trial_chambers_fail").withStyle(ChatFormatting.GRAY));
-      } else {
-         BlockPos var5 = findUndergroundSpot(var1, var4);
-         if (var5 == null) {
-            var5 = carveSafeSpot(var1, var4);
-         }
-
-         teleportUnderground(var0, var1, var5);
-         var0.sendSystemMessage(Component.translatable("hexbingo.msg.trial_chambers").withStyle(ChatFormatting.GOLD));
-      }
-   }
 
    private static void teleportUnderground(ServerPlayer var0, ServerLevel var1, BlockPos var2) {
       Teleport.teleport(var0, var1, new Vec3(var2.getX() + 0.5, var2.getY(), var2.getZ() + 0.5), var0.getYRot(), var0.getXRot());
@@ -4605,40 +4555,6 @@ public final class HexEffects {
       }
 
       return var1;
-   }
-
-   private static BlockPos generateTrialChambers(ServerLevel var2, ServerPlayer var0, int var1) {
-      MinecraftServer var3 = var2.getServer();
-      if (var3 == null) {
-         return null;
-      }
-
-      ThreadLocalRandom var4 = ThreadLocalRandom.current();
-
-      for (int var5 = 0; var5 < 8; var5++) {
-         double var6 = var4.nextDouble() * Math.PI * 2.0;
-         int var8 = var0.getBlockX() + (int)Math.round(Math.cos(var6) * (double)var1);
-         int var9 = var0.getBlockZ() + (int)Math.round(Math.sin(var6) * (double)var1);
-         var2.getChunk(var8 >> 4, var9 >> 4);
-         int var11 = -40;
-         BlockPos var12 = new BlockPos(var8, var11, var9);
-         CommandSourceStack var13 = var3.createCommandSourceStack().withLevel(var2).withPosition(Vec3.atCenterOf(var12)).withSuppressedOutput();
-         int var14;
-
-         try {
-            var14 = var3.getCommands()
-               .getDispatcher()
-               .execute("place structure minecraft:ancient_city " + var8 + " " + var11 + " " + var9, var13);
-         } catch (CommandSyntaxException var17) {
-            var14 = 0;
-         }
-
-         if (var14 > 0) {
-            return var12;
-         }
-      }
-
-      return null;
    }
 
    private static BlockPos generateStructureAt(ServerLevel var3, ServerPlayer var0, String var1, int var2) {
@@ -7633,6 +7549,17 @@ public final class HexEffects {
       }
 
       return (Item)var2.get(var0.nextInt(var2.size()));
+   }
+
+   /** 自动熔炼或掉落倍率需要真正替换原版掉落时返回 true（容器/双格方块走追加模式，避免丢失内容）。 */
+   public static boolean needsBlockDropReplacement(ServerPlayer var0, ItemStack var1, BlockState var2, BlockEntity var3) {
+      if (var0.isCreative() || var3 != null) {
+         return false;
+      }
+      if (var2.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.DOUBLE_BLOCK_HALF)) {
+         return false;
+      }
+      return hasHex(var0, "auto_smelt") || dropMultiplier(var0, var1, true) > 1.0;
    }
 
    public static void blockDrops(BlockDropsEvent var0) {

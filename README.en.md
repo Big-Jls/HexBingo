@@ -15,7 +15,7 @@
 
 ## What is this
 
-An add-on for [ReBongo](https://github.com/Big-Jls/rebongo) (the NeoForge 26.2 port of Bongo) that adds **149 hex augments**: 54 silver / 55 gold / 40 prismatic. It includes a pick-one-of-three screen, skill items, passive effects, and both task-based and combat-based augments.
+An add-on for [ReBongo](https://github.com/Big-Jls/rebongo) (the NeoForge 26.2 port of Bongo) that adds **148 hex augments**: 54 silver / 54 gold / 40 prismatic. It includes a pick-one-of-three screen, skill items, passive effects, and both task-based and combat-based augments.
 
 ## Gameplay
 
@@ -158,7 +158,6 @@ ReBongo: https://github.com/Big-Jls/rebongo
 | Utopia | `utopia` | Scrambles all your potion effects and grants 5 new permanent random buffs or debuffs. |
 | Rush Rush Rush | `dash_charge` | Gain "Rush Rush Rush": right-click to automatically dash forward for 5 seconds (no forward key needed), steering with your view. Blocks in a 3x3 area along the way are broken and drop (except obsidian and bedrock), and creatures hit take 10 damage. 30 second cooldown after the dash ends. |
 | Soul Out | `soul_out` | Immediately enter spectator mode for 30 seconds to scout freely, then return to the position where you entered spectator mode. |
-| Eighty-One Trials | `eighty_one_trials` | Teleport to the nearest trial chambers. |
 | Chaos Mind | `inventory_shuffle` | Right-click the skill item: randomly shuffle the inventory, offhand and armor slots of all enemy players (items may end up in equipment slots). Bound skill items are unaffected. 8 minute cooldown. |
 | Spider Man | `spider_man` | Climb walls like a spider: stick to any wall your body touches, hold forward to climb, release to hang, sneak to cancel. Press V to toggle. |
 | Magnet | `magnet` | All dropped items within 16 blocks fly toward you. Press T to toggle. |

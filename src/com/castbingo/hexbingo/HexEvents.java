@@ -254,18 +254,32 @@ public class HexEvents {
    @SubscribeEvent(priority = EventPriority.LOWEST)
    public void blockDrops(BlockEvent.BreakEvent var1) {
       if (var1.getPlayer() instanceof ServerPlayer var2 && var1.getLevel() instanceof ServerLevel var3) {
-         BlockState var4 = var3.getBlockState(var1.getPos());
-         BlockEntity var5 = var3.getBlockEntity(var1.getPos());
-         ItemStack var6 = var2.getMainHandItem();
-         java.util.List<ItemStack> var7 = Block.getDrops(var4, var3, var1.getPos(), var5, var2, var6);
-         java.util.List<ItemEntity> var8 = new java.util.ArrayList<>();
-         for (ItemStack var9 : var7) {
-            var8.add(new ItemEntity(var3, var1.getPos().getX() + 0.5, var1.getPos().getY() + 0.5, var1.getPos().getZ() + 0.5, var9));
+         net.minecraft.core.BlockPos var4 = var1.getPos();
+         BlockState var5 = var3.getBlockState(var4);
+         BlockEntity var6 = var3.getBlockEntity(var4);
+         ItemStack var7 = var2.getMainHandItem();
+         java.util.List<ItemStack> var8 = Block.getDrops(var5, var3, var4, var6, var2, var7);
+         java.util.List<ItemEntity> var9 = new java.util.ArrayList<>();
+         for (ItemStack var10 : var8) {
+            var9.add(new ItemEntity(var3, var4.getX() + 0.5, var4.getY() + 0.5, var4.getZ() + 0.5, var10));
          }
-         int var10 = var8.size();
-         HexEffects.blockDrops(new BlockDropsEvent(var3, var1.getPos(), var4, var2, var6, var8));
-         for (int var11 = var10; var11 < var8.size(); var11++) {
-            var3.addFreshEntity(var8.get(var11));
+         int var11 = var9.size();
+         HexEffects.blockDrops(new BlockDropsEvent(var3, var4, var5, var2, var7, var9));
+         if (HexEffects.needsBlockDropReplacement(var2, var7, var5, var6)) {
+            // 自动熔炼/掉落倍率：取消原版掉落，手动破坏并生成处理后的掉落
+            var1.setCanceled(true);
+            var3.destroyBlock(var4, false);
+            var7.mineBlock(var3, var5, var4, var2);
+            var2.awardStat(net.minecraft.stats.Stats.BLOCK_MINED.get(var5.getBlock()));
+            var3.levelEvent(2001, var4, Block.getId(var5));
+            for (ItemEntity var12 : var9) {
+               var3.addFreshEntity(var12);
+            }
+         } else {
+            // 只追加额外掉落（淘金热/拾荒者等）
+            for (int var12 = var11; var12 < var9.size(); var12++) {
+               var3.addFreshEntity(var9.get(var12));
+            }
          }
       }
    }

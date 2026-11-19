@@ -17,14 +17,16 @@
 
 - 1.20.1 has no PVP gamerule and official Bongo has no `WinCondition.LOCK`;
   the related branches were removed.
-- Removed the silver hex `pale_garden_map` (Red Light, Green Light) because
-  the Pale Garden biome does not exist in 1.20.1. Total is now 149 hexes
-  (54 silver / 55 gold / 40 prismatic).
+- Removed `pale_garden_map` (Red Light, Green Light) and `eighty_one_trials`
+  (Trial Chambers) because the Pale Garden biome and Trial Chambers structure
+  do not exist in 1.20.1. Total is now 148 hexes
+  (54 silver / 54 gold / 40 prismatic).
 - Wolf/cat variants, pale garden, trial spawner and vault do not exist in
   1.20.1; substitutes are used where possible and those hexes are skipped
-  otherwise. The Trial Chambers structure tag points at Ancient Cities.
-- Block-drop hexes hook `BlockEvent.BreakEvent` and only spawn additional
-  drops; vanilla drops are not replaced.
+  otherwise.
+- Block-drop hexes (`auto_smelt`, drop multipliers) now cancel the vanilla
+  block break and spawn the processed drops themselves. Blocks with block
+  entities and double blocks keep the additive-extra-drop behavior.
 - `SCALE` is a data-only custom attribute (no visual scaling).
 
 ## 26.2-1.49.27 — 2026-11-18

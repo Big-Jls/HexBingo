@@ -858,15 +858,6 @@
                                   ]
                   },
                   {
-                      "id":  "eighty_one_trials",
-                      "color":  "gold",
-                      "effects":  [
-                                      {
-                                          "type":  "trial_chambers"
-                                      }
-                                  ]
-                  },
-                  {
                       "id":  "day_night_flip",
                       "color":  "silver",
                       "effects":  [
