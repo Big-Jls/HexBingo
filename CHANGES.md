@@ -19,7 +19,7 @@
   the related branches were removed.
 - Wolf/cat variants, pale garden, trial spawner and vault do not exist in
   1.20.1; substitutes are used where possible and those hexes are skipped
-  otherwise.
+  otherwise. The Trial Chambers structure tag points at Ancient Cities.
 - Block-drop hexes hook `BlockEvent.BreakEvent` and only spawn additional
   drops; vanilla drops are not replaced.
 - `SCALE` is a data-only custom attribute (no visual scaling).
