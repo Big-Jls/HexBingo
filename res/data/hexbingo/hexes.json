@@ -81,7 +81,7 @@
                       "effects":  [
                                       {
                                           "type":  "random_items",
-                                          "count":  15
+                                          "count":  30
                                       }
                                   ]
                   },

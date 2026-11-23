@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.20.1-1.0.1-beta — 2026-11-23
+
+### Changed
+
+- **Pan Is Right (潘是对的)**: Chinese description and messages now say
+  本队 instead of 全队, matching the implementation (only the user's own team
+  is rerolled).
+- **Big Brain (超强大脑)**: every inventory slot is now filled from the same
+  all-item pool as the Minion Master pet (one item per slot) instead of the
+  small curated `RANDOM_ITEMS` list. 我想要 / 我很想要 / 我真的很想要 already
+  used this pool and are unchanged apart from the count below.
+- **Dragon Tamer (驯龙高手)**: natural growth time raised from 5 to 15
+  minutes (18000 ticks). Feeding still advances 5% of the bar (900 ticks).
+- **I Really Want It (我真的很想要)**: item count raised from 15 to 30.
+- **Sword Flight (踏剑飞行)**: durability consumption increased by 15% for
+  every sword tier; descriptions and README now list the effective flight
+  times.
+- **Bound item protection (绑定物品保护)**: the fisherman's rod (钓鱼佬) is
+  now in `BOUND_ITEM_NAMES`; the Chinese Can Fly elytra was already protected.
+
 ## 1.20.1-1.0.0-beta — 2026-11-20
 
 > **Beta 维护策略**：本版本为 Minecraft 1.20.1 Forge 移植的首个 Beta 版。
