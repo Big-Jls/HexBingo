@@ -4048,11 +4048,9 @@ public final class HexEffects {
          }
 
          ArrayList<Hex> var3 = new ArrayList<>();
-         Set<String> teamOwned = HexManager.teamHexes(var0);
 
          for (Hex var5 : HexRegistry.all()) {
             if (!var2.hexes(var0.getUUID()).contains(var5.id())
-               && !teamOwned.contains(var5.id())
                && !var5.id().equals(HexRegistry.OFFER_UPGRADE)
                && !var5.id().equals(HexRegistry.ASCETIC)
                && !var5.id().equals(HexRegistry.ALL_MINE)) {
@@ -4950,10 +4948,8 @@ public final class HexEffects {
                var7.addAll(HexRegistry.byColor(HexColor.SILVER));
                var7.addAll(HexRegistry.byColor(HexColor.GOLD));
                var7.addAll(HexRegistry.byColor(HexColor.PRISMATIC));
-               Set<String> teamOwned = HexManager.teamHexes(var0);
                var7.removeIf(
-                  var1x -> teamOwned.contains(var1x.id())
-                     || var1x.id().equals("pandora")
+                  var1x -> var1x.id().equals("pandora")
                      || var1x.id().equals("pan_is_right")
                      || var1x.id().equals("still_water")
                      || var1x.id().equals(HexRegistry.OFFER_UPGRADE)
@@ -7800,11 +7796,9 @@ public final class HexEffects {
 
             UUID var4 = var0.getUUID();
             ArrayList var5 = new ArrayList();
-            Set<String> var6 = HexManager.teamHexes(var0);
 
             for (Hex var7 : HexRegistry.byColor(HexColor.byId(var1))) {
                if (!var3.hexes(var4).contains(var7.id())
-                  && !var6.contains(var7.id())
                   && !var7.id().equals(HexRegistry.OFFER_UPGRADE)
                   && !var7.id().equals(HexRegistry.ASCETIC)
                   && !var7.id().equals(HexRegistry.ALL_MINE)
@@ -7868,12 +7862,10 @@ public final class HexEffects {
 
          UUID var3 = var0.getUUID();
          ArrayList var4 = new ArrayList();
-         Set<String> var5 = HexManager.teamHexes(var0);
 
          for (HexColor var8 : HexColor.values()) {
             for (Hex var10 : HexRegistry.byColor(var8)) {
                if (!var2.hexes(var3).contains(var10.id())
-                  && !var5.contains(var10.id())
                   && !var10.id().equals(HexRegistry.OFFER_UPGRADE)
                   && !var10.id().equals(HexRegistry.ASCETIC)
                   && !var10.id().equals(HexRegistry.ALL_MINE)) {
