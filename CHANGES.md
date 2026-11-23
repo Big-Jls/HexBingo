@@ -1,5 +1,16 @@
 # Changelog
 
+## 26.2-1.49.29 — 2026-11-23
+
+### Changed
+
+- **Team-wide unique hexes**: a team can no longer own the same hex twice.
+  The three-choice offer, refresh, random hex grants (transmutation / crown /
+  stack dragon / ascetic), Chaos Shift, Pandora reroll, the self-pick list and
+  Mirror Hex now all exclude hexes already owned by any teammate.
+- **Dragon Tamer feeding**: each feed still advances 300 ticks (about 1.67% of
+  the 15 minute growth bar); only the natural growth time is 15 minutes.
+
 ## 26.2-1.49.28 — 2026-11-23
 
 ### Changed

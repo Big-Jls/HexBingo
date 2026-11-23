@@ -100,6 +100,7 @@
     "hexbingo.msg.hexes_empty":  "You have no hexes yet.",
     "hexbingo.msg.no_self_pick":  "Cannot choose a hex now: hex mode is not active, or you already own every hex.",
     "hexbingo.msg.hex_pick_owned":  "You already own this hex.",
+    "hexbingo.msg.hex_team_owned":  "Your team already owns this hex.",
     "hexbingo.hook.cooldown":  "Grapple is on cooldown: %s seconds.",
     "hexbingo.list.title":  "Choose a Hex",
     "hexbingo.list.subtitle":  "%s hexes · choose one",

@@ -100,6 +100,7 @@
     "hexbingo.msg.hexes_empty":  "你还没有海克斯。",
     "hexbingo.msg.no_self_pick":  "当前无法选择海克斯：海克斯模式未启用，或你已拥有全部海克斯。",
     "hexbingo.msg.hex_pick_owned":  "你已经拥有这个海克斯了。",
+    "hexbingo.msg.hex_team_owned":  "本队已有这个海克斯了。",
     "hexbingo.hook.cooldown":  "钩爪冷却中：%s 秒。",
     "hexbingo.list.title":  "选择海克斯",
     "hexbingo.list.subtitle":  "共 %s 个 · 选择 1 个",
