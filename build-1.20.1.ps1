@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "1.20.1-1.0.1-beta",
+    [string]$Version = "1.20.1-1.0.2-beta",
     [string]$MinecraftDir = "D:\minecraft\.minecraft",
     [string]$MappedDir = "D:\bingo\hexbingo-1.20.1\tools\mapped",
     [string]$FartJar = "D:\minecraft\.minecraft\libraries\net\minecraftforge\ForgeAutoRenamingTool\0.1.22\ForgeAutoRenamingTool-0.1.22-all.jar",

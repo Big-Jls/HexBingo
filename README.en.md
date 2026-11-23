@@ -22,6 +22,7 @@ An add-on for [ReBongo](https://github.com/Big-Jls/rebongo) (the NeoForge 26.2 p
 ## Gameplay
 
 - During a match you are offered three hexes and pick one; it takes effect immediately.
+- Hexes are unique within a team: offers, refreshes, random grants, Pandora, the free-pick list and Mirror Hex all exclude hexes already owned by a teammate.
 - Default timing (adjustable in `config/hexbingo-common.toml`):
   - 1st: when you complete your first task (can be changed to the first completed Bingo line)
   - 2nd: 5 minutes into the match

@@ -52,6 +52,27 @@ public final class HexManager {
    private static final Set<UUID> MIRROR_OPEN = new HashSet<>();
    private static final Map<UUID, String> TASK_PICK_MODE = new HashMap<>();
 
+   /** 本队所有队员（含自己）已拥有的海克斯，用于队伍内去重。 */
+   static Set<String> teamHexes(ServerPlayer var0) {
+      HashSet<String> var1 = new HashSet<>();
+      MinecraftServer var2 = var0.level().getServer();
+      if (var2 == null) {
+         return var1;
+      }
+
+      HexGameData var3 = HexGameData.get(var2);
+      Team var4 = Bongo.get(var0.level()).getTeam(var0);
+      if (var4 == null) {
+         var1.addAll(var3.hexes(var0.getUUID()));
+      } else {
+         for (UUID var6 : var4.getPlayers()) {
+            var1.addAll(var3.hexes(var6));
+         }
+      }
+
+      return var1;
+   }
+
    /** 玩家下线时清理选择/镜像/任务选择模式，防止重连后仍持有资格。 */
    public static void onLogout(ServerPlayer var0) {
       UUID var1 = var0.getUUID();
@@ -479,7 +500,10 @@ public final class HexManager {
          while (!var3.isEmpty()) {
             int var4 = (Integer)var3.remove(0);
             int var5 = var1.qualityUp(var2);
-            List<Hex> var6 = rollOfferFor(var0, var1, var4, var1.hexes(var2));
+            // 三选一候选排除本人及队友已拥有的海克斯
+            Set<String> var14 = new HashSet<>(var1.hexes(var2));
+            var14.addAll(teamHexes(var0));
+            List<Hex> var6 = rollOfferFor(var0, var1, var4, var14);
             if (var6.size() >= 3) {
                if (var5 > 0) {
                   var1.clearQualityUp(var2);
@@ -551,6 +575,7 @@ public final class HexManager {
 
             ArrayList<String> var5 = new ArrayList<>(var2.hexes(var3));
             var5.addAll(var4.ids());
+            var5.addAll(teamHexes(var0));
             List<Hex> var6 = rollOfferFor(var0, var2, var4.rewardIndex(), var5);
             if (var6.size() < 3) {
                var0.sendSystemMessage(Component.translatable("hexbingo.msg.refresh_fail").withStyle(ChatFormatting.GRAY));
@@ -595,7 +620,7 @@ public final class HexManager {
             HexGameData.Offer var5 = var3.offer(var4);
             if (var5 != null && var5.ids().contains(var1)) {
                Hex var6 = HexRegistry.byId(var1);
-               if (var6 != null && !var3.hexes(var4).contains(var1)) {
+               if (var6 != null && !var3.hexes(var4).contains(var1) && !teamHexes(var0).contains(var1)) {
                   var3.removeOffer(var4);
                   var3.addHex(var4, var1);
                   HexEffects.apply(var0, var6);
@@ -621,6 +646,8 @@ public final class HexManager {
                   }
 
                   presentNext(var0, var3);
+               } else if (var6 != null && teamHexes(var0).contains(var1)) {
+                  var0.sendSystemMessage(Component.translatable("hexbingo.msg.hex_team_owned").withStyle(ChatFormatting.GRAY));
                } else {
                   var0.sendSystemMessage(Component.translatable("hexbingo.msg.no_offer").withStyle(ChatFormatting.RED));
                }
@@ -648,10 +675,11 @@ public final class HexManager {
       }
 
       ArrayList var3 = new ArrayList();
+      Set<String> var6 = teamHexes(var0);
 
       // 品质提升同样可选：它是「下一次三选一必出彩色」的投资件，不属于特殊解锁件
       for (Hex var5 : HexRegistry.all()) {
-         if (!var2.hexes(var0.getUUID()).contains(var5.id())) {
+         if (!var2.hexes(var0.getUUID()).contains(var5.id()) && !var6.contains(var5.id())) {
             var3.add(var5.id());
          }
       }
@@ -680,6 +708,8 @@ public final class HexManager {
             if (var4 != null && !var1.equals(HexRegistry.ALL_MINE)) {
                if (var3.hexes(var0.getUUID()).contains(var1)) {
                   var0.sendSystemMessage(Component.translatable("hexbingo.msg.hex_pick_owned").withStyle(ChatFormatting.GRAY));
+               } else if (teamHexes(var0).contains(var1)) {
+                  var0.sendSystemMessage(Component.translatable("hexbingo.msg.hex_team_owned").withStyle(ChatFormatting.GRAY));
                } else {
                   FREE_PICK.remove(var0.getUUID());
                   var3.addHex(var0.getUUID(), var1);
@@ -779,6 +809,7 @@ public final class HexManager {
 
       var5.sort(Comparator.comparingDouble(var7 -> nearestTeamDistance(var0, var7)));
       ArrayList<String> var12 = new ArrayList<>();
+      Set<String> var13 = teamHexes(var0);
 
       for (Team var8 : var5) {
          LinkedHashSet<String> var9 = new LinkedHashSet<>();
@@ -786,6 +817,7 @@ public final class HexManager {
          for (UUID var11 : var8.getPlayers()) {
             for (String var14 : var2.hexes(var11)) {
                if (!var2.hexes(var0.getUUID()).contains(var14)
+                  && !var13.contains(var14)
                   && !var14.equals(HexRegistry.OFFER_UPGRADE)
                   && !var14.equals(HexRegistry.ASCETIC)
                   && !var14.equals("mirror_hex")) {
@@ -844,6 +876,11 @@ public final class HexManager {
 
             if (var3.hexes(var0.getUUID()).contains(var1)) {
                var0.sendSystemMessage(Component.translatable("hexbingo.msg.hex_pick_owned").withStyle(ChatFormatting.GRAY));
+               return;
+            }
+
+            if (teamHexes(var0).contains(var1)) {
+               var0.sendSystemMessage(Component.translatable("hexbingo.msg.hex_team_owned").withStyle(ChatFormatting.GRAY));
                return;
             }
 
