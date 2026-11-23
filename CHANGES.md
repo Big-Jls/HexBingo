@@ -1,5 +1,17 @@
 # Changelog
 
+## 26.2-1.49.30 — 2026-11-23
+
+### Fixed
+
+- **Team-wide uniqueness scope**: only the three-choice offer and refresh now
+  enforce team uniqueness. The three offered candidates are reserved for the
+  player immediately, so teammates cannot be offered the same hexes even if
+  the player has not picked yet.
+- Direct acquisition paths may duplicate a teammate's hex again: Golden /
+  Prismatic / Silver Ascension, Crown Me King, Stack Dragon, Ascetic, Chaos
+  Shift, Pandora reroll, operator free pick (`/bingo hexes`) and Mirror Hex.
+
 ## 26.2-1.49.29 — 2026-11-23
 
 ### Changed
