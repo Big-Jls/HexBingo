@@ -284,7 +284,7 @@ public final class HexEffects {
    );
    private static final Map<UUID, Holder<MobEffect>> SONG_BUFFS = new HashMap<>();
    // 间谍：一次性使用标记由 HexGameData 持久化（跨重启保留）
-   private static final Set<String> BOUND_ITEM_NAMES = Set.of("转到我眩晕了", "ok回力镖", "玻璃大炮锁定槽", "中国人会飞·鞘翅", "中国人会飞·烟花", "和我一起困在这里", "精怪魔法", "冲冲冲", "随身工作台", "便携熔炉", "The World", "维度放逐", "对方不在服务区", "海神", "你摸不到", "混沌智", "目标封锁", "致盲", "蝙蝠形态", "精神控制", "矿物透视", "镜像复制", "空白格", "缩小术", "背包小偷", "潘是对的", "封印", "全是我的");
+   private static final Set<String> BOUND_ITEM_NAMES = Set.of("转到我眩晕了", "ok回力镖", "玻璃大炮锁定槽", "中国人会飞·鞘翅", "中国人会飞·烟花", "和我一起困在这里", "精怪魔法", "冲冲冲", "随身工作台", "便携熔炉", "The World", "维度放逐", "对方不在服务区", "海神", "你摸不到", "混沌智", "目标封锁", "致盲", "蝙蝠形态", "精神控制", "矿物透视", "镜像复制", "空白格", "缩小术", "背包小偷", "钓鱼佬", "潘是对的", "封印", "全是我的");
    private static final Identifier WILDCARD_TEXTURE = Identifier.fromNamespaceAndPath("hexbingo", "textures/gui/wildcard.png");
    private static final String BLACK_MARKET_USED_TAG = "hexbingo_black_market_used";
    private static final Map<UUID, Long> DICE_NEXT = new HashMap<>();
@@ -425,13 +425,14 @@ public final class HexEffects {
    private static final String DRAGON_TAG = "hexbingo_dragon";
    private static final Map<UUID, Double> DRAGON_ANGLES = new HashMap<>();
    private static final Map<UUID, Integer> DRAGON_SOUND_TIMER = new HashMap<>();
-   // 驯龙高手：成长进度（tick，满 6000 即成年）、鞍、骑乘输入与飞行速度
+   // 驯龙高手：成长进度（tick，满 18000 即成年）、鞍、骑乘输入与飞行速度
    private static final Map<UUID, Integer> DRAGON_GROWTH = new HashMap<>();
    private static final Map<UUID, ItemStack> DRAGON_SADDLE = new HashMap<>();
    private static final Map<UUID, Vec3> DRAGON_VELOCITY = new HashMap<>();
    private static final Map<UUID, boolean[]> DRAGON_INPUT = new HashMap<>();
-   private static final int DRAGON_GROWTH_TICKS = 6000;
-   private static final int DRAGON_FEED_GROWTH = 300;
+   private static final int DRAGON_GROWTH_TICKS = 18000;
+   // 每次投喂固定推进 5% 成长条（18000 / 20）
+   private static final int DRAGON_FEED_GROWTH = 900;
    private static final List<HexEffects.EggIncubation> INCUBATIONS = new ArrayList<>();
    private static final long DRAGON_INCUBATION_MS = 180000L;
    // TextDisplay 的 setText 在 26.2 中是 private，只能用反射调用
@@ -5232,11 +5233,10 @@ public final class HexEffects {
             var3.add(var0.getInventory().getItem(var4).copy());
          }
 
-         ThreadLocalRandom var7 = ThreadLocalRandom.current();
-
          for (int var5 = 0; var5 < 36; var5++) {
-            Item var6 = RANDOM_ITEMS.get(var7.nextInt(RANDOM_ITEMS.size()));
-            var0.getInventory().setItem(var5, markHexGranted(new ItemStack(var6, 1 + var7.nextInt(3))));
+            // 与仆从大师宠物同一全物品池随机；每格 1 件，避免一次刷出多件贵重物品
+            Item var6 = randomPetItem();
+            var0.getInventory().setItem(var5, markHexGranted(new ItemStack(var6 != null ? var6 : Items.STONE)));
          }
 
          TRANSFORMS.put(var2, new HexEffects.TransformState(var3, System.currentTimeMillis() + Math.max(1, var1) * 1000L));
@@ -9222,7 +9222,7 @@ public final class HexEffects {
          var3.setRemainingFireTicks(0);
          var3.setTarget(null);
 
-         // 驯龙高手：内置成长条，满 6000 tick（5 分钟）长成成年龙；喂食可加速
+         // 驯龙高手：内置成长条，满 18000 tick（15 分钟）长成成年龙；喂食可加速
          int var27 = DRAGON_GROWTH.getOrDefault(var2.getKey(), 0);
          if (var27 < DRAGON_GROWTH_TICKS) {
             var27 = Math.min(DRAGON_GROWTH_TICKS, var27 + 1);
@@ -10294,8 +10294,8 @@ public final class HexEffects {
 
       if (!var2.stack.isEmpty()) {
          var2.cap = swordFlyCap(var2.item);
-         // 每 tick 消耗的耐久点数 = 满耐久 ÷（可飞秒数 × 20）
-         var2.rate = (double)var2.stack.getMaxDamage() / (double)(swordFlySeconds(var2.item) * 20.0F);
+         // 每 tick 消耗的耐久点数 = 满耐久 ÷（可飞秒数 × 20），再提高 15% 耐久消耗
+         var2.rate = (double)var2.stack.getMaxDamage() / (double)(swordFlySeconds(var2.item) * 20.0F) * 1.15;
       }
 
       return var2;
